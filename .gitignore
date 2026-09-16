@@ -1,24 +1,31 @@
-# Nestjs specific
-/dist
-/node_modules
-/build
-/tmp
+# Entornos virtuales
+venv/
+.venv/
 
-# Logs
-logs
-*.log
-npm-debug.log*
-pnpm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-
-# dotenv environment variable files
+# Variables de entorno
 .env
-.env.development
-.env.test
-.env.production
+.env.local
 
-# temp directory
-.temp
-.tmp
+# Python
+__pycache__/
+*.py[cod]
+
+# Pruebas y cobertura
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Editores
+.vscode/
+.idea/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+*.md
+
+# Node / NestJS
+node_modules/
+dist/
+npm-debug.log*
+*.zip
