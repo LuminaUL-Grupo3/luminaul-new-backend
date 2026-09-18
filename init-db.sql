@@ -71,6 +71,31 @@ CREATE TABLE IF NOT EXISTS publications (
 -- Índice optimizado del feed
 CREATE INDEX IF NOT EXISTS idx_posts_feed ON publications (status, deleted_at, created_at);
 
+-- 6. Tabla de miembros de grupos
+CREATE TABLE IF NOT EXISTS group_members (
+  group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role VARCHAR(50) NOT NULL DEFAULT 'member',
+  joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (group_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_group_members_group_user ON group_members (group_id, user_id);
+
+-- 7. Tabla de solicitudes de unión
+CREATE TABLE IF NOT EXISTS join_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+  requester_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  message TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  responded_at TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_join_requests_group_status ON join_requests (group_id, status);
+CREATE INDEX IF NOT EXISTS idx_join_requests_requester ON join_requests (requester_id, status);
+
 -- ============================================================
 -- DATOS INICIALES (SEMILLAS)
 -- ============================================================

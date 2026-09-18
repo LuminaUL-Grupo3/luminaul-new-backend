@@ -8,6 +8,7 @@ import { UsersModule } from './users/users.module';
 import { GroupsModule } from './groups/groups.module';
 import { CoursesModule } from './courses/courses.module';
 import { PostsModule } from './posts/posts.module';
+import { JoinRequestsModule } from './join-requests/join-requests.module';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 
 @Module({
@@ -27,6 +28,7 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
     GroupsModule,
     CoursesModule,
     PostsModule,
+    JoinRequestsModule,
   ],
 })
 export class AppModule implements NestModule {
