@@ -1,9 +1,11 @@
-import * as Joi from 'joi';
+import { z } from 'zod';
 
-export const envValidationSchema = Joi.object({
-  NODE_ENV: Joi.string()
-    .valid('development', 'production', 'test')
+export const envValidationSchema = z.object({
+  NODE_ENV: z
+    .enum(['development', 'production', 'test'])
     .default('development'),
-  PORT: Joi.number().port().default(8000),
-  DATABASE_URL: Joi.string().required(),
+  PORT: z.coerce.number().min(1).max(65535).default(8000),
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
 });
+
+export type EnvConfig = z.infer<typeof envValidationSchema>;

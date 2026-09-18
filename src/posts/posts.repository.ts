@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource, Repository, IsNull } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'node:crypto';
 import { PostEntity } from './entities/post.entity';
 import { GroupEntity } from '../groups/entities/group.entity';
 import { PostCreateDto } from './dto/post-create.dto';
@@ -41,7 +41,7 @@ export class PostsRepository {
       ) {
         // Caso B: Auto-creación de grupo cuando es study_group o provee beneficios/requisitos
         const group = manager.create(GroupEntity, {
-          id: uuidv4(),
+          id: randomUUID(),
           name: `Grupo de ${courseName}`,
           description: `Grupo de estudio creado automáticamente para coordinar ${courseName}.`,
           benefits: postDto.benefits ?? null,
@@ -56,7 +56,7 @@ export class PostsRepository {
 
       // Crear la publicación
       const post = manager.create(PostEntity, {
-        id: uuidv4(),
+        id: randomUUID(),
         userId,
         courseId: postDto.course_id,
         type: postDto.type,
