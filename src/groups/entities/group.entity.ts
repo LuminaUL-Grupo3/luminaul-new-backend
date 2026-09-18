@@ -11,6 +11,7 @@ import { UserEntity } from '../../users/entities/user.entity';
 import { PostEntity } from '../../posts/entities/post.entity';
 import { GroupMemberEntity } from './group-member.entity';
 import { JoinRequestEntity } from '../../join-requests/entities/join-request.entity';
+import { GroupMessageEntity } from './group-message.entity';
 
 @Entity('groups')
 export class GroupEntity {
@@ -59,4 +60,7 @@ export class GroupEntity {
 
   @OneToMany(() => JoinRequestEntity, (request) => request.group)
   joinRequests?: JoinRequestEntity[];
+
+  @OneToMany(() => GroupMessageEntity, (message) => message.group)
+  messages?: GroupMessageEntity[];
 }

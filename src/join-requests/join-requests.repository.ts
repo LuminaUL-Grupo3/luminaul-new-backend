@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
-import { DataSource, Repository, IsNull } from 'typeorm';
+import { Injectable, ConflictException } from '@nestjs/common';
+import { DataSource, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { JoinRequestEntity } from './entities/join-request.entity';
 import { GroupMemberEntity } from '../groups/entities/group-member.entity';
 import { GroupEntity } from '../groups/entities/group.entity';
+import { GroupsRepository } from '../groups/groups.repository';
 
 @Injectable()
 export class JoinRequestsRepository {
@@ -14,11 +15,12 @@ export class JoinRequestsRepository {
     private readonly memberRepo: Repository<GroupMemberEntity>,
     @InjectRepository(GroupEntity)
     private readonly groupRepo: Repository<GroupEntity>,
+    private readonly groupsRepository: GroupsRepository,
     private readonly dataSource: DataSource,
   ) {}
 
   /**
-   * Buscar solicitud por ID incluyendo el grupo, el solicitante y su perfil.
+   * Buscar solicitud por ID incluyendo el grupo, el solicitante y su perfil, y el revisor.
    */
   async findById(requestId: string): Promise<JoinRequestEntity | null> {
     return this.requestRepo
@@ -26,28 +28,23 @@ export class JoinRequestsRepository {
       .leftJoinAndSelect('req.group', 'group')
       .leftJoinAndSelect('req.requester', 'requester')
       .leftJoinAndSelect('requester.profile', 'profile')
+      .leftJoinAndSelect('req.reviewer', 'reviewer')
       .where('req.id = :requestId', { requestId })
       .getOne();
   }
 
   /**
-   * Buscar grupo por ID asegurando que no esté eliminado lógicamente.
+   * Buscar grupo activo por ID asegurando que no esté eliminado lógicamente.
    */
   async findGroupById(groupId: string): Promise<GroupEntity | null> {
-    return this.groupRepo.findOne({
-      where: { id: groupId, deletedAt: IsNull() },
-    });
+    return this.groupsRepository.findActiveById(groupId);
   }
 
   /**
    * Obtener IDs de todos los grupos activos administrados por un usuario.
    */
   async findAdminGroupIds(adminId: string): Promise<string[]> {
-    const groups = await this.groupRepo.find({
-      select: ['id'],
-      where: { adminId, deletedAt: IsNull() },
-    });
-    return groups.map((g) => g.id);
+    return this.groupsRepository.findActiveGroupIdsByAdmin(adminId);
   }
 
   /**
@@ -69,29 +66,37 @@ export class JoinRequestsRepository {
 
   /**
    * Aceptar solicitud en una transacción atómica:
-   * 1. Actualiza estado de solicitud a 'accepted' y responded_at a NOW().
-   * 2. Registra al usuario en la tabla `group_members` como 'member'.
+   * 1. Valida que el grupo no haya superado max_capacity (regla DDL).
+   * 2. Actualiza estado de solicitud a 'accepted', reviewed_at a NOW() y reviewed_by al admin.
+   * 3. Registra al usuario en la tabla `group_members` como 'member'.
    */
-  async acceptRequest(request: JoinRequestEntity): Promise<JoinRequestEntity> {
+  async acceptRequest(
+    request: JoinRequestEntity,
+    reviewerId: string,
+  ): Promise<JoinRequestEntity> {
     return this.dataSource.transaction(async (manager) => {
+      // 1. Validar regla de capacidad máxima
+      const isFull = await this.groupsRepository.isGroupFull(request.groupId, manager);
+      if (isFull) {
+        throw new ConflictException('El grupo ha alcanzado su capacidad máxima');
+      }
+
       const now = new Date();
       request.status = 'accepted';
-      request.respondedAt = now;
+      request.reviewedAt = now;
+      request.reviewedById = reviewerId;
+      request.reviewer = { id: reviewerId } as any;
+      request.respondedAt = now; // Retrocompatibilidad
       const updatedRequest = await manager.save(JoinRequestEntity, request);
+      updatedRequest.reviewedById = reviewerId;
 
-      const existingMember = await manager.findOne(GroupMemberEntity, {
-        where: { groupId: request.groupId, userId: request.requesterId },
-      });
-
-      if (!existingMember) {
-        const member = manager.create(GroupMemberEntity, {
-          groupId: request.groupId,
-          userId: request.requesterId,
-          role: 'member',
-          joinedAt: now,
-        });
-        await manager.save(GroupMemberEntity, member);
-      }
+      // 2. Registrar miembro en group_members si aún no lo es
+      await this.groupsRepository.addMember(
+        request.groupId,
+        request.requesterId,
+        'member',
+        manager,
+      );
 
       return updatedRequest;
     });
@@ -99,12 +104,21 @@ export class JoinRequestsRepository {
 
   /**
    * Rechazar solicitud:
-   * Actualiza estado a 'rejected' y responded_at a NOW().
+   * Actualiza estado a 'rejected', reviewed_at a NOW() y reviewed_by al admin.
    * Permanece en BD para auditoría pero queda excluida del listado 'pending'.
    */
-  async rejectRequest(request: JoinRequestEntity): Promise<JoinRequestEntity> {
+  async rejectRequest(
+    request: JoinRequestEntity,
+    reviewerId: string,
+  ): Promise<JoinRequestEntity> {
+    const now = new Date();
     request.status = 'rejected';
-    request.respondedAt = new Date();
-    return this.requestRepo.save(request);
+    request.reviewedAt = now;
+    request.reviewedById = reviewerId;
+    request.reviewer = { id: reviewerId } as any;
+    request.respondedAt = now; // Retrocompatibilidad
+    const updatedRequest = await this.requestRepo.save(request);
+    updatedRequest.reviewedById = reviewerId;
+    return updatedRequest;
   }
 }

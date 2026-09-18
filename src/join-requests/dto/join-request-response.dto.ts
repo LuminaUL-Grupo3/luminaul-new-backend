@@ -39,6 +39,12 @@ export class JoinRequestItemDto {
   created_at!: Date;
 
   @ApiProperty({ example: null, nullable: true })
+  reviewed_at!: Date | null;
+
+  @ApiProperty({ example: '3fa85f64-5717-4562-b3fc-2c963f66afa6', nullable: true })
+  reviewed_by!: string | null;
+
+  @ApiProperty({ example: null, nullable: true, description: 'Alias retrocompatible de reviewed_at' })
   responded_at!: Date | null;
 }
 

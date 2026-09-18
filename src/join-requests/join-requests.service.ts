@@ -72,10 +72,10 @@ export class JoinRequestsService {
     let message: string;
 
     if (action === 'accepted') {
-      updated = await this.joinRequestsRepository.acceptRequest(request);
+      updated = await this.joinRequestsRepository.acceptRequest(request, userId);
       message = 'Solicitud aceptada exitosamente';
     } else {
-      updated = await this.joinRequestsRepository.rejectRequest(request);
+      updated = await this.joinRequestsRepository.rejectRequest(request, userId);
       message = 'Solicitud rechazada exitosamente';
     }
 
@@ -90,6 +90,7 @@ export class JoinRequestsService {
    */
   private mapToItemDto(entity: JoinRequestEntity): JoinRequestItemDto {
     const profile = entity.requester?.profile;
+    const reviewedAt = entity.reviewedAt ?? entity.respondedAt ?? null;
     return {
       id: entity.id,
       group: {
@@ -104,7 +105,9 @@ export class JoinRequestsService {
       status: entity.status,
       message: entity.message ?? null,
       created_at: entity.createdAt,
-      responded_at: entity.respondedAt ?? null,
+      reviewed_at: reviewedAt,
+      reviewed_by: entity.reviewedById ?? entity.reviewer?.id ?? null,
+      responded_at: reviewedAt,
     };
   }
 }

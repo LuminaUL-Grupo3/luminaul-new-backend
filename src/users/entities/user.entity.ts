@@ -13,6 +13,12 @@ import { PostEntity } from '../../posts/entities/post.entity';
 import { GroupEntity } from '../../groups/entities/group.entity';
 import { GroupMemberEntity } from '../../groups/entities/group-member.entity';
 import { JoinRequestEntity } from '../../join-requests/entities/join-request.entity';
+import { AvailabilityEntity } from './availability.entity';
+import { ReviewEntity } from '../../reviews/entities/review.entity';
+import { NotificationEntity } from '../../notifications/entities/notification.entity';
+import { GroupMessageEntity } from '../../groups/entities/group-message.entity';
+import { ReportEntity } from '../../moderation/entities/report.entity';
+import { AppealEntity } from '../../moderation/entities/appeal.entity';
 
 @Entity('users')
 export class UserEntity {
@@ -29,6 +35,7 @@ export class UserEntity {
   @Column({ type: 'varchar', length: 50, default: 'student', nullable: false })
   role!: string;
 
+  @Index('ix_users_status')
   @Column({ type: 'varchar', length: 50, default: 'pending_verification', nullable: false })
   status!: string;
 
@@ -70,4 +77,28 @@ export class UserEntity {
 
   @OneToMany(() => JoinRequestEntity, (request) => request.requester)
   joinRequests?: JoinRequestEntity[];
+
+  @OneToMany(() => JoinRequestEntity, (request) => request.reviewer)
+  reviewedJoinRequests?: JoinRequestEntity[];
+
+  @OneToMany(() => AvailabilityEntity, (avail) => avail.user)
+  availabilities?: AvailabilityEntity[];
+
+  @OneToMany(() => ReviewEntity, (rev) => rev.reviewer)
+  reviewsGiven?: ReviewEntity[];
+
+  @OneToMany(() => ReviewEntity, (rev) => rev.reviewedUser)
+  reviewsReceived?: ReviewEntity[];
+
+  @OneToMany(() => NotificationEntity, (notif) => notif.user)
+  notifications?: NotificationEntity[];
+
+  @OneToMany(() => GroupMessageEntity, (msg) => msg.sender)
+  sentMessages?: GroupMessageEntity[];
+
+  @OneToMany(() => ReportEntity, (rep) => rep.reporter)
+  reportsFiled?: ReportEntity[];
+
+  @OneToMany(() => AppealEntity, (appeal) => appeal.user)
+  appeals?: AppealEntity[];
 }

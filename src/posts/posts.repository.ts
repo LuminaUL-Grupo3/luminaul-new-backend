@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'node:crypto';
 import { PostEntity } from './entities/post.entity';
 import { GroupEntity } from '../groups/entities/group.entity';
+import { GroupsRepository } from '../groups/groups.repository';
 import { PostCreateDto } from './dto/post-create.dto';
 import { PostUpdateDto } from './dto/post-update.dto';
 
@@ -14,13 +15,12 @@ export class PostsRepository {
     private readonly postRepo: Repository<PostEntity>,
     @InjectRepository(GroupEntity)
     private readonly groupRepo: Repository<GroupEntity>,
+    private readonly groupsRepository: GroupsRepository,
     private readonly dataSource: DataSource,
   ) {}
 
   async findGroupById(groupId: string): Promise<GroupEntity | null> {
-    return this.groupRepo.findOne({
-      where: { id: groupId },
-    });
+    return this.groupsRepository.findActiveById(groupId);
   }
 
   async create(
@@ -39,17 +39,17 @@ export class PostsRepository {
         postDto.benefits ||
         postDto.requirements
       ) {
-        // Caso B: Auto-creación de grupo cuando es study_group o provee beneficios/requisitos
-        const group = manager.create(GroupEntity, {
-          id: randomUUID(),
-          name: `Grupo de ${courseName}`,
-          description: `Grupo de estudio creado automáticamente para coordinar ${courseName}.`,
-          benefits: postDto.benefits ?? null,
-          requirements: postDto.requirements ?? null,
-          adminId: userId,
-          createdAt: new Date(),
-        });
-        const savedGroup = await manager.save(GroupEntity, group);
+        // Caso B: Auto-creación de grupo garantizando el admin en group_members (Regla DDL)
+        const savedGroup = await this.groupsRepository.createWithAdmin(
+          {
+            name: `Grupo de ${courseName}`,
+            description: `Grupo de estudio creado automáticamente para coordinar ${courseName}.`,
+            benefits: postDto.benefits ?? null,
+            requirements: postDto.requirements ?? null,
+          },
+          userId,
+          manager,
+        );
         finalGroupId = savedGroup.id;
       }
       // Caso C: Tutoría individual o post simple sin grupo -> finalGroupId queda en null

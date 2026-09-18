@@ -25,7 +25,7 @@ export class JoinRequestEntity {
   @Column('uuid', { name: 'requester_id', nullable: false })
   requesterId!: string;
 
-  @Column({ type: 'varchar', length: 20, default: 'pending', nullable: false })
+  @Column({ type: 'varchar', length: 50, default: 'pending', nullable: false })
   status!: JoinRequestStatus;
 
   @Column({ type: 'text', nullable: true })
@@ -33,6 +33,12 @@ export class JoinRequestEntity {
 
   @CreateDateColumn({ type: 'timestamp', name: 'created_at', default: () => 'CURRENT_TIMESTAMP' })
   createdAt!: Date;
+
+  @Column({ type: 'timestamp', nullable: true, name: 'reviewed_at' })
+  reviewedAt!: Date | null;
+
+  @Column('uuid', { name: 'reviewed_by', nullable: true })
+  reviewedById!: string | null;
 
   @Column({ type: 'timestamp', nullable: true, name: 'responded_at' })
   respondedAt!: Date | null;
@@ -44,4 +50,8 @@ export class JoinRequestEntity {
   @ManyToOne(() => UserEntity, (user) => user.joinRequests, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'requester_id' })
   requester?: UserEntity;
+
+  @ManyToOne(() => UserEntity, (user) => user.reviewedJoinRequests, { nullable: true })
+  @JoinColumn({ name: 'reviewed_by' })
+  reviewer?: UserEntity | null;
 }

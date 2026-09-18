@@ -7,6 +7,8 @@ import { JoinRequestsController } from './join-requests.controller';
 import { JoinRequestsService } from './join-requests.service';
 import { JoinRequestsRepository } from './join-requests.repository';
 
+import { GroupsModule } from '../groups/groups.module';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -14,6 +16,7 @@ import { JoinRequestsRepository } from './join-requests.repository';
       GroupMemberEntity,
       GroupEntity,
     ]),
+    GroupsModule,
   ],
   controllers: [JoinRequestsController],
   providers: [JoinRequestsService, JoinRequestsRepository],

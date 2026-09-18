@@ -9,6 +9,9 @@ import { GroupsModule } from './groups/groups.module';
 import { CoursesModule } from './courses/courses.module';
 import { PostsModule } from './posts/posts.module';
 import { JoinRequestsModule } from './join-requests/join-requests.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { ReviewsModule } from './reviews/reviews.module';
+import { ModerationModule } from './moderation/moderation.module';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 
 @Module({
@@ -29,6 +32,9 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
     CoursesModule,
     PostsModule,
     JoinRequestsModule,
+    NotificationsModule,
+    ReviewsModule,
+    ModerationModule,
   ],
 })
 export class AppModule implements NestModule {

@@ -82,6 +82,8 @@ async function runSprint2Tests() {
       ALTER TABLE join_requests ALTER COLUMN id SET DEFAULT gen_random_uuid();
       ALTER TABLE join_requests ADD COLUMN IF NOT EXISTS message TEXT;
       ALTER TABLE join_requests ADD COLUMN IF NOT EXISTS responded_at TIMESTAMP;
+      ALTER TABLE join_requests ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMP;
+      ALTER TABLE join_requests ADD COLUMN IF NOT EXISTS reviewed_by UUID REFERENCES users(id);
 
       CREATE INDEX IF NOT EXISTS idx_join_requests_group_status ON join_requests (group_id, status);
       CREATE INDEX IF NOT EXISTS idx_join_requests_requester ON join_requests (requester_id, status);
@@ -219,6 +221,8 @@ async function runSprint2Tests() {
         response.request.id === request1Id &&
         response.request.status === 'accepted' &&
         response.request.responded_at !== null &&
+        response.request.reviewed_at !== null &&
+        response.request.reviewed_by === DEMO_USER_ID &&
         response.message === 'Solicitud aceptada exitosamente';
 
       // Verificar inserción atómica en group_members
@@ -229,9 +233,9 @@ async function runSprint2Tests() {
       const dbOk = members.length === 1 && members[0].role === 'member';
 
       if (!responseOk || !dbOk) {
-        throw new Error(`Aceptación fallida: responseOk=${responseOk}, dbOk=${dbOk}, membersCount=${members.length}`);
+        throw new Error(`Aceptación fallida: responseOk=${responseOk}, dbOk=${dbOk}, membersCount=${members.length}, req=${JSON.stringify(response.request)}, expReviewedBy=${DEMO_USER_ID}`);
       }
-      recordTest('HU 2.2 - CA #1', 'Aceptar solicitud actualiza status a "accepted" e inserta miembro en group_members de forma atómica', true);
+      recordTest('HU 2.2 - CA #1', 'Aceptar solicitud actualiza status a "accepted", asigna reviewed_at/reviewed_by e inserta miembro en group_members de forma atómica', true);
     } catch (err: any) {
       recordTest('HU 2.2 - CA #1', 'Aceptar solicitud pendiente', false, err.message);
     }
@@ -250,6 +254,8 @@ async function runSprint2Tests() {
         response.request.id === request2Id &&
         response.request.status === 'rejected' &&
         response.request.responded_at !== null &&
+        response.request.reviewed_at !== null &&
+        response.request.reviewed_by === DEMO_USER_ID &&
         response.message === 'Solicitud rechazada exitosamente';
 
       // Verificar que NO se insertó en group_members
@@ -268,7 +274,7 @@ async function runSprint2Tests() {
           `Rechazo fallido: responseOk=${responseOk}, noMember=${noMember}, notInList=${notInPendingList}, isNowEmpty=${isNowEmpty}`,
         );
       }
-      recordTest('HU 2.2 - CA #2', 'Rechazar solicitud actualiza status a "rejected" y la elimina de la lista de pendientes', true);
+      recordTest('HU 2.2 - CA #2', 'Rechazar solicitud actualiza status a "rejected", asigna reviewed_at/reviewed_by y la excluye de pendientes', true);
     } catch (err: any) {
       recordTest('HU 2.2 - CA #2', 'Rechazar solicitud pendiente', false, err.message);
     }
@@ -377,6 +383,49 @@ async function runSprint2Tests() {
       recordTest('HU 2.2 - DTO Validation', 'RespondJoinRequestDto rechaza valores distintos a "accepted" o "rejected"', true);
     } catch (err: any) {
       recordTest('HU 2.2 - DTO Validation', 'Validación estricta de acción en DTO', false, err.message);
+    }
+
+    // =========================================================================
+    // PRUEBA 10: Regla de Negocio - Control de Capacidad Máxima (max_capacity)
+    // =========================================================================
+    try {
+      const fullGroupId = 'cccccccc-1111-2222-3333-444444444444';
+      await dataSource.query(`
+        INSERT INTO groups (id, name, description, max_capacity, admin_id, created_at)
+        VALUES ('${fullGroupId}', 'Grupo Lleno', 'Grupo para probar límite', 1, '${DEMO_USER_ID}', NOW());
+
+        INSERT INTO group_members (group_id, user_id, role, joined_at)
+        VALUES ('${fullGroupId}', '${DEMO_USER_ID}', 'admin', NOW());
+      `);
+
+      const insertFullReq = await dataSource.query(`
+        INSERT INTO join_requests (id, group_id, requester_id, status, message, created_at)
+        VALUES (gen_random_uuid(), '${fullGroupId}', '${STUDENT_3_ID}', 'pending', 'Quiero entrar a grupo lleno', NOW())
+        RETURNING id;
+      `);
+      const fullReqId = insertFullReq[0].id;
+
+      let caughtFullConflict = false;
+      try {
+        await controller.respondToRequest(
+          fullReqId,
+          { action: 'accepted' },
+          DEMO_USER_ID,
+        );
+      } catch (err: any) {
+        if (err instanceof ConflictException && err.message.includes('capacidad')) {
+          caughtFullConflict = true;
+        } else {
+          throw err;
+        }
+      }
+
+      if (!caughtFullConflict) {
+        throw new Error('Se esperaba ConflictException por capacidad máxima superada');
+      }
+      recordTest('HU 2.2 - Capacidad Máxima', 'Aceptar solicitud en grupo con max_capacity alcanzada lanza ConflictException (409)', true);
+    } catch (err: any) {
+      recordTest('HU 2.2 - Capacidad Máxima', 'Control de max_capacity en grupos', false, err.message);
     }
 
   } catch (globalErr: any) {
