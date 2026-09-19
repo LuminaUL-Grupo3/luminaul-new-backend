@@ -90,8 +90,8 @@ async function runSprint2Tests() {
     `);
 
     // Limpiar datos previos de pruebas
-    await dataSource.query(`DELETE FROM join_requests;`);
-    await dataSource.query(`DELETE FROM group_members;`);
+    await dataSource.query(`DELETE FROM join_requests WHERE group_id IN ('${group1Id}', '${group2Id}') OR requester_id IN ('${DEMO_USER_ID}', '${OTHER_USER_ID}', '${STUDENT_3_ID}');`);
+    await dataSource.query(`DELETE FROM group_members WHERE group_id IN ('${group1Id}', '${group2Id}') OR user_id IN ('${DEMO_USER_ID}', '${OTHER_USER_ID}', '${STUDENT_3_ID}');`);
     await dataSource.query(`DELETE FROM publications WHERE user_id IN ('${DEMO_USER_ID}', '${OTHER_USER_ID}', '${STUDENT_3_ID}');`);
     await dataSource.query(`DELETE FROM groups WHERE admin_id IN ('${DEMO_USER_ID}', '${OTHER_USER_ID}', '${STUDENT_3_ID}');`);
     await dataSource.query(`DELETE FROM profiles WHERE user_id IN ('${DEMO_USER_ID}', '${OTHER_USER_ID}', '${STUDENT_3_ID}');`);
