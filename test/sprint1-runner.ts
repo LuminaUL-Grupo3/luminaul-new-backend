@@ -62,6 +62,8 @@ async function runTests() {
     console.log('📦 Sembrando datos iniciales en PostgreSQL para pruebas...');
 
     // Limpiar publicaciones y grupos previos de prueba si existen
+    await dataSource.query(`DELETE FROM join_requests;`);
+    await dataSource.query(`DELETE FROM group_members;`);
     await dataSource.query(`DELETE FROM publications WHERE user_id IN ('${DEMO_USER_ID}', '${OTHER_USER_ID}');`);
     await dataSource.query(`DELETE FROM groups WHERE admin_id IN ('${DEMO_USER_ID}', '${OTHER_USER_ID}');`);
     await dataSource.query(`DELETE FROM profiles WHERE user_id IN ('${DEMO_USER_ID}', '${OTHER_USER_ID}');`);
@@ -397,6 +399,8 @@ async function runTests() {
     if (createdPostId) {
       await dataSource.query(`DELETE FROM publications WHERE id = '${createdPostId}';`);
     }
+    await dataSource.query(`DELETE FROM join_requests;`);
+    await dataSource.query(`DELETE FROM group_members;`);
     await dataSource.query(`DELETE FROM publications WHERE user_id IN ('${DEMO_USER_ID}', '${OTHER_USER_ID}');`);
     await dataSource.query(`DELETE FROM groups WHERE admin_id IN ('${DEMO_USER_ID}', '${OTHER_USER_ID}');`);
     await dataSource.query(`DELETE FROM profiles WHERE user_id IN ('${DEMO_USER_ID}', '${OTHER_USER_ID}');`);

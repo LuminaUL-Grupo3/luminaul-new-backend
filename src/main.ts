@@ -34,6 +34,7 @@ async function bootstrap(): Promise<void> {
     .addTag('Health', 'Verificación de estado del servidor')
     .addTag('Courses', 'Módulo de cursos académicos')
     .addTag('Posts', 'Módulo de publicaciones (feed, historial, creación, edición, eliminación)')
+    .addTag('Join Requests', 'Módulo de solicitudes de unión a grupos de estudio (H.U 2.2)')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
