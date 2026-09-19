@@ -93,8 +93,8 @@ CREATE INDEX IF NOT EXISTS idx_group_members_group_user ON group_members (group_
 -- 7. Tabla de solicitudes de unión
 CREATE TABLE IF NOT EXISTS join_requests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  group_id UUID NOT NULL REFERENCES groups(id),
-  requester_id UUID NOT NULL REFERENCES users(id),
+  group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+  requester_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   status VARCHAR(50) NOT NULL DEFAULT 'pending',
   message TEXT,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
