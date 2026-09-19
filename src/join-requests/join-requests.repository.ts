@@ -75,20 +75,45 @@ export class JoinRequestsRepository {
     reviewerId: string,
   ): Promise<JoinRequestEntity> {
     return this.dataSource.transaction(async (manager) => {
-      // 1. Validar regla de capacidad máxima
-      const isFull = await this.groupsRepository.isGroupFull(request.groupId, manager);
-      if (isFull) {
-        throw new ConflictException('El grupo ha alcanzado su capacidad máxima');
+      // 1. Bloquear el grupo para serializar validación de capacidad y alta de miembro
+      const group = await manager
+        .getRepository(GroupEntity)
+        .createQueryBuilder('group')
+        .setLock('pessimistic_write')
+        .where('group.id = :groupId', { groupId: request.groupId })
+        .andWhere('group.deletedAt IS NULL')
+        .getOne();
+
+      if (!group) {
+        throw new ConflictException('El grupo no está disponible');
+      }
+
+      if (group.maxCapacity) {
+        const currentMembers = await manager
+          .getRepository(GroupMemberEntity)
+          .count({ where: { groupId: request.groupId } });
+        if (currentMembers >= group.maxCapacity) {
+          throw new ConflictException('El grupo ha alcanzado su capacidad máxima');
+        }
       }
 
       const now = new Date();
-      request.status = 'accepted';
-      request.reviewedAt = now;
-      request.reviewedById = reviewerId;
-      request.reviewer = { id: reviewerId } as any;
-      request.respondedAt = now; // Retrocompatibilidad
-      const updatedRequest = await manager.save(JoinRequestEntity, request);
-      updatedRequest.reviewedById = reviewerId;
+      const updateResult = await manager
+        .createQueryBuilder()
+        .update(JoinRequestEntity)
+        .set({
+          status: 'accepted',
+          reviewedAt: now,
+          reviewedById: reviewerId,
+          respondedAt: now,
+        })
+        .where('id = :requestId', { requestId: request.id })
+        .andWhere('status = :pendingStatus', { pendingStatus: 'pending' })
+        .execute();
+
+      if (updateResult.affected !== 1) {
+        throw new ConflictException('La solicitud ya ha sido procesada anteriormente');
+      }
 
       // 2. Registrar miembro en group_members si aún no lo es
       await this.groupsRepository.addMember(
@@ -98,6 +123,11 @@ export class JoinRequestsRepository {
         manager,
       );
 
+      const updatedRequest = await manager.findOneByOrFail(JoinRequestEntity, {
+        id: request.id,
+      });
+      updatedRequest.reviewedById = reviewerId;
+      updatedRequest.reviewer = { id: reviewerId } as any;
       return updatedRequest;
     });
   }
