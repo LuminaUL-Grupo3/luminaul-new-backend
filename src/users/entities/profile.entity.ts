@@ -5,8 +5,15 @@ import {
   UpdateDateColumn,
   OneToOne,
   JoinColumn,
+  ManyToMany,
+  JoinTable,
+  OneToMany,
 } from 'typeorm';
 import { UserEntity } from './user.entity';
+import { SkillEntity } from './skill.entity';
+import { ProfileSkillEntity } from './profile-skill.entity';
+import { InterestEntity } from './interest.entity';
+import { ProfileInterestEntity } from './profile-interest.entity';
 
 @Entity('profiles')
 export class ProfileEntity {
@@ -34,4 +41,26 @@ export class ProfileEntity {
   @OneToOne(() => UserEntity, (user) => user.profile)
   @JoinColumn({ name: 'user_id' })
   user?: UserEntity;
+
+  @ManyToMany(() => SkillEntity, (skill) => skill.profiles)
+  @JoinTable({
+    name: 'profile_skills',
+    joinColumn: { name: 'profile_user_id', referencedColumnName: 'userId' },
+    inverseJoinColumn: { name: 'skill_id', referencedColumnName: 'id' },
+  })
+  skills?: SkillEntity[];
+
+  @OneToMany(() => ProfileSkillEntity, (profileSkill) => profileSkill.profile)
+  profileSkills?: ProfileSkillEntity[];
+
+  @ManyToMany(() => InterestEntity, (interest) => interest.profiles)
+  @JoinTable({
+    name: 'profile_interests',
+    joinColumn: { name: 'profile_user_id', referencedColumnName: 'userId' },
+    inverseJoinColumn: { name: 'interest_id', referencedColumnName: 'id' },
+  })
+  interests?: InterestEntity[];
+
+  @OneToMany(() => ProfileInterestEntity, (profileInterest) => profileInterest.profile)
+  profileInterests?: ProfileInterestEntity[];
 }

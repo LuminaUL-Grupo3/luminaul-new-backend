@@ -37,8 +37,20 @@ async function runManualMigration() {
     await dataSource.initialize();
     console.log('📦 Ejecutando script init-db.sql...');
     await dataSource.query(sql);
+
+    // Ajustes idempotentes para tablas existentes
+    await dataSource.query(`
+      ALTER TABLE join_requests ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMP;
+      ALTER TABLE join_requests ADD COLUMN IF NOT EXISTS reviewed_by UUID REFERENCES users(id);
+      ALTER TABLE join_requests ADD COLUMN IF NOT EXISTS message TEXT;
+      ALTER TABLE join_requests ADD COLUMN IF NOT EXISTS responded_at TIMESTAMP;
+      ALTER TABLE join_requests ALTER COLUMN status TYPE VARCHAR(50);
+      CREATE INDEX IF NOT EXISTS idx_join_requests_reviewed_by ON join_requests (reviewed_by);
+      CREATE UNIQUE INDEX IF NOT EXISTS ux_join_requests_pending_unique ON join_requests (group_id, requester_id) WHERE status = 'pending';
+    `);
+
     console.log('✅ Migración manual completada con éxito.');
-    console.log('   Tablas (courses, users, profiles, groups, publications) y datos iniciales listos.');
+    console.log('   Tablas (courses, users, profiles, groups, publications, join_requests) e índices listos.');
   } catch (err: any) {
     console.error('❌ Error al ejecutar la migración manual:', err.message);
     process.exit(1);

@@ -5,12 +5,15 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
   Index,
 } from 'typeorm';
 import { UserEntity } from '../../users/entities/user.entity';
 import { GroupEntity } from '../../groups/entities/group.entity';
 import { CourseEntity } from '../../courses/entities/course.entity';
+import { ReportEntity } from '../../moderation/entities/report.entity';
+import { ModerationLogEntity } from '../../moderation/entities/moderation-log.entity';
 
 @Entity('publications')
 @Index('idx_posts_feed', ['status', 'deletedAt', 'createdAt'])
@@ -18,14 +21,14 @@ export class PostEntity {
   @PrimaryColumn('uuid')
   id!: string;
 
-  @Index('ix_publications_user_id')
+  @Index('ix_publications_user')
   @Column('uuid', { name: 'user_id', nullable: false })
   userId!: string;
 
   @Column('uuid', { name: 'group_id', nullable: true })
   groupId!: string | null;
 
-  @Index('ix_publications_course_id')
+  @Index('ix_publications_course')
   @Column('uuid', { name: 'course_id', nullable: false })
   courseId!: string;
 
@@ -59,4 +62,10 @@ export class PostEntity {
   @ManyToOne(() => CourseEntity, (course) => course.posts)
   @JoinColumn({ name: 'course_id' })
   course?: CourseEntity;
+
+  @OneToMany(() => ReportEntity, (report) => report.publication)
+  reports?: ReportEntity[];
+
+  @OneToMany(() => ModerationLogEntity, (log) => log.publication)
+  moderationLogs?: ModerationLogEntity[];
 }

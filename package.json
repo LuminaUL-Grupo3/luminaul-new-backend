@@ -13,7 +13,8 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "db:init": "ts-node scripts/init-db.ts",
-    "test:sprint1": "ts-node test/sprint1-runner.ts"
+    "test:sprint1": "ts-node test/sprint1-runner.ts",
+    "test:sprint2": "ts-node test/sprint2-join-requests-runner.ts"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.3",
