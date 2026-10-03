@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { envValidationSchema } from './config/env.validation';
 import { getTypeOrmConfig } from './config/database.config';
+import { AuthModule } from './auth/auth.module';
 import { HealthModule } from './health/health.module';
 import { UsersModule } from './users/users.module';
 import { GroupsModule } from './groups/groups.module';
@@ -27,6 +28,7 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
       useFactory: getTypeOrmConfig,
     }),
     HealthModule,
+    AuthModule,
     UsersModule,
     GroupsModule,
     CoursesModule,
