@@ -4,6 +4,7 @@ import { JoinRequestEntity } from './entities/join-request.entity';
 import { GroupMemberEntity } from '../groups/entities/group-member.entity';
 import { GroupEntity } from '../groups/entities/group.entity';
 import { JoinRequestsController } from './join-requests.controller';
+import { GroupJoinRequestsController } from './group-join-requests.controller';
 import { JoinRequestsService } from './join-requests.service';
 import { JoinRequestsRepository } from './join-requests.repository';
 
@@ -18,7 +19,7 @@ import { GroupsModule } from '../groups/groups.module';
     ]),
     GroupsModule,
   ],
-  controllers: [JoinRequestsController],
+  controllers: [JoinRequestsController, GroupJoinRequestsController],
   providers: [JoinRequestsService, JoinRequestsRepository],
   exports: [JoinRequestsService, JoinRequestsRepository],
 })

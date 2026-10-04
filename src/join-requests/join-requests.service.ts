@@ -11,12 +11,72 @@ import {
   JoinRequestRespondResponseDto,
 } from './dto/join-request-response.dto';
 import { JoinRequestListResponseDto } from './dto/join-request-list-response.dto';
+import { CreateJoinRequestResponseDto } from './dto/create-join-request-response.dto';
+import { GroupsRepository } from '../groups/groups.repository';
+
+/** Mensajes de la H.U 2.1 (textos de los criterios de aceptación). */
+export const JOIN_REQUEST_MESSAGES = {
+  CREATED: 'Solicitud enviada con éxito',
+  GROUP_NOT_FOUND: 'Grupo no encontrado o eliminado',
+  ALREADY_MEMBER: 'Ya perteneces a este grupo',
+  ALREADY_PENDING: 'Ya tienes una solicitud pendiente para este grupo',
+} as const;
 
 @Injectable()
 export class JoinRequestsService {
   constructor(
     private readonly joinRequestsRepository: JoinRequestsRepository,
+    private readonly groupsRepository: GroupsRepository,
   ) {}
+
+  /**
+   * H.U 2.1 — Enviar solicitud de unión a un grupo de estudio.
+   *
+   * Reglas de negocio (en este orden):
+   * 1. El grupo debe existir y no estar eliminado lógicamente      → 404
+   * 2. El alumno no debe ser ya miembro (ni admin) del grupo         → 409 (escenario 3)
+   * 3. El alumno no debe tener otra solicitud pendiente en el grupo  → 409 (escenario 2)
+   * 4. Se registra la solicitud en estado 'pending'                  → 201 (escenario 1)
+   *    Si la BD detecta un duplicado simultáneo (doble click), se responde
+   *    igual que en la regla 3.
+   */
+  async createRequest(
+    groupId: string,
+    requesterId: string,
+    message: string,
+  ): Promise<CreateJoinRequestResponseDto> {
+    const group = await this.groupsRepository.findActiveById(groupId);
+    if (!group) {
+      throw new NotFoundException(JOIN_REQUEST_MESSAGES.GROUP_NOT_FOUND);
+    }
+
+    const isMember = await this.groupsRepository.isUserMember(groupId, requesterId);
+    if (isMember) {
+      throw new ConflictException(JOIN_REQUEST_MESSAGES.ALREADY_MEMBER);
+    }
+
+    const pendingRequest = await this.joinRequestsRepository.findPendingByGroupAndRequester(
+      groupId,
+      requesterId,
+    );
+    if (pendingRequest) {
+      throw new ConflictException(JOIN_REQUEST_MESSAGES.ALREADY_PENDING);
+    }
+
+    const created = await this.joinRequestsRepository.createPending(
+      groupId,
+      requesterId,
+      message,
+    );
+    if (!created) {
+      throw new ConflictException(JOIN_REQUEST_MESSAGES.ALREADY_PENDING);
+    }
+
+    return {
+      request: this.mapToItemDto(created),
+      message: JOIN_REQUEST_MESSAGES.CREATED,
+    };
+  }
 
   /**
    * Listar todas las solicitudes pendientes de todos los grupos administrados por el usuario.

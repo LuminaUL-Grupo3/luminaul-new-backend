@@ -1,10 +1,13 @@
 import { Injectable, ConflictException } from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, QueryFailedError, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { JoinRequestEntity } from './entities/join-request.entity';
 import { GroupMemberEntity } from '../groups/entities/group-member.entity';
 import { GroupEntity } from '../groups/entities/group.entity';
 import { GroupsRepository } from '../groups/groups.repository';
+
+/** Código de PostgreSQL para violación de restricción UNIQUE. */
+const PG_UNIQUE_VIOLATION = '23505';
 
 @Injectable()
 export class JoinRequestsRepository {
@@ -62,6 +65,62 @@ export class JoinRequestsRepository {
       .andWhere('req.status = :status', { status: 'pending' })
       .orderBy('req.createdAt', 'DESC')
       .getMany();
+  }
+
+  /**
+   * H.U 2.1 — Buscar la solicitud PENDIENTE de un alumno hacia un grupo.
+   * Retorna null si el alumno no tiene ninguna solicitud pendiente en ese grupo.
+   */
+  async findPendingByGroupAndRequester(
+    groupId: string,
+    requesterId: string,
+  ): Promise<JoinRequestEntity | null> {
+    return this.requestRepo.findOne({
+      where: { groupId, requesterId, status: 'pending' },
+    });
+  }
+
+  /**
+   * H.U 2.1 — Registrar una nueva solicitud en estado 'pending'.
+   *
+   * La BD tiene el índice único parcial ux_join_requests_pending_unique
+   * (group_id, requester_id) WHERE status = 'pending'. Si dos peticiones llegan
+   * al mismo tiempo (doble click), ambas pueden pasar la validación del Service,
+   * pero PostgreSQL rechaza la segunda con el error 23505. En ese caso se retorna
+   * null ("ya existía una pendiente") y el Service decide el mensaje al usuario.
+   * El Repository no lanza excepciones HTTP: solo informa lo que pasó en la BD.
+   *
+   * Retorna la solicitud creada con sus relaciones (grupo y solicitante con perfil).
+   */
+  async createPending(
+    groupId: string,
+    requesterId: string,
+    message: string,
+  ): Promise<JoinRequestEntity | null> {
+    try {
+      const request = this.requestRepo.create({
+        groupId,
+        requesterId,
+        message,
+        status: 'pending',
+      });
+      const saved = await this.requestRepo.save(request);
+      return this.findById(saved.id);
+    } catch (error) {
+      if (this.isUniqueViolation(error)) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  private isUniqueViolation(error: unknown): boolean {
+    if (!(error instanceof QueryFailedError)) {
+      return false;
+    }
+    const driverError = (error as QueryFailedError & { driverError?: { code?: string } })
+      .driverError;
+    return driverError?.code === PG_UNIQUE_VIOLATION;
   }
 
   /**

@@ -71,3 +71,7 @@ npm run test:sprint1
 | `GET` | `/posts/me` | Historial de publicaciones del usuario actual |
 | `PUT` | `/posts/:post_id` | Editar publicación existente |
 | `DELETE` | `/posts/:post_id` | Eliminar publicación (soft delete) |
+| `GET` | `/groups/:group_id` | Detalle del grupo y estado del usuario (`my_status`) — H.U 2.1 |
+| `POST` | `/groups/:group_id/join-requests` | Enviar solicitud de unión a un grupo — H.U 2.1 |
+| `GET` | `/join-requests/me` | Solicitudes pendientes de mis grupos — H.U 2.2 |
+| `PATCH` | `/join-requests/:request_id` | Aceptar o rechazar una solicitud — H.U 2.2 |

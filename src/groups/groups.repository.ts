@@ -4,6 +4,7 @@ import { Repository, IsNull, DataSource, EntityManager } from 'typeorm';
 import { randomUUID } from 'node:crypto';
 import { GroupEntity } from './entities/group.entity';
 import { GroupMemberEntity } from './entities/group-member.entity';
+import { JoinRequestEntity } from '../join-requests/entities/join-request.entity';
 
 export interface CreateGroupInput {
   name: string;
@@ -22,6 +23,8 @@ export class GroupsRepository {
     private readonly groupRepo: Repository<GroupEntity>,
     @InjectRepository(GroupMemberEntity)
     private readonly memberRepo: Repository<GroupMemberEntity>,
+    @InjectRepository(JoinRequestEntity)
+    private readonly joinRequestRepo: Repository<JoinRequestEntity>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -33,6 +36,32 @@ export class GroupsRepository {
       where: { id: groupId, deletedAt: IsNull() },
       relations: ['members', 'admin'],
     });
+  }
+
+  /**
+   * H.U 2.1 — Detalle de un grupo activo con su administrador (y perfil) y sus miembros.
+   */
+  async findDetailById(groupId: string): Promise<GroupEntity | null> {
+    return this.groupRepo
+      .createQueryBuilder('group')
+      .leftJoinAndSelect('group.admin', 'admin')
+      .leftJoinAndSelect('admin.profile', 'adminProfile')
+      .leftJoinAndSelect('group.members', 'member')
+      .where('group.id = :groupId', { groupId })
+      .andWhere('group.deletedAt IS NULL')
+      .getOne();
+  }
+
+  /**
+   * H.U 2.1 — Verificar si un usuario tiene una solicitud pendiente hacia un grupo.
+   * Se consulta la tabla join_requests directamente (entidad, no módulo) para no
+   * crear una dependencia circular GroupsModule <-> JoinRequestsModule.
+   */
+  async hasPendingJoinRequest(groupId: string, userId: string): Promise<boolean> {
+    const count = await this.joinRequestRepo.count({
+      where: { groupId, requesterId: userId, status: 'pending' },
+    });
+    return count > 0;
   }
 
   /**
