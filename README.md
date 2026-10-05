@@ -6,7 +6,7 @@ Backend de la plataforma LuminaUL refactorizado a **NestJS** con **TypeScript**,
 
 ## 🚀 Requisitos Previos
 
-* **Node.js** v18 o superior (v20+ recomendado).
+* **Node.js** v22.12 o superior.
 * **PostgreSQL** corriendo localmente o en un contenedor Docker.
 
 ---
@@ -53,14 +53,16 @@ El servidor estará escuchando en:
 
 ## 🧪 Pruebas Automatizadas (Sprint 1)
 
-Para ejecutar la suite de 24 pruebas de integración que validan todas las Historias de Usuario (H.U 1.1 a 1.6):
+Para ejecutar las suites heredadas de Sprint 1/Sprint 2 y las pruebas HTTP de autenticación, registro, correo, perfiles, horarios y reseñas sobre una base aislada:
 ```bash
-npm run test:sprint1
+npm run test:integration
 ```
 
 ---
 
 ## 📋 Endpoints Disponibles
+
+Consulta [la guía de integración](docs/INTEGRACION_ROBERT.md) para los contratos de cuentas, perfiles y disponibilidad, el arranque con Docker y el buzón local de verificación en `http://localhost:8026`. Antes de arrancar una copia existente, ejecuta `npm run db:init`: agrega de forma idempotente los campos de intentos de verificación y versión de sesión.
 
 | Método | Ruta | Descripción |
 | :--- | :--- | :--- |

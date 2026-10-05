@@ -10,6 +10,7 @@ import {
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -26,6 +27,7 @@ import { PostFeedResponseDto } from './dto/post-feed-response.dto';
 import { MyPostHistoryResponseDto } from './dto/my-post-history-response.dto';
 import { DeletePostResponseDto } from './dto/delete-post-response.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiTags('Posts')
 @Controller('posts')
@@ -34,6 +36,7 @@ export class PostsController {
 
   // H.U 1.1: POST /posts (Crear publicación)
   @Post()
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Crear una nueva publicación (H.U 1.1)' })
   @ApiResponse({
@@ -85,6 +88,7 @@ export class PostsController {
 
   // H.U 1.6: GET /posts/me (Historial propio)
   @Get('me')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Historial de publicaciones del usuario autenticado (H.U 1.6)' })
   @ApiResponse({
     status: 200,
@@ -105,8 +109,16 @@ export class PostsController {
     );
   }
 
+  @Get(':post_id')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Detalle para precargar la edición de una publicación' })
+  getPost(@Param('post_id', ParseUUIDPipe) id: string, @CurrentUser() userId: string) {
+    return this.postsService.getPostDetail(id, userId);
+  }
+
   // H.U 1.2: PUT /posts/:post_id (Editar publicación)
   @Put(':post_id')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Editar una publicación existente (H.U 1.2)' })
   @ApiParam({
     name: 'post_id',
@@ -137,6 +149,7 @@ export class PostsController {
 
   // H.U 1.4: DELETE /posts/:post_id (Eliminar publicación)
   @Delete(':post_id')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Eliminar una publicación existente (soft delete) (H.U 1.4)' })
   @ApiParam({
     name: 'post_id',

@@ -18,7 +18,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
-    let message: string | object = 'Internal server error';
+    let message: string | object = 'No pudimos completar la operación. Inténtalo nuevamente.';
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
@@ -30,7 +30,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
       }
     } else if (exception instanceof Error) {
       this.logger.error(`Unhandled exception: ${exception.message}`, exception.stack);
-      message = exception.message;
+    }
+
+    if (status === 404 && typeof message === 'string' && /^Cannot (GET|POST|PUT|PATCH|DELETE)\s/.test(message)) {
+      message = 'Esta función todavía no está disponible. Inténtalo más tarde.';
     }
 
     response.status(status).json({

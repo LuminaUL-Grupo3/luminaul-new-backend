@@ -5,6 +5,7 @@ import {
   Param,
   Body,
   ParseUUIDPipe,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -19,9 +20,11 @@ import {
 } from './dto/join-request-response.dto';
 import { JoinRequestListResponseDto } from './dto/join-request-list-response.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiTags('Join Requests')
 @Controller('join-requests')
+@UseGuards(JwtAuthGuard)
 export class JoinRequestsController {
   constructor(private readonly joinRequestsService: JoinRequestsService) {}
 

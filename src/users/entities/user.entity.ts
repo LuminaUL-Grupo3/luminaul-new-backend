@@ -42,6 +42,12 @@ export class UserEntity {
   @Column({ type: 'boolean', default: false, name: 'is_verified', nullable: false })
   isVerified!: boolean;
 
+  @Column({ type: 'int', default: 0, name: 'verification_attempts' })
+  verificationAttempts!: number;
+
+  @Column({ type: 'int', default: 0, name: 'session_version' })
+  sessionVersion!: number;
+
   @Column({ type: 'varchar', length: 255, unique: true, nullable: true, name: 'verification_token' })
   verificationToken!: string | null;
 

@@ -47,9 +47,19 @@ export class GroupsRepository {
       .leftJoinAndSelect('group.admin', 'admin')
       .leftJoinAndSelect('admin.profile', 'adminProfile')
       .leftJoinAndSelect('group.members', 'member')
+      .leftJoinAndSelect('member.user', 'memberUser')
+      .leftJoinAndSelect('memberUser.profile', 'memberProfile')
       .where('group.id = :groupId', { groupId })
       .andWhere('group.deletedAt IS NULL')
       .getOne();
+  }
+
+  findMyGroups(userId: string): Promise<GroupEntity[]> {
+    return this.groupRepo.createQueryBuilder('group')
+      .innerJoin('group.members', 'mine', 'mine.userId = :userId', { userId })
+      .leftJoinAndSelect('group.members', 'members')
+      .where('group.deletedAt IS NULL')
+      .orderBy('group.createdAt', 'DESC').getMany();
   }
 
   /**

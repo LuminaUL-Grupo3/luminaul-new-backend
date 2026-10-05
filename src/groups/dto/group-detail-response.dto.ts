@@ -20,6 +20,9 @@ export class GroupAdminDto {
  * frontend decidir si muestra el botón "Enviar solicitud" (solo si es 'none').
  */
 export class GroupDetailResponseDto {
+  @ApiProperty({ type: 'array', items: { type: 'object' }, description: 'Integrantes; visible a miembros y administrador del grupo' })
+  members!: { user_id: string; name: string; role: string; photo_url?: string | null }[];
+
   @ApiProperty({ example: '8fa85f64-5717-4562-b3fc-2c963f66afa8' })
   id!: string;
 

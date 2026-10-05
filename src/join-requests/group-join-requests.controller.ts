@@ -6,6 +6,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiOperation,
@@ -17,6 +18,7 @@ import { JoinRequestsService } from './join-requests.service';
 import { CreateJoinRequestDto } from './dto/create-join-request.dto';
 import { CreateJoinRequestResponseDto } from './dto/create-join-request-response.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 /**
  * H.U 2.1 — Enviar solicitud de unión a un grupo de estudio.
@@ -29,6 +31,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
  */
 @ApiTags('Join Requests')
 @Controller('groups/:group_id/join-requests')
+@UseGuards(JwtAuthGuard)
 export class GroupJoinRequestsController {
   constructor(private readonly joinRequestsService: JoinRequestsService) {}
 

@@ -7,12 +7,14 @@ import { PostsService } from './posts.service';
 import { PostsController } from './posts.controller';
 import { CoursesModule } from '../courses/courses.module';
 import { GroupsModule } from '../groups/groups.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([PostEntity, GroupEntity]),
     CoursesModule,
     GroupsModule,
+    AuthModule,
   ],
   controllers: [PostsController],
   providers: [PostsRepository, PostsService],

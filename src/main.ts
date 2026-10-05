@@ -4,16 +4,19 @@ import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { resolve } from 'path';
 
 async function bootstrap(): Promise<void> {
   const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.useStaticAssets(resolve('uploads'), { prefix: '/uploads/', setHeaders: res => res.setHeader('X-Content-Type-Options', 'nosniff') });
+  const configService = app.get(ConfigService);
 
-  // Configuración de CORS idéntica a FastAPI
+  // La cookie de sesión solo se comparte con el origen configurado del frontend.
   app.enableCors({
-    origin: '*',
-    methods: '*',
-    allowedHeaders: '*',
+    origin: configService.get<string>('WEB_ORIGIN') || 'http://localhost:5173',
+    credentials: true,
   });
 
   // Filtro de excepciones y validación estricta global
@@ -33,6 +36,9 @@ async function bootstrap(): Promise<void> {
     .setVersion('0.1.0')
     .addBearerAuth()
     .addTag('Auth', 'Autenticación y cierre de sesión')
+    .addTag('Profiles', 'Perfil y fotografía del estudiante')
+    .addTag('Availability', 'Horario disponible del usuario de sesión')
+    .addTag('Reviews', 'Reseñas entre compañeros de grupo')
     .addTag('Health', 'Verificación de estado del servidor')
     .addTag('Courses', 'Módulo de cursos académicos')
     .addTag('Posts', 'Módulo de publicaciones (feed, historial, creación, edición, eliminación)')
@@ -48,7 +54,6 @@ async function bootstrap(): Promise<void> {
     },
   });
 
-  const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT') || 8000;
 
   await app.listen(port);

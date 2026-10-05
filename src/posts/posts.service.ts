@@ -74,6 +74,17 @@ export class PostsService {
   }
 
   // H.U 1.1 (Crear publicación)
+  async getPostDetail(id: string, userId: string) {
+    const post = await this.postsRepository.getPostById(id);
+    if (!post || (post.status !== 'published' && post.userId !== userId)) {
+      throw new NotFoundException('Publicación no encontrada');
+    }
+    return { ...this.mapToFeedDto(post), user_id: post.userId, course_id: post.courseId,
+      benefits: post.group?.benefits || '', requirements: post.group?.requirements || '',
+      max_capacity: post.group?.maxCapacity ?? 10 };
+  }
+
+  // H.U 1.1 (Crear publicación)
   async createPost(
     postDto: PostCreateDto,
     userId: string,

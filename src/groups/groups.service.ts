@@ -10,6 +10,16 @@ import {
 export class GroupsService {
   constructor(private readonly groupsRepository: GroupsRepository) {}
 
+  async listMyGroups(userId: string) {
+    return (await this.groupsRepository.findMyGroups(userId)).map((group) => ({
+      id: group.id, name: group.name, description: group.description,
+      benefits: group.benefits, requirements: group.requirements,
+      admin_id: group.adminId, max_capacity: group.maxCapacity,
+      member_count: group.members?.length || 0,
+      role: group.adminId === userId ? 'admin' : 'member',
+    }));
+  }
+
   /**
    * H.U 2.1 — Detalle de un grupo y estado del usuario actual frente a él.
    *
@@ -48,6 +58,11 @@ export class GroupsService {
     const adminProfile = group.admin?.profile;
     return {
       id: group.id,
+      members: myStatus === 'admin' || myStatus === 'member'
+        ? (group.members || []).map((m) => ({
+          user_id: m.userId, role: m.role, name: m.user?.profile?.name || 'Estudiante',
+          photo_url: m.user?.profile?.profilePhotoUrl || null,
+        })) : [],
       name: group.name,
       description: group.description,
       benefits: group.benefits,

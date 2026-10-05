@@ -182,12 +182,10 @@ export class JoinRequestsRepository {
         manager,
       );
 
-      const updatedRequest = await manager.findOneByOrFail(JoinRequestEntity, {
-        id: request.id,
+      return manager.findOneOrFail(JoinRequestEntity, {
+        where: { id: request.id },
+        relations: ['group', 'requester', 'requester.profile'],
       });
-      updatedRequest.reviewedById = reviewerId;
-      updatedRequest.reviewer = { id: reviewerId } as any;
-      return updatedRequest;
     });
   }
 
@@ -201,13 +199,11 @@ export class JoinRequestsRepository {
     reviewerId: string,
   ): Promise<JoinRequestEntity> {
     const now = new Date();
-    request.status = 'rejected';
-    request.reviewedAt = now;
-    request.reviewedById = reviewerId;
-    request.reviewer = { id: reviewerId } as any;
-    request.respondedAt = now; // Retrocompatibilidad
-    const updatedRequest = await this.requestRepo.save(request);
-    updatedRequest.reviewedById = reviewerId;
-    return updatedRequest;
+    const result = await this.requestRepo.createQueryBuilder().update(JoinRequestEntity)
+      .set({ status: 'rejected', reviewedAt: now, reviewedById: reviewerId, respondedAt: now })
+      .where('id = :id', { id: request.id })
+      .andWhere('status = :status', { status: 'pending' }).execute();
+    if (result.affected !== 1) throw new ConflictException('La solicitud ya ha sido procesada anteriormente');
+    return this.requestRepo.findOneOrFail({ where: { id: request.id }, relations: ['group', 'requester', 'requester.profile'] });
   }
 }

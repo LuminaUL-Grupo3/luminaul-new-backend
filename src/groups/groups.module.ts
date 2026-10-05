@@ -7,9 +7,11 @@ import { GroupsRepository } from './groups.repository';
 import { GroupsService } from './groups.service';
 import { GroupsController } from './groups.controller';
 import { JoinRequestEntity } from '../join-requests/entities/join-request.entity';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
+    AuthModule,
     TypeOrmModule.forFeature([
       GroupEntity,
       GroupMemberEntity,

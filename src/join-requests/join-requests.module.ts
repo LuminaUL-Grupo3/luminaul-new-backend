@@ -9,6 +9,7 @@ import { JoinRequestsService } from './join-requests.service';
 import { JoinRequestsRepository } from './join-requests.repository';
 
 import { GroupsModule } from '../groups/groups.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { GroupsModule } from '../groups/groups.module';
       GroupEntity,
     ]),
     GroupsModule,
+    AuthModule,
   ],
   controllers: [JoinRequestsController, GroupJoinRequestsController],
   providers: [JoinRequestsService, JoinRequestsRepository],

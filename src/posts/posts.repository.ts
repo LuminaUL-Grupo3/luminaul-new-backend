@@ -90,6 +90,7 @@ export class PostsRepository {
         id: postId,
         deletedAt: IsNull(),
       },
+      relations: ['group', 'course', 'author', 'author.profile'],
     });
   }
 

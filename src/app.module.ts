@@ -19,7 +19,7 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      validationSchema: envValidationSchema,
+      validate: (config) => envValidationSchema.parse(config),
       envFilePath: '.env',
     }),
     TypeOrmModule.forRootAsync({

@@ -1,12 +1,15 @@
 import { IsUUID, IsString, MaxLength, IsIn, IsOptional, Validate } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ALLOWED_POST_TYPES, IsNotBlankConstraint } from './post-create.dto';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class PostUpdateDto {
+  @ApiPropertyOptional({ format: 'uuid' })
   @IsOptional()
   @IsUUID(undefined, { message: 'course_id must be a valid UUID' })
   course_id?: string;
 
+  @ApiPropertyOptional({ enum: ALLOWED_POST_TYPES })
   @IsOptional()
   @IsString()
   @MaxLength(50)
@@ -15,6 +18,7 @@ export class PostUpdateDto {
   })
   type?: string;
 
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   @Transform(({ value }: { value: unknown }) =>

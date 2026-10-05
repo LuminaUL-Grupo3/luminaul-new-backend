@@ -23,6 +23,9 @@ htmlcov/
 .DS_Store
 Thumbs.db
 *.md
+!README.md
+!docs/
+!docs/**/*.md
 
 # Node / NestJS
 node_modules/
@@ -30,3 +33,5 @@ dist/
 npm-debug.log*
 *.tsbuildinfo
 *.zip
+analysis/
+uploads/

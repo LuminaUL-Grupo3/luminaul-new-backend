@@ -1,13 +1,21 @@
-import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { GroupsService } from './groups.service';
 import { GroupDetailResponseDto } from './dto/group-detail-response.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiTags('Groups')
 @Controller('groups')
+@UseGuards(JwtAuthGuard)
 export class GroupsController {
   constructor(private readonly groupsService: GroupsService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Mis grupos de estudio' })
+  list(@CurrentUser() id: string) {
+    return this.groupsService.listMyGroups(id);
+  }
 
   // H.U 2.1 — Detalle del grupo y estado del usuario frente a él
   @Get(':group_id')

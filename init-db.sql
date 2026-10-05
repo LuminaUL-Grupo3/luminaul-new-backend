@@ -249,3 +249,7 @@ CREATE TABLE IF NOT EXISTS revoked_tokens (
   revoked_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS ix_revoked_tokens_expires_at ON revoked_tokens(expires_at);
+
+-- Estado de seguridad de cuentas; aditivo para las bases del equipo existentes.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_attempts INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS session_version INTEGER NOT NULL DEFAULT 0;
