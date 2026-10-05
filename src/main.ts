@@ -31,6 +31,8 @@ async function bootstrap(): Promise<void> {
     .setTitle('LuminaUL API')
     .setDescription('API del backend LuminaUL (Refactorizado de Python a NestJS)')
     .setVersion('0.1.0')
+    .addBearerAuth()
+    .addTag('Auth', 'Autenticación y cierre de sesión')
     .addTag('Health', 'Verificación de estado del servidor')
     .addTag('Courses', 'Módulo de cursos académicos')
     .addTag('Posts', 'Módulo de publicaciones (feed, historial, creación, edición, eliminación)')

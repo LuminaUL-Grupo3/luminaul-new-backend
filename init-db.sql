@@ -240,3 +240,12 @@ VALUES
   (gen_random_uuid(), 'Programación Orientada a Objetos', 2),
   (gen_random_uuid(), 'Ingeniería de Software I', 5)
 ON CONFLICT (name) DO NOTHING;
+
+-- 15. Tokens revocados (cierre de sesion)
+CREATE TABLE IF NOT EXISTS revoked_tokens (
+  token_hash VARCHAR(64) PRIMARY KEY,
+  user_id UUID NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  revoked_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS ix_revoked_tokens_expires_at ON revoked_tokens(expires_at);
