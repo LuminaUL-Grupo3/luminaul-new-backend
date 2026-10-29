@@ -1,19 +1,19 @@
 # LuminaUL Backend (NestJS + TypeScript)
 
-Backend de la plataforma LuminaUL refactorizado a **NestJS** con **TypeScript**, **TypeORM** y **OpenAPI (Swagger)**.
+Backend de la plataforma LuminaUL implementado en **NestJS** con **TypeScript**, **TypeORM**, **PostgreSQL** y **OpenAPI (Swagger)**.
 
 ---
 
 ## 🚀 Requisitos Previos
 
-* **Node.js** v18 o superior (v20+ recomendado).
-* **PostgreSQL** corriendo localmente o en un contenedor Docker.
+* **Node.js** v20 o superior.
+* **PostgreSQL** v15+ corriendo localmente o en un contenedor Docker en el puerto 5432.
 
 ---
 
 ## 🛠️ Instalación y Configuración
 
-### 1. Descomprimir e instalar dependencias
+### 1. Instalar dependencias
 ```bash
 npm install
 ```
@@ -23,14 +23,19 @@ Copia el archivo `.env.example` a `.env`:
 ```bash
 cp .env.example .env
 ```
+*(En Windows PowerShell: `Copy-Item .env.example .env`)*
+
 Ajusta la URL de conexión a tu base de datos en `.env`:
 ```env
-DATABASE_URL=postgresql://usuario:contraseña@localhost:5432/luminaul
 PORT=8000
+NODE_ENV=development
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/luminaul
+JWT_SECRET=super-secret-key-luminaul-development-2026
+JWT_EXPIRES_IN=86400
 ```
 
-### 3. Ejecutar la Migración Manual de la Base de Datos
-La sincronización automática de TypeORM está **deshabilitada por seguridad**. Para crear las tablas y datos iniciales de forma manual, ejecuta:
+### 3. Ejecutar la Migración Manual e Inicializar Semillas
+La sincronización automática de TypeORM está **deshabilitada por seguridad**. Para crear las 17 tablas y sembrar los datos iniciales para el desarrollo en paralelo, ejecuta:
 ```bash
 npm run db:init
 ```
@@ -46,21 +51,35 @@ npm run start:dev
 ```
 
 El servidor estará escuchando en:
-* **API**: `http://localhost:8000`
+* **API REST**: `http://localhost:8000`
 * **Swagger UI interactivo**: `http://localhost:8000/docs`
+* **Health Check**: `http://localhost:8000/health`
 
 ---
 
-## 🧪 Pruebas Automatizadas (Sprint 1)
+## 👥 Cuentas Demo Sembradas (disponibles tras `npm run db:init`)
 
-Para ejecutar la suite de 24 pruebas de integración que validan todas las Historias de Usuario (H.U 1.1 a 1.6):
+| Rol | Correo | Contraseña | Propósito |
+| :--- | :--- | :--- | :--- |
+| **Alumno 1** | `demo.student@ulima.edu.pe` | `Password123!` | Creador del Grupo de Cálculo I y autor de posts |
+| **Alumno 2** | `carlos.mendoza@aloe.ulima.edu.pe` | `Password123!` | Miembro del Grupo; permite probar reseñas (SPEC-05) y reportes (SPEC-06) |
+| **Admin** | `admin@aloe.ulima.edu.pe` | `Password123!` | Acceso completo al panel administrativo `/admin/*` (SPEC-07) |
+
+---
+
+## 🧪 Pruebas Automatizadas
+
 ```bash
+# Pruebas de integración del Sprint 1 (Posts y Catálogos):
 npm run test:sprint1
+
+# Pruebas de integración del Sprint 2 (Grupos y Solicitudes):
+npm run test:sprint2
 ```
 
 ---
 
-## 📋 Endpoints Disponibles
+## 📋 Endpoints Principales
 
 | Método | Ruta | Descripción |
 | :--- | :--- | :--- |

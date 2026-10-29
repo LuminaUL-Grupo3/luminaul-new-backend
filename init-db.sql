@@ -249,3 +249,96 @@ CREATE TABLE IF NOT EXISTS revoked_tokens (
   revoked_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS ix_revoked_tokens_expires_at ON revoked_tokens(expires_at);
+
+-- ============================================================
+-- SEMILLAS ADICIONALES PARA HABILITAR DESARROLLO EN PARALELO
+-- ============================================================
+
+-- 1. Segundo Estudiante Demo (para interacción cruzada, reseñas y solicitudes)
+INSERT INTO users (id, email, password_hash, role, status, is_verified, created_at, updated_at)
+VALUES ('a1b2c3d4-e5f6-47a8-b9c0-123456789abc', 'carlos.mendoza@aloe.ulima.edu.pe', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', 'student', 'active', true, NOW(), NOW())
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO profiles (user_id, name, bio, major, academic_cycle, profile_photo_url, updated_at)
+VALUES ('a1b2c3d4-e5f6-47a8-b9c0-123456789abc', 'Carlos Mendoza', 'Estudiante de 4to ciclo enfocado en algoritmos y estructuras de datos', 'Ingeniería de Sistemas', '4', 'https://avatar.test/carlos.png', NOW())
+ON CONFLICT (user_id) DO NOTHING;
+
+-- 2. Administrador Demo (para Dev 7 - Panel de Admin y Auditoría)
+INSERT INTO users (id, email, password_hash, role, status, is_verified, created_at, updated_at)
+VALUES ('d290f1ee-6c54-4b01-90e6-d701748f0851', 'admin@aloe.ulima.edu.pe', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', 'admin', 'active', true, NOW(), NOW())
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO profiles (user_id, name, bio, major, academic_cycle, profile_photo_url, updated_at)
+VALUES ('d290f1ee-6c54-4b01-90e6-d701748f0851', 'Administrador General', 'Gestión de Comunidad y Moderación LuminaUL', 'Administración', '10', 'https://avatar.test/admin.png', NOW())
+ON CONFLICT (user_id) DO NOTHING;
+
+-- 3. Grupo de Estudio Demo (habilita SPEC-04 y SPEC-05 de inmediato)
+INSERT INTO groups (id, name, description, benefits, requirements, meeting_mode, meeting_shift, max_capacity, admin_id, created_at)
+VALUES ('7b134111-9a22-48df-9fa0-cd8213aa0981', 'Grupo de Cálculo Integral Avanzado', 'Repaso de integrales dobles y triples', 'Exámenes resueltos y asesorías', 'Haber aprobado Cálculo I', 'Presencial', 'Tarde', 6, '3fa85f64-5717-4562-b3fc-2c963f66afa6', NOW())
+ON CONFLICT (id) DO NOTHING;
+
+-- Ambos estudiantes son miembros del mismo grupo (permite a Carlos calificar a Martín y viceversa en SPEC-05)
+INSERT INTO group_members (group_id, user_id, role, joined_at)
+VALUES 
+  ('7b134111-9a22-48df-9fa0-cd8213aa0981', '3fa85f64-5717-4562-b3fc-2c963f66afa6', 'admin', NOW()),
+  ('7b134111-9a22-48df-9fa0-cd8213aa0981', 'a1b2c3d4-e5f6-47a8-b9c0-123456789abc', 'member', NOW())
+ON CONFLICT (group_id, user_id) DO NOTHING;
+
+-- 4. Publicación Demo (para probar Feed en SPEC-03 y Reportes en SPEC-06/07)
+INSERT INTO publications (id, user_id, group_id, course_id, type, description, status, created_at, updated_at)
+VALUES (
+  '18938a12-6f2b-4d43-9801-bca908234fed',
+  '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+  '7b134111-9a22-48df-9fa0-cd8213aa0981',
+  (SELECT id FROM courses WHERE name = 'Cálculo I' LIMIT 1),
+  'study_group',
+  'Buscamos 2 personas para repasar antes de la PC1 en biblioteca.',
+  'published',
+  NOW(),
+  NOW()
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- 5. Mensaje Grupal de Prueba (para SPEC-04 Chat y reportes en SPEC-06)
+INSERT INTO group_messages (id, group_id, sender_id, content, status, created_at)
+VALUES (
+  'f8a91012-3456-7890-abcd-ef0123456789',
+  '7b134111-9a22-48df-9fa0-cd8213aa0981',
+  '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+  '¡Bienvenidos al grupo de estudio de Cálculo!',
+  'published',
+  NOW()
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- 6. Reporte y Moderación de Muestra (habilita SPEC-06 y SPEC-07)
+INSERT INTO reports (id, reporter_id, publication_id, reason, status, created_at)
+VALUES (
+  'd5a19022-77aa-4899-b1c2-349801289fed',
+  'a1b2c3d4-e5f6-47a8-b9c0-123456789abc',
+  '18938a12-6f2b-4d43-9801-bca908234fed',
+  'Contenido potencialmente duplicado o spam',
+  'pending',
+  NOW()
+)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO moderation_log (id, publication_id, result, moderated_at)
+VALUES (
+  'e6a21033-88bb-4900-c2d3-450912390abc',
+  '18938a12-6f2b-4d43-9801-bca908234fed',
+  'flagged',
+  NOW()
+)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO appeals (id, moderation_log_id, user_id, justification, status, created_at)
+VALUES (
+  'f7b32144-99cc-4011-d3e4-561023401bcd',
+  'e6a21033-88bb-4900-c2d3-450912390abc',
+  '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+  'El contenido fue publicado para coordinar la práctica calificada y no infringe normas comunitarias.',
+  'pending',
+  NOW()
+)
+ON CONFLICT (id) DO NOTHING;
