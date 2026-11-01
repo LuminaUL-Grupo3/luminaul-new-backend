@@ -13,6 +13,7 @@ import { JoinRequestsModule } from './join-requests/join-requests.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { ModerationModule } from './moderation/moderation.module';
+import { UserProfileModule } from './modules/user-profile/user-profile.module';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 
 @Module({
@@ -30,6 +31,7 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
     HealthModule,
     AuthModule,
     UsersModule,
+    UserProfileModule,
     GroupsModule,
     CoursesModule,
     PostsModule,

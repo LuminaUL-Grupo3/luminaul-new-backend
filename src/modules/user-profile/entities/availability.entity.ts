@@ -1,12 +1,4 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  ManyToOne,
-  JoinColumn,
-  Index,
-} from 'typeorm';
-import { UserEntity } from './user.entity';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 'typeorm';
 
 @Entity('availabilities')
 @Index('ix_availabilities_user_day', ['userId', 'dayOfWeek'])
@@ -26,7 +18,6 @@ export class AvailabilityEntity {
   @Column({ type: 'time', name: 'end_time', nullable: false })
   endTime!: string;
 
-  @ManyToOne(() => UserEntity, (user) => user.availabilities, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_id' })
-  user?: UserEntity;
+  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  createdAt!: Date;
 }
