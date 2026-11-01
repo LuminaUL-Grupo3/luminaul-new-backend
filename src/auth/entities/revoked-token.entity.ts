@@ -6,13 +6,14 @@ export class RevokedTokenEntity {
   @PrimaryColumn({ type: 'varchar', length: 64, name: 'token_hash' })
   tokenHash!: string;
 
+  // FK a users(id) ON DELETE CASCADE definida en init-db.sql
   @Column({ type: 'uuid', name: 'user_id' })
   userId!: string;
 
   @Index('ix_revoked_tokens_expires_at')
-  @Column({ type: 'timestamp', name: 'expires_at' })
+  @Column({ type: 'timestamptz', name: 'expires_at' })
   expiresAt!: Date;
 
-  @CreateDateColumn({ type: 'timestamp', name: 'revoked_at' })
+  @CreateDateColumn({ type: 'timestamptz', name: 'revoked_at' })
   revokedAt!: Date;
 }

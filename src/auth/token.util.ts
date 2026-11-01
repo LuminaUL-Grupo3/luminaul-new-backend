@@ -1,4 +1,4 @@
-import { createHash, createHmac, timingSafeEqual } from 'crypto';
+import { createHash, createHmac, randomUUID, timingSafeEqual } from 'crypto';
 
 export interface JwtPayload {
   sub: string;
@@ -6,10 +6,37 @@ export interface JwtPayload {
   role?: string;
   exp: number;
   iat?: number;
+  jti?: string;
 }
 
 export function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
+}
+
+// Factory Method: única fuente del payload de acceso (sin hash ni códigos OTP)
+export function buildJwtPayload(
+  user: { id: string; email: string; role: string },
+  issuedAtSeconds: number,
+  ttlSeconds: number,
+): JwtPayload {
+  return {
+    sub: user.id,
+    email: user.email,
+    role: user.role,
+    iat: issuedAtSeconds,
+    exp: issuedAtSeconds + ttlSeconds,
+    // Identificador único: dos logins en el mismo segundo no generan el mismo token
+    // (si no, revocar uno revocaría también el otro)
+    jti: randomUUID(),
+  };
+}
+
+// Firma un JWT HS256 compatible con verifyJwt
+export function signJwt(payload: JwtPayload, secret: string): string {
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+  const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const signature = createHmac('sha256', secret).update(`${header}.${body}`).digest('base64url');
+  return `${header}.${body}.${signature}`;
 }
 
 // Verifica un JWT HS256 (firma y expiración). Retorna null si es inválido o expiró.
