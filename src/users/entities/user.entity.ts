@@ -8,12 +8,11 @@ import {
   OneToMany,
   Index,
 } from 'typeorm';
-import { ProfileEntity } from './profile.entity';
+import { ProfileEntity } from '../../modules/user-profile/entities/profile.entity';
 import { PostEntity } from '../../posts/entities/post.entity';
 import { GroupEntity } from '../../groups/entities/group.entity';
 import { GroupMemberEntity } from '../../groups/entities/group-member.entity';
 import { JoinRequestEntity } from '../../join-requests/entities/join-request.entity';
-import { AvailabilityEntity } from './availability.entity';
 import { ReviewEntity } from '../../reviews/entities/review.entity';
 import { NotificationEntity } from '../../notifications/entities/notification.entity';
 import { GroupMessageEntity } from '../../groups/entities/group-message.entity';
@@ -80,9 +79,6 @@ export class UserEntity {
 
   @OneToMany(() => JoinRequestEntity, (request) => request.reviewer)
   reviewedJoinRequests?: JoinRequestEntity[];
-
-  @OneToMany(() => AvailabilityEntity, (avail) => avail.user)
-  availabilities?: AvailabilityEntity[];
 
   @OneToMany(() => ReviewEntity, (rev) => rev.reviewer)
   reviewsGiven?: ReviewEntity[];
