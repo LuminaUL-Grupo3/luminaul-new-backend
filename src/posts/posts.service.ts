@@ -3,6 +3,8 @@ import {
   NotFoundException,
   ForbiddenException,
   UnprocessableEntityException,
+  Optional,
+  Inject,
 } from '@nestjs/common';
 import { PostsRepository } from './posts.repository';
 import { CoursesRepository } from '../courses/courses.repository';
@@ -14,24 +16,53 @@ import { MyPostHistoryResponseDto } from './dto/my-post-history-response.dto';
 import { DeletePostResponseDto } from './dto/delete-post-response.dto';
 import { PostEntity } from './entities/post.entity';
 
+export interface EventEmitterLike {
+  emit(event: string, ...args: unknown[]): boolean;
+}
+
 @Injectable()
 export class PostsService {
   constructor(
     private readonly postsRepository: PostsRepository,
     private readonly coursesRepository: CoursesRepository,
+    @Optional()
+    @Inject('EventEmitter')
+    private readonly eventEmitter?: EventEmitterLike,
   ) {}
 
   private mapToPostResponseDto(post: PostEntity): PostResponseDto {
+    const profile = post.author?.profile;
     return {
       id: post.id,
+      userId: post.userId,
       user_id: post.userId,
+      courseId: post.courseId,
       course_id: post.courseId,
       type: post.type,
       description: post.description,
+      benefits: post.benefits ?? null,
+      requirements: post.requirements ?? null,
+      maxCapacity: post.maxCapacity ?? 5,
+      max_capacity: post.maxCapacity ?? 5,
+      groupId: post.groupId,
       group_id: post.groupId,
       status: post.status,
+      createdAt: post.createdAt,
       created_at: post.createdAt,
+      updatedAt: post.updatedAt,
       updated_at: post.updatedAt,
+      author: {
+        id: post.userId,
+        user_id: post.userId,
+        name: profile?.name ?? '',
+        profilePhotoUrl: profile?.profilePhotoUrl ?? null,
+        profile_photo_url: profile?.profilePhotoUrl ?? null,
+      },
+      course: {
+        id: post.course?.id ?? post.courseId,
+        name: post.course?.name ?? '',
+        cycle: post.course?.cycle ?? null,
+      },
     };
   }
 
@@ -39,14 +70,24 @@ export class PostsService {
     const profile = post.author?.profile;
     return {
       id: post.id,
+      userId: post.userId,
+      user_id: post.userId,
       type: post.type,
       description: post.description,
+      benefits: post.benefits ?? null,
+      requirements: post.requirements ?? null,
+      maxCapacity: post.maxCapacity ?? 5,
+      max_capacity: post.maxCapacity ?? 5,
+      groupId: post.groupId,
       group_id: post.groupId,
       status: post.status,
+      createdAt: post.createdAt,
       created_at: post.createdAt,
       author: {
+        id: post.userId,
         user_id: post.userId,
         name: profile?.name ?? '',
+        profilePhotoUrl: profile?.profilePhotoUrl ?? null,
         profile_photo_url: profile?.profilePhotoUrl ?? null,
       },
       course: {
@@ -62,8 +103,14 @@ export class PostsService {
       id: post.id,
       type: post.type,
       description: post.description,
+      benefits: post.benefits ?? null,
+      requirements: post.requirements ?? null,
+      maxCapacity: post.maxCapacity ?? 5,
+      max_capacity: post.maxCapacity ?? 5,
+      groupId: post.groupId,
       group_id: post.groupId,
       status: post.status,
+      createdAt: post.createdAt,
       created_at: post.createdAt,
       course: {
         id: post.course?.id ?? post.courseId,
@@ -78,13 +125,15 @@ export class PostsService {
     postDto: PostCreateDto,
     userId: string,
   ): Promise<PostResponseDto> {
-    const course = await this.coursesRepository.findById(postDto.course_id);
+    const targetCourseId = PostCreateDto.getCourseId(postDto);
+    const course = await this.coursesRepository.findById(targetCourseId);
     if (!course) {
       throw new UnprocessableEntityException('Course not found');
     }
 
-    if (postDto.group_id) {
-      const existingGroup = await this.postsRepository.findGroupById(postDto.group_id);
+    const targetGroupId = PostCreateDto.getGroupId(postDto);
+    if (targetGroupId) {
+      const existingGroup = await this.postsRepository.findGroupById(targetGroupId);
       if (!existingGroup) {
         throw new NotFoundException('Specified group not found');
       }
@@ -95,13 +144,34 @@ export class PostsService {
       userId,
       course.name,
     );
+
+    // Emisión Asíncrona de Moderación (SPEC-06 y AGENTS.md Regla 3.4)
+    if (this.eventEmitter) {
+      this.eventEmitter.emit('content.created', {
+        contentType: 'publication',
+        contentId: createdPost.id,
+        authorId: createdPost.userId,
+        text: `${createdPost.description} ${createdPost.benefits ?? ''} ${createdPost.requirements ?? ''}`.trim(),
+      });
+    }
+
     return this.mapToPostResponseDto(createdPost);
   }
 
   // H.U 1.5 (Feed)
-  async listPosts(limit: number, offset: number): Promise<PostFeedResponseDto[]> {
-    const posts = await this.postsRepository.getPosts(limit, offset);
-    return posts.map((p) => this.mapToFeedDto(p));
+  async listPosts(
+    limit: number,
+    offset: number,
+    search?: string,
+  ): Promise<PostFeedResponseDto[]> {
+    const { items, total } = await this.postsRepository.getPosts(limit, offset, search);
+    const dtos = items.map((p) => this.mapToFeedDto(p));
+    return Object.assign(dtos, {
+      total,
+      limit,
+      offset,
+      items: dtos,
+    });
   }
 
   // H.U 1.3 (Filtros)
@@ -111,15 +181,23 @@ export class PostsService {
     courseId?: string,
     type?: string,
     cycle?: number,
+    search?: string,
   ): Promise<PostFeedResponseDto[]> {
-    const posts = await this.postsRepository.searchByFilter(
+    const { items, total } = await this.postsRepository.searchByFilter(
       limit,
       offset,
       courseId,
       type,
       cycle,
+      search,
     );
-    return posts.map((p) => this.mapToFeedDto(p));
+    const dtos = items.map((p) => this.mapToFeedDto(p));
+    return Object.assign(dtos, {
+      total,
+      limit,
+      offset,
+      items: dtos,
+    });
   }
 
   // H.U 1.6 (Historial propio)
@@ -128,12 +206,18 @@ export class PostsService {
     limit: number,
     offset: number,
   ): Promise<MyPostHistoryResponseDto[]> {
-    const posts = await this.postsRepository.getPostsByUser(
+    const { items, total } = await this.postsRepository.getPostsByUser(
       userId,
       limit,
       offset,
     );
-    return posts.map((p) => this.mapToMyPostHistoryDto(p));
+    const dtos = items.map((p) => this.mapToMyPostHistoryDto(p));
+    return Object.assign(dtos, {
+      total,
+      limit,
+      offset,
+      items: dtos,
+    });
   }
 
   // H.U 1.2 (Editar publicación)
@@ -157,6 +241,21 @@ export class PostsService {
     const updatedPost = await this.postsRepository.edit(postId, payload);
     if (!updatedPost) {
       throw new NotFoundException('Post not found');
+    }
+
+    // Reemisión de evento si se modificó texto
+    if (
+      this.eventEmitter &&
+      (payload.description !== undefined ||
+        payload.benefits !== undefined ||
+        payload.requirements !== undefined)
+    ) {
+      this.eventEmitter.emit('content.created', {
+        contentType: 'publication',
+        contentId: updatedPost.id,
+        authorId: updatedPost.userId,
+        text: `${updatedPost.description} ${updatedPost.benefits ?? ''} ${updatedPost.requirements ?? ''}`.trim(),
+      });
     }
 
     return this.mapToPostResponseDto(updatedPost);
@@ -187,6 +286,7 @@ export class PostsService {
     return {
       success: true,
       message: 'Post deleted successfully',
+      deletedId: postId,
       publication_id: postId,
       deleted_at: new Date(),
     };

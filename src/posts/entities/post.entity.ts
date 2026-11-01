@@ -5,15 +5,12 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
-  OneToMany,
   JoinColumn,
   Index,
 } from 'typeorm';
 import { UserEntity } from '../../users/entities/user.entity';
 import { GroupEntity } from '../../groups/entities/group.entity';
 import { CourseEntity } from '../../courses/entities/course.entity';
-import { ReportEntity } from '../../moderation/entities/report.entity';
-import { ModerationLogEntity } from '../../moderation/entities/moderation-log.entity';
 
 @Entity('publications')
 @Index('idx_posts_feed', ['status', 'deletedAt', 'createdAt'])
@@ -38,17 +35,26 @@ export class PostEntity {
   @Column({ type: 'text', nullable: false })
   description!: string;
 
+  @Column({ type: 'text', nullable: true })
+  benefits!: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  requirements!: string | null;
+
+  @Column({ type: 'int', name: 'max_capacity', default: 5, nullable: false })
+  maxCapacity!: number;
+
   @Index('ix_publications_status')
   @Column({ type: 'varchar', length: 50, default: 'published', nullable: false })
   status!: string;
 
-  @CreateDateColumn({ type: 'timestamp', name: 'created_at', default: () => 'CURRENT_TIMESTAMP' })
+  @CreateDateColumn({ type: 'timestamptz', name: 'created_at', default: () => 'CURRENT_TIMESTAMP' })
   createdAt!: Date;
 
-  @UpdateDateColumn({ type: 'timestamp', name: 'updated_at', default: () => 'CURRENT_TIMESTAMP' })
+  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at', default: () => 'CURRENT_TIMESTAMP' })
   updatedAt!: Date;
 
-  @Column({ type: 'timestamp', nullable: true, name: 'deleted_at' })
+  @Column({ type: 'timestamptz', nullable: true, name: 'deleted_at' })
   deletedAt!: Date | null;
 
   @ManyToOne(() => UserEntity, (user) => user.posts)
@@ -62,10 +68,4 @@ export class PostEntity {
   @ManyToOne(() => CourseEntity, (course) => course.posts)
   @JoinColumn({ name: 'course_id' })
   course?: CourseEntity;
-
-  @OneToMany(() => ReportEntity, (report) => report.publication)
-  reports?: ReportEntity[];
-
-  @OneToMany(() => ModerationLogEntity, (log) => log.publication)
-  moderationLogs?: ModerationLogEntity[];
 }

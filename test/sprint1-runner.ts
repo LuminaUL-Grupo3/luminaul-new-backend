@@ -31,7 +31,7 @@ const results: TestResult[] = [];
 
 function recordTest(hu: string, name: string, passed: boolean, error?: string) {
   results.push({ hu, name, passed, error });
-  const icon = passed ? '✅ PASS' : '❌ FAIL';
+  const icon = passed ? '[PASS]' : '[FAIL]';
   console.log(`${icon} [${hu}] ${name}`);
   if (error) {
     console.error(`       Error: ${error}`);
@@ -40,7 +40,7 @@ function recordTest(hu: string, name: string, passed: boolean, error?: string) {
 
 async function runTests() {
   console.log('\n======================================================');
-  console.log('🚀 INICIANDO SUITE DE PRUEBAS DE HISTORIAS DE USUARIO (SPRINT 1)');
+  console.log('INICIANDO SUITE DE PRUEBAS DE HISTORIAS DE USUARIO (SPRINT 1)');
   console.log('======================================================\n');
 
   const app = await NestFactory.createApplicationContext(AppModule, {
@@ -59,7 +59,7 @@ async function runTests() {
 
   try {
     // 0. Preparar Semillas en BD (Usuarios y Cursos de prueba)
-    console.log('📦 Sembrando datos iniciales en PostgreSQL para pruebas...');
+    console.log('[INFO] Sembrando datos iniciales en PostgreSQL para pruebas...');
 
     // Limpiar publicaciones y grupos previos de prueba si existen
     await dataSource.query(`DELETE FROM join_requests;`);
@@ -395,7 +395,7 @@ async function runTests() {
 
   } finally {
     // Limpieza de datos de prueba
-    console.log('\n🧹 Limpiando registros temporales de prueba en BD...');
+    console.log('\n[INFO] Limpiando registros temporales de prueba en BD...');
     if (createdPostId) {
       await dataSource.query(`DELETE FROM publications WHERE id = '${createdPostId}';`);
     }
@@ -412,20 +412,20 @@ async function runTests() {
 
   // Resumen Final
   console.log('\n======================================================');
-  console.log('📊 RESUMEN FINAL DE PRUEBAS DEL SPRINT 1');
+  console.log('RESUMEN FINAL DE PRUEBAS DEL SPRINT 1');
   console.log('======================================================');
   const total = results.length;
   const passed = results.filter((r) => r.passed).length;
   const failed = total - passed;
 
   console.log(`Total Pruebas:  ${total}`);
-  console.log(`Exitosas (✅):  ${passed}`);
-  console.log(`Fallidas  (❌):  ${failed}`);
+  console.log(`Exitosas ([PASS]):  ${passed}`);
+  console.log(`Fallidas  ([FAIL]):  ${failed}`);
 
   if (failed === 0) {
-    console.log('\n🎉 ¡TODAS LAS HISTORIAS DE USUARIO DEL SPRINT 1 PASARON AL 100%!');
+    console.log('\n[SUCCESS] Todas las historias de usuario del Sprint 1 pasaron al 100%.');
   } else {
-    console.error('\n⚠️ Hay pruebas que fallaron. Revisa los logs anteriores.');
+    console.error('\n[ERROR] Hay pruebas que fallaron. Revisa los logs anteriores.');
     process.exit(1);
   }
 }

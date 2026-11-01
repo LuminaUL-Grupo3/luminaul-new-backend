@@ -1,18 +1,52 @@
-import { CourseResponseDto } from '../../courses/dto/course-response.dto';
-
-export class PostAuthorResponseDto {
-  user_id!: string;
-  name!: string;
-  profile_photo_url!: string | null;
-}
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { CourseSummaryDto, PostAuthorDto } from './post-response.dto';
 
 export class PostFeedResponseDto {
+  @ApiProperty()
   id!: string;
+
+  @ApiProperty()
+  userId!: string;
+
+  @ApiPropertyOptional()
+  user_id?: string;
+
+  @ApiProperty()
   type!: string;
+
+  @ApiProperty()
   description!: string;
+
+  @ApiPropertyOptional()
+  benefits!: string | null;
+
+  @ApiPropertyOptional()
+  requirements!: string | null;
+
+  @ApiPropertyOptional()
+  maxCapacity!: number;
+
+  @ApiPropertyOptional()
+  max_capacity?: number;
+
+  @ApiPropertyOptional()
+  groupId!: string | null;
+
+  @ApiPropertyOptional()
   group_id!: string | null;
+
+  @ApiProperty()
   status!: string;
-  created_at!: Date;
-  author!: PostAuthorResponseDto;
-  course!: CourseResponseDto;
+
+  @ApiProperty()
+  createdAt!: Date;
+
+  @ApiPropertyOptional()
+  created_at?: Date;
+
+  @ApiProperty({ type: PostAuthorDto })
+  author!: PostAuthorDto;
+
+  @ApiProperty({ type: CourseSummaryDto })
+  course!: CourseSummaryDto;
 }

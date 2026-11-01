@@ -10,4 +10,4 @@ export * from './dto/post-response.dto';
 export * from './dto/post-feed-response.dto';
 export * from './dto/my-post-history-response.dto';
 export * from './dto/delete-post-response.dto';
-
+export * from './dto/paginated-posts-response.dto';

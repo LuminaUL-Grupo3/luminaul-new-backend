@@ -28,7 +28,7 @@ const results: TestResult[] = [];
 
 function recordTest(hu: string, name: string, passed: boolean, error?: string) {
   results.push({ hu, name, passed, error });
-  const icon = passed ? '✅ PASS' : '❌ FAIL';
+  const icon = passed ? '[PASS]' : '[FAIL]';
   console.log(`${icon} [${hu}] ${name}`);
   if (error) {
     console.error(`       Error: ${error}`);
@@ -37,7 +37,7 @@ function recordTest(hu: string, name: string, passed: boolean, error?: string) {
 
 async function runSprint2Tests() {
   console.log('\n======================================================');
-  console.log('🚀 INICIANDO SUITE DE PRUEBAS DE HISTORIA DE USUARIO (HU 2.2)');
+  console.log('INICIANDO SUITE DE PRUEBAS DE HISTORIA DE USUARIO (HU 2.2)');
   console.log('   Gestionar solicitud de unión al grupo de estudio');
   console.log('======================================================\n');
 
@@ -55,7 +55,7 @@ async function runSprint2Tests() {
   let request3Id = '';
 
   try {
-    console.log('📦 Verificando estructura de BD y sembrando datos para HU 2.2...');
+    console.log('[INFO] Verificando estructura de BD y sembrando datos para HU 2.2...');
 
     // 0. Crear tablas si no existen
     await dataSource.query(`
@@ -429,7 +429,7 @@ async function runSprint2Tests() {
     }
 
   } catch (globalErr: any) {
-    console.error('💥 Error crítico en suite de pruebas:', globalErr.message);
+    console.error('[ERROR] Error critico en suite de pruebas:', globalErr.message);
   } finally {
     await app.close();
   }
@@ -438,7 +438,7 @@ async function runSprint2Tests() {
   // RESUMEN FINAL
   // =========================================================================
   console.log('\n======================================================');
-  console.log('📊 RESUMEN DE EJECUCIÓN (HISTORIA DE USUARIO 2.2)');
+  console.log('RESUMEN DE EJECUCION (HISTORIA DE USUARIO 2.2)');
   console.log('======================================================');
   const total = results.length;
   const passed = results.filter((r) => r.passed).length;
@@ -449,10 +449,10 @@ async function runSprint2Tests() {
   console.log(`Fallidas     : ${failed}`);
 
   if (failed > 0) {
-    console.log('\n❌ ALGUNAS PRUEBAS FALLARON.');
+    console.log('\n[ERROR] Algunas pruebas fallaron.');
     process.exit(1);
   } else {
-    console.log('\n✨ TODAS LAS PRUEBAS DE LA HU 2.2 PASARON CON ÉXITO.');
+    console.log('\n[SUCCESS] Todas las pruebas de la HU 2.2 pasaron con exito.');
   }
 }
 

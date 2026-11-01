@@ -8,7 +8,7 @@ dotenv.config();
 async function runManualMigration() {
   let dbUrl = process.env.DATABASE_URL || '';
   if (!dbUrl) {
-    console.error('❌ Error: DATABASE_URL no está definida en el archivo .env');
+    console.error('[ERROR] DATABASE_URL no está definida en el archivo .env');
     process.exit(1);
   }
 
@@ -20,13 +20,13 @@ async function runManualMigration() {
 
   const sqlPath = path.resolve(__dirname, '../init-db.sql');
   if (!fs.existsSync(sqlPath)) {
-    console.error(`❌ Error: No se encontró el archivo SQL en: ${sqlPath}`);
+    console.error(`[ERROR] No se encontró el archivo SQL en: ${sqlPath}`);
     process.exit(1);
   }
 
   const sql = fs.readFileSync(sqlPath, 'utf8');
 
-  console.log('🔄 Conectando a PostgreSQL para ejecutar la migración manual...');
+  console.log('[INFO] Conectando a PostgreSQL para ejecutar la migración manual...');
   const dataSource = new DataSource({
     type: 'postgres',
     url: dbUrl,
@@ -35,13 +35,13 @@ async function runManualMigration() {
 
   try {
     await dataSource.initialize();
-    console.log('📦 Ejecutando script init-db.sql (SPECS.md v3.0.0)...');
+    console.log('[INFO] Ejecutando script init-db.sql (SPECS.md v3.0.0)...');
     await dataSource.query(sql);
 
-    console.log('✅ Inicialización de base de datos completada con éxito.');
-    console.log('   17 tablas, índices parciales, extensiones y semillas oficiales (SPECS.md & AGENTS.md) listas.');
+    console.log('[OK] Inicialización de base de datos completada con éxito.');
+    console.log('     17 tablas, índices parciales, extensiones y semillas oficiales (SPECS.md & AGENTS.md) listas.');
   } catch (err: any) {
-    console.error('❌ Error al ejecutar la migración manual:', err.message);
+    console.error('[ERROR] Error al ejecutar la migración manual:', err.message);
     process.exit(1);
   } finally {
     await dataSource.destroy();

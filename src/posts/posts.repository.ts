@@ -8,6 +8,11 @@ import { GroupsRepository } from '../groups/groups.repository';
 import { PostCreateDto } from './dto/post-create.dto';
 import { PostUpdateDto } from './dto/post-update.dto';
 
+export interface PaginatedResult<T> {
+  items: T[];
+  total: number;
+}
+
 @Injectable()
 export class PostsRepository {
   constructor(
@@ -30,10 +35,13 @@ export class PostsRepository {
   ): Promise<PostEntity> {
     return this.dataSource.transaction(async (manager) => {
       let finalGroupId: string | null = null;
+      const targetGroupId = PostCreateDto.getGroupId(postDto);
+      const targetCourseId = PostCreateDto.getCourseId(postDto);
+      const targetMaxCapacity = PostCreateDto.getMaxCapacity(postDto);
 
-      if (postDto.group_id) {
+      if (targetGroupId) {
         // Caso A: Vincular a grupo existente especificado
-        finalGroupId = postDto.group_id;
+        finalGroupId = targetGroupId;
       } else if (
         postDto.type === 'study_group' ||
         postDto.benefits ||
@@ -58,9 +66,12 @@ export class PostsRepository {
       const post = manager.create(PostEntity, {
         id: randomUUID(),
         userId,
-        courseId: postDto.course_id,
+        courseId: targetCourseId,
         type: postDto.type,
         description: postDto.description,
+        benefits: postDto.benefits ?? null,
+        requirements: postDto.requirements ?? null,
+        maxCapacity: targetMaxCapacity,
         groupId: finalGroupId,
         status: 'published',
         createdAt: new Date(),
@@ -70,18 +81,33 @@ export class PostsRepository {
     });
   }
 
-  async getPosts(limit: number, offset: number): Promise<PostEntity[]> {
-    return this.postRepo
+  async getPosts(
+    limit: number,
+    offset: number,
+    search?: string,
+  ): Promise<PaginatedResult<PostEntity>> {
+    const qb = this.postRepo
       .createQueryBuilder('post')
       .leftJoinAndSelect('post.author', 'author')
       .leftJoinAndSelect('author.profile', 'profile')
       .leftJoinAndSelect('post.course', 'course')
       .where('post.deletedAt IS NULL')
-      .andWhere('post.status = :status', { status: 'published' })
+      .andWhere('post.status = :status', { status: 'published' });
+
+    if (search && search.trim().length > 0) {
+      qb.andWhere(
+        '(post.description ILIKE :search OR post.benefits ILIKE :search OR post.requirements ILIKE :search)',
+        { search: `%${search.trim()}%` },
+      );
+    }
+
+    const [items, total] = await qb
       .orderBy('post.createdAt', 'DESC')
       .skip(offset)
       .take(limit)
-      .getMany();
+      .getManyAndCount();
+
+    return { items, total };
   }
 
   async getPostById(postId: string): Promise<PostEntity | null> {
@@ -90,6 +116,7 @@ export class PostsRepository {
         id: postId,
         deletedAt: IsNull(),
       },
+      relations: ['author', 'author.profile', 'course'],
     });
   }
 
@@ -97,8 +124,8 @@ export class PostsRepository {
     userId: string,
     limit: number,
     offset: number,
-  ): Promise<PostEntity[]> {
-    return this.postRepo
+  ): Promise<PaginatedResult<PostEntity>> {
+    const [items, total] = await this.postRepo
       .createQueryBuilder('post')
       .leftJoinAndSelect('post.author', 'author')
       .leftJoinAndSelect('author.profile', 'profile')
@@ -109,7 +136,9 @@ export class PostsRepository {
       .orderBy('post.createdAt', 'DESC')
       .skip(offset)
       .take(limit)
-      .getMany();
+      .getManyAndCount();
+
+    return { items, total };
   }
 
   async searchByFilter(
@@ -118,7 +147,8 @@ export class PostsRepository {
     courseId?: string,
     type?: string,
     cycle?: number,
-  ): Promise<PostEntity[]> {
+    search?: string,
+  ): Promise<PaginatedResult<PostEntity>> {
     const qb = this.postRepo
       .createQueryBuilder('post')
       .leftJoinAndSelect('post.author', 'author')
@@ -139,11 +169,20 @@ export class PostsRepository {
       qb.andWhere('course.cycle = :cycle', { cycle });
     }
 
-    return qb
+    if (search && search.trim().length > 0) {
+      qb.andWhere(
+        '(post.description ILIKE :search OR post.benefits ILIKE :search OR post.requirements ILIKE :search)',
+        { search: `%${search.trim()}%` },
+      );
+    }
+
+    const [items, total] = await qb
       .orderBy('post.createdAt', 'DESC')
       .skip(offset)
       .take(limit)
-      .getMany();
+      .getManyAndCount();
+
+    return { items, total };
   }
 
   async edit(
@@ -155,8 +194,9 @@ export class PostsRepository {
       return null;
     }
 
-    if (postData.course_id !== undefined) {
-      post.courseId = postData.course_id;
+    const courseId = PostUpdateDto.getCourseId(postData);
+    if (courseId !== undefined) {
+      post.courseId = courseId;
     }
     if (postData.type !== undefined) {
       post.type = postData.type;
@@ -164,6 +204,17 @@ export class PostsRepository {
     if (postData.description !== undefined) {
       post.description = postData.description;
     }
+    if (postData.benefits !== undefined) {
+      post.benefits = postData.benefits;
+    }
+    if (postData.requirements !== undefined) {
+      post.requirements = postData.requirements;
+    }
+    const maxCapacity = PostUpdateDto.getMaxCapacity(postData);
+    if (maxCapacity !== undefined) {
+      post.maxCapacity = maxCapacity;
+    }
+    post.updatedAt = new Date();
 
     return this.postRepo.save(post);
   }
@@ -174,7 +225,6 @@ export class PostsRepository {
       return false;
     }
 
-    // Soft delete idéntico al comportamiento en Python
     post.deletedAt = new Date();
     post.status = 'hidden';
     await this.postRepo.save(post);
