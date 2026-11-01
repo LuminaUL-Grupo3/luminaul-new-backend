@@ -13,8 +13,8 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "db:init": "ts-node scripts/init-db.ts",
-    "test:sprint1": "ts-node test/sprint1-runner.ts",
-    "test:sprint2": "ts-node test/sprint2-join-requests-runner.ts"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
+    "test:integration": "node --experimental-vm-modules node_modules/jest/bin/jest.js test/spec01-spec03.spec.ts --runInBand"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.3",
@@ -40,8 +40,12 @@
     "@nestjs/cli": "^12.0.3",
     "@nestjs/schematics": "^12.0.3",
     "@types/express": "^5.0.0",
+    "@types/jest": "^30.0.0",
     "@types/node": "^22.10.5",
+    "jest": "^30.5.2",
+    "jest-junit": "^17.0.0",
     "source-map-support": "^0.5.21",
+    "ts-jest": "^29.4.15",
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
