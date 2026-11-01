@@ -35,7 +35,7 @@ export class PostsController {
   // H.U 1.1: POST /posts (Crear publicación)
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Crear una nueva publicación (H.U 1.1)' })
+  @ApiOperation({ summary: 'Crear una nueva publicación (H.U 1.1 / SPEC-03)' })
   @ApiResponse({
     status: 201,
     description: 'Publicación creada exitosamente',
@@ -54,10 +54,12 @@ export class PostsController {
 
   // H.U 1.5 y 1.3: GET /posts (Feed y filtros)
   @Get()
-  @ApiOperation({ summary: 'Feed de publicaciones públicas con filtros opcionales (H.U 1.3 / 1.5)' })
+  @ApiOperation({
+    summary: 'Feed de publicaciones públicas con filtros opcionales (H.U 1.3 / 1.5 / SPEC-03)',
+  })
   @ApiResponse({
     status: 200,
-    description: 'Lista de publicaciones del feed',
+    description: 'Lista de publicaciones del feed con soporte de paginación',
     type: [PostFeedResponseDto],
   })
   async listPosts(
@@ -65,27 +67,32 @@ export class PostsController {
   ): Promise<PostFeedResponseDto[]> {
     const limit = query.limit ?? 15;
     const offset = query.offset ?? 0;
+    const courseId = PostFilterQueryDto.getCourseId(query);
 
     if (
-      query.course_id !== undefined ||
+      courseId !== undefined ||
       query.type !== undefined ||
-      query.cycle !== undefined
+      query.cycle !== undefined ||
+      query.search !== undefined
     ) {
       return this.postsService.filterPosts(
         limit,
         offset,
-        query.course_id,
+        courseId,
         query.type,
         query.cycle,
+        query.search,
       );
     }
 
-    return this.postsService.listPosts(limit, offset);
+    return this.postsService.listPosts(limit, offset, query.search);
   }
 
   // H.U 1.6: GET /posts/me (Historial propio)
   @Get('me')
-  @ApiOperation({ summary: 'Historial de publicaciones del usuario autenticado (H.U 1.6)' })
+  @ApiOperation({
+    summary: 'Historial de publicaciones del usuario autenticado (H.U 1.6 / SPEC-03)',
+  })
   @ApiResponse({
     status: 200,
     description: 'Lista de publicaciones del usuario actual',
@@ -98,16 +105,12 @@ export class PostsController {
     const limit = query.limit ?? 15;
     const offset = query.offset ?? 0;
 
-    return this.postsService.listPostsByUser(
-      userId,
-      limit,
-      offset,
-    );
+    return this.postsService.listPostsByUser(userId, limit, offset);
   }
 
   // H.U 1.2: PUT /posts/:post_id (Editar publicación)
   @Put(':post_id')
-  @ApiOperation({ summary: 'Editar una publicación existente (H.U 1.2)' })
+  @ApiOperation({ summary: 'Editar una publicación existente (H.U 1.2 / SPEC-03)' })
   @ApiParam({
     name: 'post_id',
     type: 'string',
@@ -137,7 +140,9 @@ export class PostsController {
 
   // H.U 1.4: DELETE /posts/:post_id (Eliminar publicación)
   @Delete(':post_id')
-  @ApiOperation({ summary: 'Eliminar una publicación existente (soft delete) (H.U 1.4)' })
+  @ApiOperation({
+    summary: 'Eliminar una publicación existente (soft delete) (H.U 1.4 / SPEC-03)',
+  })
   @ApiParam({
     name: 'post_id',
     type: 'string',

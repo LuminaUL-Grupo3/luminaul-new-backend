@@ -4,14 +4,14 @@ Backend de la plataforma LuminaUL implementado en **NestJS** con **TypeScript**,
 
 ---
 
-## 🚀 Requisitos Previos
+## Requisitos Previos
 
 * **Node.js** v20 o superior.
 * **PostgreSQL** v15+ corriendo localmente o en un contenedor Docker en el puerto 5432.
 
 ---
 
-## 🛠️ Instalación y Configuración
+## Instalación y Configuración
 
 ### 1. Instalar dependencias
 ```bash
@@ -43,7 +43,7 @@ npm run db:init
 
 ---
 
-## ▶️ Ejecución del Servidor
+## Ejecución del Servidor
 
 ### Modo desarrollo (con recarga en caliente):
 ```bash
@@ -57,7 +57,7 @@ El servidor estará escuchando en:
 
 ---
 
-## 👥 Cuentas Demo Sembradas (disponibles tras `npm run db:init`)
+## Cuentas Demo Sembradas (disponibles tras `npm run db:init`)
 
 | Rol | Correo | Contraseña | Propósito |
 | :--- | :--- | :--- | :--- |
@@ -67,7 +67,7 @@ El servidor estará escuchando en:
 
 ---
 
-## 🧪 Pruebas Automatizadas
+## Pruebas Automatizadas
 
 ```bash
 # Pruebas de integración del Sprint 1 (Posts y Catálogos):
@@ -79,7 +79,7 @@ npm run test:sprint2
 
 ---
 
-## 📋 Endpoints Principales
+## Endpoints Principales
 
 | Método | Ruta | Descripción |
 | :--- | :--- | :--- |
