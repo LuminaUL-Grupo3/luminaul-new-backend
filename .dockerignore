@@ -1,0 +1,10 @@
+node_modules
+dist
+test-reports
+coverage
+.git
+.env
+npm-debug.log*
+test
+scripts
+
