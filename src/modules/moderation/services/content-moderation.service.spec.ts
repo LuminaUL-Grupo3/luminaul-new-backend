@@ -11,7 +11,7 @@ describe('SPEC-06 ContentModerationService', () => {
   const CONTENT = '18938a12-6f2b-4d43-9801-bca908234fed';
 
   let repository: jest.Mocked<
-    Pick<ModerationRepository, 'listBannedWords' | 'findContent' | 'hideContent' | 'saveLog'>
+    Pick<ModerationRepository, 'listBannedWords' | 'findContent' | 'hideAndSaveLog'>
   >;
   let events: { emit: jest.Mock };
   let service: ContentModerationService;
@@ -20,8 +20,7 @@ describe('SPEC-06 ContentModerationService', () => {
     repository = {
       listBannedWords: jest.fn().mockResolvedValue(['estafa', 'spam']),
       findContent: jest.fn().mockResolvedValue({ authorId: AUTHOR, groupId: GROUP, status: 'published' }),
-      hideContent: jest.fn().mockResolvedValue(true),
-      saveLog: jest.fn().mockResolvedValue({ id: 'log-1' }),
+      hideAndSaveLog: jest.fn().mockResolvedValue({ id: 'log-1' }),
     };
     events = { emit: jest.fn() };
     service = new ContentModerationService(
@@ -38,7 +37,7 @@ describe('SPEC-06 ContentModerationService', () => {
       text: 'Repaso de cálculo',
     });
     expect(outcome).toEqual({ status: 'clean' });
-    expect(repository.hideContent).not.toHaveBeenCalled();
+    expect(repository.hideAndSaveLog).not.toHaveBeenCalled();
     expect(events.emit).not.toHaveBeenCalled();
   });
 
@@ -50,7 +49,7 @@ describe('SPEC-06 ContentModerationService', () => {
       text: 'Es una estafa',
     });
     expect(outcome).toEqual({ status: 'hidden', moderationLogId: 'log-1', detectedWords: ['estafa'] });
-    expect(repository.saveLog).toHaveBeenCalledWith('publication', CONTENT, AUTHOR, ['estafa']);
+    expect(repository.hideAndSaveLog).toHaveBeenCalledWith(expect.objectContaining({ table: 'publications' }), 'publication', CONTENT, AUTHOR, ['estafa']);
     expect(events.emit).toHaveBeenCalledWith(
       NOTIFICATION_SEND_EVENT,
       expect.objectContaining({ userId: AUTHOR, type: 'MODERATION' }),
@@ -79,11 +78,11 @@ describe('SPEC-06 ContentModerationService', () => {
       authorId: 'otro-usuario',
       text: 'estafa',
     });
-    expect(repository.saveLog).toHaveBeenCalledWith('review', CONTENT, AUTHOR, ['estafa']);
+    expect(repository.hideAndSaveLog).toHaveBeenCalledWith(expect.objectContaining({ table: 'reviews' }), 'review', CONTENT, AUTHOR, ['estafa']);
   });
 
   it('no registra nada si el contenido ya no estaba publicado', async () => {
-    repository.hideContent.mockResolvedValue(false);
+    repository.hideAndSaveLog.mockResolvedValue(null);
     const outcome = await service.moderate({
       contentType: TargetContentType.PUBLICATION,
       contentId: CONTENT,
@@ -91,7 +90,6 @@ describe('SPEC-06 ContentModerationService', () => {
       text: 'estafa',
     });
     expect(outcome.status).toBe('skipped');
-    expect(repository.saveLog).not.toHaveBeenCalled();
     expect(events.emit).not.toHaveBeenCalled();
   });
 

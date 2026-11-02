@@ -174,6 +174,11 @@ export class AdminService {
       throw new ConflictException(ADMIN_MESSAGES.REPORT_ALREADY_RESOLVED);
     }
 
+    // La conversación se actualiza únicamente después de confirmar el borrado y su auditoría.
+    if (deleteContent) this.events.emit('content.visibility_changed', {
+      contentType: report.targetType, contentId: report.targetId,
+    });
+
     if (authorId) {
       this.notify({
         userId: authorId,
@@ -232,6 +237,11 @@ export class AdminService {
     if (!resolved) {
       throw new ConflictException(ADMIN_MESSAGES.APPEAL_ALREADY_RESOLVED);
     }
+
+    // El chat relee el estado persistido; no se transmiten textos desde administración.
+    if (approved) this.events.emit('content.visibility_changed', {
+      contentType: appeal.contentType, contentId: appeal.contentId,
+    });
 
     const notice = approved ? NOTICES.APPEAL_APPROVED : NOTICES.APPEAL_REJECTED;
     this.notify({ userId: appeal.userId, ...notice, type: NotificationType.MODERATION });

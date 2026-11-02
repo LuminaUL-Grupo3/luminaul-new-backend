@@ -61,33 +61,42 @@ export class ModerationRepository {
   }
 
   // Oculta el contenido solo si estaba publicado: no pisa un borrado ni un ocultamiento previo.
-  async hideContent(source: ModeratedContentSource, id: string): Promise<boolean> {
-    const result: [unknown, number] = await this.dataSource.query(
-      `UPDATE ${source.table} SET status = 'hidden'
-       WHERE id = $1 AND status = 'published' AND deleted_at IS NULL`,
-      [id],
-    );
-    return result[1] > 0;
-  }
-
-  saveLog(
+  async hideAndSaveLog(
+    source: ModeratedContentSource,
     contentType: TargetContentType,
     contentId: string,
     authorId: string,
     detectedWords: string[],
-  ): Promise<ContentModerationLogEntity> {
-    return this.logs.save(
-      this.logs.create({
+  ): Promise<ContentModerationLogEntity | null> {
+    // Si falla el registro, el contenido conserva su visibilidad y no queda una sanción sin historial.
+    return this.dataSource.transaction(async (manager) => {
+      const [, affected]: [unknown, number] = await manager.query(
+        `UPDATE ${source.table} SET status = 'hidden'
+         WHERE id = $1 AND status = 'published' AND deleted_at IS NULL`, [contentId],
+      );
+      if (!affected) return null;
+      return manager.save(manager.create(ContentModerationLogEntity, {
         contentType,
         contentId,
         authorId,
         detectedWords,
         result: ModerationResult.BLOCKED,
-      }),
-    );
+      }));
+    });
   }
 
   // ---------- Reportes (HU 6.1) ----------
+
+  /** Un UUID de mensaje no concede acceso al chat: se exige pertenencia activa o rol de plataforma. */
+  async canAccessGroup(groupId: string, userId: string): Promise<boolean> {
+    const [row]: { allowed: boolean }[] = await this.dataSource.query(
+      `SELECT EXISTS(SELECT 1 FROM groups g WHERE g.id=$1 AND g.deleted_at IS NULL AND
+        (EXISTS(SELECT 1 FROM group_members m WHERE m.group_id=g.id AND m.user_id=$2 AND m.status='active')
+        OR EXISTS(SELECT 1 FROM users u WHERE u.id=$2 AND u.role='admin' AND u.status='active'))) AS allowed`,
+      [groupId, userId],
+    );
+    return row.allowed;
+  }
 
   findPendingReport(
     reporterId: string,
@@ -127,14 +136,23 @@ export class ModerationRepository {
     });
   }
 
-  createAppeal(
+  async createAppeal(
     moderationLogId: string,
     userId: string,
     justification: string,
-  ): Promise<ContentAppealEntity> {
-    return this.appeals.save(
-      this.appeals.create({ moderationLogId, userId, justification, status: AppealStatus.PENDING }),
-    );
+  ): Promise<ContentAppealEntity | null> {
+    // Bloquear la moderación serializa dos envíos simultáneos, sin cambiar el esquema del equipo.
+    return this.dataSource.transaction(async (manager) => {
+      const rows: { id: string }[] = await manager.query(
+        'SELECT id FROM moderation_logs WHERE id=$1 FOR UPDATE', [moderationLogId],
+      );
+      if (!rows.length) return null;
+      const previous = await manager.findOne(ContentAppealEntity, { where: { moderationLogId } });
+      if (previous) return null;
+      return manager.save(manager.create(ContentAppealEntity, {
+        moderationLogId, userId, justification, status: AppealStatus.PENDING,
+      }));
+    });
   }
 
   async findLogsByAuthor(authorId: string): Promise<ModerationLogWithAppeal[]> {

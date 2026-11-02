@@ -1,6 +1,6 @@
 # SPEC-04 — Grupos de estudio y chat en tiempo real
 
-Implementación de las tareas 4.1–4.4 de la especificación entregada: entidades, Gateway, REST y conexión con React. Base de esta rama: `origin/main` en `9799d97c7f3d8844ef5085e9146bba429de6d758` (1 de noviembre de 2026). Rama: `SPEC04-grupos-chat-tiempo-real`.
+Implementación de las tareas 4.1–4.4: entidades, Gateway, REST y conexión con React. La revisión `SPEC04-integracion-spec06` parte del main `17cd0fd`, que ya incluye la reorganización modular de Lau y SPEC-06 de Lourdes. Integra sus eventos y pantallas con SPEC-04 y SPEC-07; no sustituye los módulos del equipo.
 
 ## Alcance y límites
 
@@ -11,7 +11,7 @@ Implementación de las tareas 4.1–4.4 de la especificación entregada: entidad
 - Extras solicitados para el chat: escritura, presencia por usuario con múltiples pestañas, reacciones, lecturas y respuestas a mensajes.
 - Puente hacia SPEC-06 para ocultar mensajes y citas. El motor de moderación pertenece a esa SPEC; aquí no se implementa un filtro paralelo.
 
-No se incorporan adjuntos, encuestas, mensajes privados, edición, eliminación ni mensajes fijados. Tampoco se modifican autenticación, perfiles, publicaciones, reseñas o administración.
+No se incorporan adjuntos, encuestas, mensajes privados, edición ni mensajes fijados. La eliminación por administración y la restauración por apelación se difunden después de la transacción mediante `content.visibility_changed`; el chat relee el estado saneado y emite `chat:message_updated` solo a miembros vigentes. No se añaden rutas de edición o eliminación para estudiantes.
 
 Integración posterior solicitada: se confirmó que main ya contenía SPEC-01, SPEC-02 y SPEC-03 (esta última a través del PR #6). Se incorporó mediante merge el ajuste publicado `415de10` de SPEC-03 que admite `/auth/account` como alias de `/auth/me` al eliminar la cuenta, para compatibilidad con el frontend del equipo. Se conserva su autoría; no se implementa otro sistema de autenticación. El frontend incluye el ajuste correspondiente `859515b` y una ampliación visual de presentación/acceso, documentada en su carpeta `features/welcome/`. Main permanece intacto; se prepara un PR para revisión.
 
@@ -75,8 +75,9 @@ Abrir `http://localhost:5175/login`. Cuentas de esta demostración, no publicada
 | Líder | `spec04.lider@aloe.ulima.edu.pe` | `LuminaSpec04!2026` |
 | Integrante | `spec04.usuario@aloe.ulima.edu.pe` | `LuminaSpec04!2026` |
 | Otra persona | `spec04.otro@aloe.ulima.edu.pe` | `LuminaSpec04!2026` |
+| Administrador local | `spec04.admin@aloe.ulima.edu.pe` | `LuminaSpec04!2026` |
 
-Las dos primeras pertenecen inicialmente a Taller de Software II; la tercera puede solicitar ingreso. Son cuentas de estudiante, no administradores de plataforma. Usar ventanas o perfiles distintos para probarlas simultáneamente. El servidor de demostración crea su propio secreto JWT al arrancar: tras reiniciarlo hay que iniciar sesión otra vez.
+Las dos primeras pertenecen inicialmente a Taller de Software II; la tercera puede solicitar ingreso. La cuarta permite probar `/admin`, sin pertenencia automática al chat. Todas se crean exclusivamente por el helper en las bases locales de demostración/test, nunca en la nube; sus credenciales no se muestran en la interfaz. Usar ventanas o perfiles distintos para probarlas simultáneamente. El servidor de demostración crea su propio secreto JWT al arrancar: tras reiniciarlo hay que iniciar sesión otra vez.
 
 ## Integración con una base del equipo existente
 
@@ -174,3 +175,11 @@ Después de integrar el main actualizado y la presentación pública, la suite c
 Referencias técnicas: [Gateways de NestJS](https://docs.nestjs.com/websockets/gateways), [garantías de entrega de Socket.IO](https://socket.io/docs/v4/delivery-guarantees/), [middleware de Socket.IO](https://socket.io/docs/v4/middlewares/).
 
 Revisión posterior a la integración: base main `3a9d545`, incluyendo la reorganización modular de Lau (PR #15/#16) y SPEC-07. Las seis suites de Jest del equipo pasaron sus 188 pruebas con `DATABASE_URL` apuntando exclusivamente a la base local de test. Se verificaron también la instalación limpia con `npm ci`, el build estándar, el arranque compilado y su documentación OpenAPI. Se conservan AdministrationModule, sus notificaciones y el único bus EventEmitter2 del AppModule; los ajustes de esta revisión no modifican lógica de las demás SPEC.
+
+## Integración de SPEC-06 y SPEC-07 — 2 de noviembre
+
+Base de la revisión actual: main `17cd0fd`, incluyendo el motor y los contratos de Lourdes. Una ocultación automática y su registro se guardan en la misma transacción. Las denuncias de mensajes privados exigen pertenencia activa al grupo o rol de administrador de plataforma. La creación de apelaciones bloquea la fila de moderación para que dos envíos simultáneos produzcan una sola solicitud.
+
+Las decisiones de SPEC-07 publican `content.visibility_changed` después de confirmar su transacción. El Gateway de SPEC-04 consulta el mensaje saneado, depura membresías/sesiones de la sala y difunde `chat:message_updated`. El frontend actualiza texto y citas tanto al restaurar como al eliminar. No se importa una entidad de otro módulo ni se crea otro bus de eventos.
+
+Validación final: build de ambos proyectos, arranque compilado con `/health` y `/docs-json`, **200 pruebas en 8 suites del backend**, **44 del frontend** y **22 grupos de integración con PostgreSQL real y frontend compilado**, incluidos cuatro recorridos nuevos de moderación/administración. Los artefactos permanecen en `frontend/analysis/spec04/`. La prueba de filtro real complementa la prueba aislada del puente por IPC; no la sustituye por un mock del motor. El despliegue y la base en la nube no se han modificado.

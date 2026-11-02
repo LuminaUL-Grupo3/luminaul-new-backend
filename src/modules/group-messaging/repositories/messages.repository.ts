@@ -32,7 +32,8 @@ export class MessagesRepository {
   /** Oculta el texto moderado también en respuestas citadas y devuelve agregados tipados. */
   private selection(): string {
     return `SELECT m.id,m.group_id AS "groupId",m.sender_id AS "senderId",
-      CASE WHEN m.status='published' THEN m.content ELSE '' END AS content,m.status,
+      CASE WHEN m.status='published' AND m.deleted_at IS NULL THEN m.content ELSE '' END AS content,
+      CASE WHEN m.deleted_at IS NOT NULL THEN 'deleted' ELSE m.status END AS status,
       to_char(m.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS "createdAt",
       m.client_message_id AS "clientMessageId",
       json_build_object('id',u.id,'name',COALESCE(p.name,u.name),'profilePhotoUrl',p.profile_photo_url) AS sender,
@@ -57,6 +58,12 @@ export class MessagesRepository {
     if (!rows[0])
       throw new NotFoundException("El mensaje ya no está disponible.");
     return rows[0];
+  }
+
+  /** Consulta interna para difundir decisiones ya guardadas, incluidos los borrados lógicos. */
+  async findState(messageId: string): Promise<GroupMessageDto | null> {
+    const rows: MessageRow[] = await this.db.query(`${this.selection()} WHERE m.id=$1`, [messageId]);
+    return rows[0] ?? null;
   }
 
   /** Selecciona primero los mensajes recientes y los devuelve cronológicamente para la vista. */

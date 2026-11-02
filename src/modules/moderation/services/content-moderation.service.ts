@@ -44,17 +44,12 @@ export class ContentModerationService {
     const content = await this.repository.findContent(source, event.contentId);
     if (!content) return { status: 'skipped', reason: 'el contenido ya no existe' };
 
-    const hidden = await this.repository.hideContent(source, event.contentId);
-    if (!hidden) {
+    const log = await this.repository.hideAndSaveLog(
+      source, event.contentType, event.contentId, content.authorId, detectedWords,
+    );
+    if (!log) {
       return { status: 'skipped', reason: `el contenido no estaba publicado (${content.status})` };
     }
-
-    const log = await this.repository.saveLog(
-      event.contentType,
-      event.contentId,
-      content.authorId,
-      detectedWords,
-    );
 
     if (event.contentType === TargetContentType.MESSAGE && content.groupId) {
       const hiddenMessage: ChatMessageHiddenEvent = {
