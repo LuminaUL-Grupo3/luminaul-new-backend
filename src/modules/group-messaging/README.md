@@ -17,11 +17,11 @@ Integración posterior solicitada: se confirmó que main ya contenía SPEC-01, S
 
 Actualización durante esta revisión: el equipo fusionó SPEC-05 y el ajuste de SPEC-03 en main `25df6c06882a75a148b0f4921036b8766aeac2d4` (PR #11/#12). Esa versión se incorporó a SPEC-04 mediante merge, conservando la implementación de reseñas del equipo; el frontend integra su main correspondiente `1da721f`. La conservación de `joined_at`/`left_at` se verifica mediante una reseña real posterior a una expulsión, sin modificar reglas de SPEC-05.
 
-Los ajustes de integración fuera de esta carpeta registran `GroupMessagingModule` en `src/app.module.ts`, retiran de allí el módulo antiguo de solicitudes y desregistran el controlador antiguo de `src/groups/groups.module.ts`. Sus proveedores y exportaciones siguen disponibles para publicaciones. Esto evita dos controladores respondiendo las mismas rutas. Por la decisión de entrega sin contenedores, esta rama también retira `Dockerfile` y `.dockerignore` heredados y adapta el requisito de PostgreSQL del README raíz. No cambia main.
+Los ajustes de integración registran `GroupMessagingModule` en `src/app.module.ts`, sin duplicar controladores de solicitudes/grupos. La entrega inicial se integró mediante PR #14. El main posterior `3a9d545` reorganiza los dominios del equipo bajo `src/modules/` y conserva los proveedores de grupos que utilizan publicaciones. La revisión `SPEC04-ajustes-integracion-final` parte de ese main y mantiene sus módulos; no incorpora contenedores.
 
 ## Decisiones frente al código real de main
 
-Se conserva el stack y las dependencias existentes; no se modifica `package.json`, el lock ni `.env`. La ejecución usa Node y una conexión PostgreSQL directa, sin infraestructura de contenedores. Main usa NestJS 12/TypeScript 6 en backend y React 19/TypeScript 5.9 en frontend. No se degrada el proyecto a las versiones antiguas del protocolo.
+Se conserva el stack y las versiones de las dependencias existentes. La ejecución usa Node y una conexión PostgreSQL directa, sin infraestructura de contenedores. Main usa NestJS 12/TypeScript 6 en backend y React 19/TypeScript 5.9 en frontend. El ajuste de integración corrige entradas duplicadas/incompletas del lock y añade al comando de build la normalización de rutas locales generadas por Swagger; no modifica `.env` ni reglas de otras SPEC.
 
 El contrato específico y el código actual usan `student`/`admin` para plataforma y `leader`/`member` para grupos, en minúsculas. El rol `admin` no se utiliza como rol canónico de grupo. Se mantiene `admin_id` únicamente como columna heredada que main sincroniza con `leader_id`.
 
@@ -46,11 +46,11 @@ Todas las entradas usan clases con `class-validator`/`class-transformer`; no se 
 
 Requisitos: Node compatible con main, PostgreSQL 16 instalado directamente y las dos ramas descargadas. Puede obtenerse PostgreSQL desde su [sitio oficial para Windows](https://www.postgresql.org/download/windows/). Debe estar iniciado; el usuario de preparación necesita permiso para crear las dos bases locales de demostración/pruebas. Estos comandos se ejecutan desde la raíz del backend en PowerShell.
 
-El lock publicado en main no permite `npm ci`: faltan entradas transitivas de `@istanbuljs/load-nyc-config` y `es-object-atoms`. Hasta que el integrador lo corrija, la instalación local comprobada sin cambiarlo es:
+El lock corregido permite instalar con `npm ci`, sin recurrir a instalaciones que lo ignoren:
 
 ```powershell
-npm install --package-lock=false --ignore-scripts
-node node_modules/typescript/bin/tsc -p tsconfig.build.json --incremental false
+npm ci
+npm run build
 $env:SPEC04_DATABASE_URL='postgresql://postgres:TU_CLAVE_POSTGRES@127.0.0.1:5432/luminaul_spec04_demo'
 node src/modules/group-messaging/tools/local.cjs prepare
 node src/modules/group-messaging/tools/local.cjs serve
@@ -85,14 +85,14 @@ Esta rama necesita el esquema v3 que ya está en main: grupos, membresías con e
 Después de configurar la conexión habitual `DATABASE_URL`, compilar y aplicar solamente la extensión:
 
 ```powershell
-node node_modules/typescript/bin/tsc -p tsconfig.build.json --incremental false
+npm run build
 node src/modules/group-messaging/tools/migrate.cjs
 node dist/main.js
 ```
 
 El helper de migración lee la configuración existente, ejecuta `up` dentro de una transacción y es repetible; no registra una segunda infraestructura de migraciones. **No ejecutar `db:init`/`init-db.sql` sobre una base existente:** el SQL de main reinicia tablas. No se ha ejecutado esta migración en la nube del equipo.
 
-En Windows, `npm run build` termina, pero el plugin Swagger de main genera una importación absoluta a `src/auth/enums/user-role.enum` que hace fallar `node dist/main.js`. Se comprobó que la compilación directa con TypeScript mostrada arriba y el arranque compilado funcionan. El archivo afectado de autenticación y `nest-cli.json` no cambian en esta rama; queda pendiente del integrador corregir el plugin. El helper `serve` usa `ts-node` y también funciona. No confundir compilación exitosa con arranque verificado.
+El plugin Swagger puede dejar referencias absolutas a archivos TypeScript cuando la ruta de Windows contiene tildes. `scripts/normalize-openapi-paths.cjs`, ejecutado después de `nest build`, convierte exclusivamente los `require` absolutos que apuntan a `src` en rutas relativas al JavaScript correspondiente de `dist`. Utiliza el AST para decodificar Unicode y comprueba que el destino exista. No cambia fuentes, dependencias, paquetes externos ni contratos OpenAPI. Se mantiene el plugin y se verifica el arranque real con `npm run start:prod`, `/health` y `/docs-json`. Para desarrollo local sin ese plugin, el helper `serve` sigue utilizando `ts-node`.
 
 Permitir en `WEB_ORIGIN` los orígenes reales del frontend, separados por coma. Para desarrollo, Vite usa `BACKEND_URL` para reenviar HTTP y `/socket.io`. Para otro despliegue, conservar el cliente y la configuración compartidos del equipo.
 
@@ -173,4 +173,4 @@ Después de integrar el main actualizado y la presentación pública, la suite c
 
 Referencias técnicas: [Gateways de NestJS](https://docs.nestjs.com/websockets/gateways), [garantías de entrega de Socket.IO](https://socket.io/docs/v4/delivery-guarantees/), [middleware de Socket.IO](https://socket.io/docs/v4/middlewares/).
 
-Actualización final: se incorporó main 8181e32 con SPEC-07. Se conservan AdministrationModule y sus notificaciones; GroupMessagingModule utiliza el bus EventEmitter2 del AppModule del equipo, sin registrar un segundo bus. El PR mantiene intacta la lógica de las otras SPEC.
+Revisión posterior a la integración: base main `3a9d545`, incluyendo la reorganización modular de Lau (PR #15/#16) y SPEC-07. Las seis suites de Jest del equipo pasaron sus 188 pruebas con `DATABASE_URL` apuntando exclusivamente a la base local de test. Se verificaron también la instalación limpia con `npm ci`, el build estándar, el arranque compilado y su documentación OpenAPI. Se conservan AdministrationModule, sus notificaciones y el único bus EventEmitter2 del AppModule; los ajustes de esta revisión no modifican lógica de las demás SPEC.
