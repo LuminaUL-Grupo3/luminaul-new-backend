@@ -1,7 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, QueryFailedError, Repository } from 'typeorm';
-import { ReviewsDAO } from '../ReviewsDAO';
+import { ReviewsRepository } from '../ReviewsRepository';
 import { ReviewEntity } from '../../entities/review.entity';
 import { ReviewException } from '../../exception/ReviewException';
 import { REVIEW_MESSAGES, REVIEW_STATUS } from '../../reviews.constants';
@@ -9,10 +9,10 @@ import { REVIEW_MESSAGES, REVIEW_STATUS } from '../../reviews.constants';
 // Código de PostgreSQL para "unique_violation"
 const PG_UNIQUE_VIOLATION = '23505';
 
-// Implementación del DAO con TypeORM sobre PostgreSQL. Solo lee la tabla reviews: los datos
+// Implementación del repositorio con TypeORM sobre PostgreSQL. Solo lee la tabla reviews: los datos
 // de autor y reseñado los trae ProfileClient (sin relaciones con entidades de otros módulos).
 @Injectable()
-export class ReviewsDAOImpl extends ReviewsDAO {
+export class ReviewsRepositoryImpl extends ReviewsRepository {
   constructor(
     @InjectRepository(ReviewEntity)
     private readonly reviewRepo: Repository<ReviewEntity>,

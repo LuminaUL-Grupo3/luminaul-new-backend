@@ -1,6 +1,6 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { ReviewsService } from '../ReviewsService';
-import { ReviewsDAO } from '../../dao/ReviewsDAO';
+import { ReviewsRepository } from '../../repository/ReviewsRepository';
 import { ModerationClient } from '../../client/ModerationClient';
 import { ProfileClient } from '../../client/ProfileClient';
 import { ReviewEligibilityStrategy, RuleViolation } from '../../strategy/ReviewEligibilityStrategy';
@@ -18,14 +18,14 @@ import {
   REVIEW_STATUS,
 } from '../../reviews.constants';
 
-// Coordina los casos de uso: valida con las reglas, persiste con el DAO, avisa a moderación y
+// Coordina los casos de uso: valida con las reglas, persiste con el repositorio, avisa a moderación y
 // completa nombre y foto con ProfileClient.
 // Facade: el controller solo llama a ReviewsService y no conoce a esos subsistemas.
 // Solo conoce abstracciones; ReviewsModule le entrega las implementaciones.
 @Injectable()
 export class ReviewsServiceImpl extends ReviewsService {
   constructor(
-    private readonly reviewsDAO: ReviewsDAO,
+    private readonly reviewsRepository: ReviewsRepository,
     private readonly moderation: ModerationClient,
     private readonly profiles: ProfileClient,
     @Inject(REVIEW_ELIGIBILITY_RULES)
@@ -40,7 +40,7 @@ export class ReviewsServiceImpl extends ReviewsService {
       throw new ReviewException(violation.reason, violation.status);
     }
 
-    const review = await this.reviewsDAO.insert({
+    const review = await this.reviewsRepository.insert({
       reviewerId,
       reviewedUserId: payload.reviewedUserId,
       rating: payload.rating,
@@ -53,7 +53,7 @@ export class ReviewsServiceImpl extends ReviewsService {
   }
 
   async getUserSummary(userId: string): Promise<UserReviewsSummaryDto> {
-    const reviews = await this.reviewsDAO.findPublishedByReviewedUser(userId);
+    const reviews = await this.reviewsRepository.findPublishedByReviewedUser(userId);
     return {
       userId,
       averageRating: averageRating(reviews),
@@ -63,7 +63,7 @@ export class ReviewsServiceImpl extends ReviewsService {
   }
 
   async listMine(reviewerId: string): Promise<ReviewResponseDto[]> {
-    return this.toResponses(await this.reviewsDAO.findActiveByReviewer(reviewerId));
+    return this.toResponses(await this.reviewsRepository.findActiveByReviewer(reviewerId));
   }
 
   // Mismas reglas que create, pero responde el motivo en vez de lanzar el error
@@ -84,7 +84,7 @@ export class ReviewsServiceImpl extends ReviewsService {
     review.rating = payload.rating ?? review.rating;
     review.comment = payload.comment ?? review.comment;
 
-    const updated = await this.reviewsDAO.update(review);
+    const updated = await this.reviewsRepository.update(review);
     // Texto nuevo: moderación lo vuelve a revisar
     if (payload.comment !== undefined) {
       this.moderation.reviewWritten(updated);
@@ -95,7 +95,7 @@ export class ReviewsServiceImpl extends ReviewsService {
 
   async remove(reviewId: string, actorId: string): Promise<DeleteReviewResponseDto> {
     await this.findOwnReview(reviewId, actorId);
-    if (!(await this.reviewsDAO.delete(reviewId))) {
+    if (!(await this.reviewsRepository.delete(reviewId))) {
       throw new ReviewException(REVIEW_MESSAGES.NOT_FOUND, HttpStatus.NOT_FOUND);
     }
     return { message: REVIEW_MESSAGES.DELETED, deletedId: reviewId };
@@ -117,7 +117,7 @@ export class ReviewsServiceImpl extends ReviewsService {
 
   // HU 5.3 y 5.4: solo el autor edita o elimina su reseña (403 para cualquier otro)
   private async findOwnReview(reviewId: string, actorId: string): Promise<ReviewEntity> {
-    const review = await this.reviewsDAO.findById(reviewId);
+    const review = await this.reviewsRepository.findById(reviewId);
     if (!review) {
       throw new ReviewException(REVIEW_MESSAGES.NOT_FOUND, HttpStatus.NOT_FOUND);
     }

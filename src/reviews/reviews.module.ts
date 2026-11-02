@@ -5,8 +5,8 @@ import { AuthModule } from '../auth/auth.module';
 import { ReviewsController } from './controller/ReviewsController';
 import { ReviewsService } from './service/ReviewsService';
 import { ReviewsServiceImpl } from './service/impl/ReviewsServiceImpl';
-import { ReviewsDAO } from './dao/ReviewsDAO';
-import { ReviewsDAOImpl } from './dao/impl/ReviewsDAOImpl';
+import { ReviewsRepository } from './repository/ReviewsRepository';
+import { ReviewsRepositoryImpl } from './repository/impl/ReviewsRepositoryImpl';
 import { GroupMembershipClient } from './client/GroupMembershipClient';
 import { GroupMembershipClientImpl } from './client/impl/GroupMembershipClientImpl';
 import { ModerationClient } from './client/ModerationClient';
@@ -27,7 +27,7 @@ import { REVIEW_ELIGIBILITY_RULES } from './reviews.constants';
   // Singleton: NestJS crea una sola instancia de cada provider y la comparte (scope por defecto).
   providers: [
     { provide: ReviewsService, useClass: ReviewsServiceImpl },
-    { provide: ReviewsDAO, useClass: ReviewsDAOImpl },
+    { provide: ReviewsRepository, useClass: ReviewsRepositoryImpl },
     { provide: GroupMembershipClient, useClass: GroupMembershipClientImpl },
     { provide: ModerationClient, useClass: ModerationClientImpl },
     { provide: ProfileClient, useClass: ProfileClientImpl },
@@ -42,7 +42,7 @@ import { REVIEW_ELIGIBILITY_RULES } from './reviews.constants';
       inject: [NoSelfReviewRule, SharedGroupRule, UniqueReviewRule],
     },
   ],
-  // ReviewsDAO queda disponible para moderación (SPEC-06) y administración (SPEC-07)
-  exports: [TypeOrmModule, ReviewsDAO],
+  // ReviewsRepository queda disponible para moderación (SPEC-06) y administración (SPEC-07)
+  exports: [TypeOrmModule, ReviewsRepository],
 })
 export class ReviewsModule {}

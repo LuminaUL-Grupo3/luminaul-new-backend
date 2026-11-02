@@ -1,9 +1,9 @@
-import { Dao } from './Dao';
+import { CrudRepository } from './CrudRepository';
 import { ReviewEntity } from '../entities/review.entity';
 
-// DAO de la tabla reviews: el CRUD heredado más las consultas que pide SPEC-05.
+// Repositorio de la tabla reviews: el CRUD heredado más las consultas que pide SPEC-05.
 // Las lecturas ignoran las reseñas con borrado lógico (deleted_at).
-export abstract class ReviewsDAO extends Dao<string, ReviewEntity> {
+export abstract class ReviewsRepository extends CrudRepository<string, ReviewEntity> {
   // Reseña vigente que un alumno escribió sobre otro (la usa la regla de reseña única)
   abstract findActiveByPair(
     reviewerId: string,
