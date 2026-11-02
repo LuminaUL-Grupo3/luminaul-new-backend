@@ -2,7 +2,9 @@ import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { envValidationSchema } from './config/env.validation';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { validateEnv } from './config/env.validation';
 import { getTypeOrmConfig } from './config/database.config';
 import { AuthModule } from './modules/auth-security/auth.module';
 import { HealthModule } from './health/health.module';
@@ -21,7 +23,7 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      validationSchema: envValidationSchema,
+      validate: validateEnv,
       envFilePath: '.env',
     }),
     TypeOrmModule.forRootAsync({
@@ -29,6 +31,13 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
       inject: [ConfigService],
       useFactory: getTypeOrmConfig,
     }),
+    // Límite de tasa para prevenir ataques de fuerza bruta y saturación DoS (100 req/min por IP)
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
     // Bus de eventos en memoria: content.created (moderación) y notification.send (SPEC-07)
     EventEmitterModule.forRoot(),
     HealthModule,
@@ -43,10 +52,15 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
     ModerationModule,
     AdministrationModule,
   ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
     consumer.apply(LoggerMiddleware).forRoutes('*');
   }
 }
-
