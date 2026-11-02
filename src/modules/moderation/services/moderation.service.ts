@@ -55,6 +55,9 @@ export class ModerationService {
     const source = resolveModeratedContent(dto.targetType);
     const content = source ? await this.repository.findContent(source, dto.targetId) : null;
     if (!content) throw new NotFoundException(MODERATION_MESSAGES.TARGET_NOT_FOUND);
+    if (content.groupId && !(await this.repository.canAccessGroup(content.groupId, userId))) {
+      throw new NotFoundException(MODERATION_MESSAGES.TARGET_NOT_FOUND);
+    }
 
     const pending = await this.repository.findPendingReport(userId, dto.targetType, dto.targetId);
     if (pending) throw new ConflictException(MODERATION_MESSAGES.REPORT_DUPLICATED);
@@ -115,6 +118,7 @@ export class ModerationService {
     }
 
     const appeal = await this.repository.createAppeal(log.id, userId, dto.justification);
+    if (!appeal) throw new ConflictException(MODERATION_MESSAGES.APPEAL_DUPLICATED);
     return {
       message: MODERATION_MESSAGES.APPEAL_CREATED,
       appealId: appeal.id,

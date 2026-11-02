@@ -81,13 +81,19 @@ async function prepare(test = false) {
         "spec04.otro@aloe.ulima.edu.pe",
         "Otra persona",
       ],
+      [
+        "4a040000-0000-4000-8000-000000000099",
+        "spec04.admin@aloe.ulima.edu.pe",
+        "Administrador de prueba",
+        "admin",
+      ],
     ];
-    for (const [id, email, displayName] of users) {
+    for (const [id, email, displayName, role = "student"] of users) {
       await db.query(
         `INSERT INTO users(id,email,password_hash,name,role,status,is_verified,tokens_valid_after)
-        VALUES($1,$2,$3,$4,'student','active',true,NOW()-INTERVAL '1 second') ON CONFLICT(id)
-        DO UPDATE SET password_hash=$3,name=$4,status='active',is_verified=true`,
-        [id, email, passwordHash, displayName],
+        VALUES($1,$2,$3,$4,$5,'active',true,NOW()-INTERVAL '1 second') ON CONFLICT(id)
+        DO UPDATE SET password_hash=$3,name=$4,role=$5,status='active',is_verified=true`,
+        [id, email, passwordHash, displayName, role],
       );
       await db.query(
         "INSERT INTO profiles(user_id,name) VALUES($1,$2) ON CONFLICT(user_id) DO NOTHING",
@@ -102,7 +108,7 @@ async function prepare(test = false) {
       [groupId, users[0][0]],
     );
     for (const [index, [id]] of users.entries()) {
-      if (index === 2) continue;
+      if (index >= 2) continue;
       await db.query(
         `INSERT INTO group_members(group_id,user_id,role,status) VALUES($1,$2,$3,'active') ON CONFLICT(group_id,user_id) DO NOTHING`,
         [groupId, id, index === 0 ? "leader" : "member"],

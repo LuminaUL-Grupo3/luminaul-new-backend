@@ -135,4 +135,9 @@ export class GroupMessagingService {
   message(groupId: string, messageId: string) {
     return this.messages.find(groupId, messageId);
   }
+
+  /** Expone el estado saneado al puente interno de administración, sin una ruta HTTP adicional. */
+  messageState(messageId: string) {
+    return this.messages.findState(messageId);
+  }
 }

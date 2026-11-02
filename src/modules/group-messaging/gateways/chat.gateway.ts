@@ -447,6 +447,16 @@ export class ChatGateway
     this.server.to(this.room(event.groupId)).emit("chat:message_hidden", event);
   }
 
+  /** SPEC-07 anuncia una decisión después de su transacción; solo los miembros vigentes la reciben. */
+  @OnEvent("content.visibility_changed")
+  async visibilityChanged(event: { contentType: string; contentId: string }): Promise<void> {
+    if (!this.server || event.contentType !== "message") return;
+    const message = await this.service.messageState(event.contentId);
+    if (!message) return;
+    await this.pruneRoom(message.groupId);
+    this.server.to(this.room(message.groupId)).emit("chat:message_updated", message);
+  }
+
   /** Actualiza listas y permisos visibles después de aprobar solicitudes o transferir liderazgo. */
   @OnEvent("group.changed")
   async changed(event: { groupId: string }): Promise<void> {
