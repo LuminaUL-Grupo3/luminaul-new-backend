@@ -4,7 +4,7 @@ import {
   Column,
   OneToMany,
 } from 'typeorm';
-import { PostEntity } from '../../modules/posts/entities/post.entity';
+import { PostEntity } from '../../posts/entities/post.entity';
 
 @Entity('courses')
 export class CourseEntity {

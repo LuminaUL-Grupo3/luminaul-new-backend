@@ -3,8 +3,8 @@ import { DataSource, Repository, IsNull } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'node:crypto';
 import { PostEntity } from './entities/post.entity';
-import { GroupEntity } from '../../groups/entities/group.entity';
-import { GroupsRepository } from '../../groups/groups.repository';
+import { GroupEntity } from '../groups/entities/group.entity';
+import { GroupsRepository } from '../groups/groups.repository';
 import { PostCreateDto } from './dto/post-create.dto';
 import { PostUpdateDto } from './dto/post-update.dto';
 

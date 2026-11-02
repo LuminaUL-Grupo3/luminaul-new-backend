@@ -4,7 +4,7 @@ import { Repository, IsNull, DataSource, EntityManager } from 'typeorm';
 import { randomUUID } from 'node:crypto';
 import { GroupEntity } from './entities/group.entity';
 import { GroupMemberEntity } from './entities/group-member.entity';
-import { JoinRequestEntity } from '../join-requests/entities/join-request.entity';
+import { JoinRequestEntity } from './entities/join-request.entity';
 
 export interface CreateGroupInput {
   name: string;
