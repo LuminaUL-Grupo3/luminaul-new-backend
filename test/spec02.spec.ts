@@ -5,7 +5,7 @@ import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { GUARDS_METADATA } from '@nestjs/common/constants';
 
-import { JwtAuthGuard } from '../src/auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../src/modules/auth-security/guards/jwt-auth.guard';
 import { CreateAvailabilityDto, UpdateAvailabilityDto } from '../src/modules/user-profile/dto/availability.dto';
 import { UpdateProfileDto } from '../src/modules/user-profile/dto/update-profile.dto';
 import { UserProfileController } from '../src/modules/user-profile/user-profile.controller';

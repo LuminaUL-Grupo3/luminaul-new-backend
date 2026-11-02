@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AuthModule } from '../../auth/auth.module';
+import { AuthModule } from '../auth-security/auth.module';
 import { ProfileEntity } from './entities/profile.entity';
 import { AvailabilityEntity } from './entities/availability.entity';
 import { ProfileSkillEntity } from './entities/profile-skill.entity';

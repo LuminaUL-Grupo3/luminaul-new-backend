@@ -1,6 +1,6 @@
 import { Controller, Get, Param, ParseUUIDPipe, Patch, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../auth-security/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { NotificationsService } from '../services/notifications.service';
 import { MarkNotificationReadResponseDto, NotificationDto } from '../dto/admin-response.dto';

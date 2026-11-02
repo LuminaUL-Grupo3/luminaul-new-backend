@@ -25,8 +25,8 @@ import { ReviewResponseDto } from '../dto/ReviewResponseDto';
 import { UserReviewsSummaryDto } from '../dto/UserReviewsSummaryDto';
 import { ReviewEligibilityResponseDto } from '../dto/ReviewEligibilityResponseDto';
 import { DeleteReviewResponseDto } from '../dto/DeleteReviewResponseDto';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { ReviewException } from '../exception/ReviewException';
 import { REVIEW_MESSAGES } from '../reviews.constants';
 

@@ -19,7 +19,7 @@ import { SessionService } from './services/session.service';
 import { AccountVerificationService } from './services/account-verification.service';
 import { PasswordRecoveryService } from './services/password-recovery.service';
 import { AuthenticatedRequest, JwtAuthGuard } from './guards/jwt-auth.guard';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';

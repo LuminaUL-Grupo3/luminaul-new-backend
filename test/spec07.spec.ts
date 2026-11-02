@@ -12,10 +12,10 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 
-import { JwtAuthGuard } from '../src/auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../src/auth/guards/roles.guard';
-import { ROLES_KEY } from '../src/auth/decorators/roles.decorator';
-import { UserRole } from '../src/auth/enums/user-role.enum';
+import { JwtAuthGuard } from '../src/modules/auth-security/guards/jwt-auth.guard';
+import { RolesGuard } from '../src/modules/auth-security/guards/roles.guard';
+import { ROLES_KEY } from '../src/modules/auth-security/decorators/roles.decorator';
+import { UserRole } from '../src/modules/auth-security/enums/user-role.enum';
 import { AdminController } from '../src/modules/administration/controllers/admin.controller';
 import { NotificationsController } from '../src/modules/administration/controllers/notifications.controller';
 import {

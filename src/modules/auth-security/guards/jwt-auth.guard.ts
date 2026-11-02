@@ -5,7 +5,7 @@ import { SessionService } from '../services/session.service';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { AUTH_MESSAGES } from '../auth.constants';
 import { extractToken } from '../token.util';
-import { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
+import { AuthenticatedUser } from '../../../common/decorators/current-user.decorator';
 
 export type AuthenticatedRequest = Request & { user?: AuthenticatedUser; token?: string };
 

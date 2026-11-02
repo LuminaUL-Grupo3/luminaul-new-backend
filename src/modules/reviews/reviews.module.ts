@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ReviewEntity } from './entities/review.entity';
-import { AuthModule } from '../auth/auth.module';
+import { AuthModule } from '../auth-security/auth.module';
 import { ReviewsController } from './controller/ReviewsController';
 import { ReviewsService } from './service/ReviewsService';
 import { ReviewsServiceImpl } from './service/impl/ReviewsServiceImpl';

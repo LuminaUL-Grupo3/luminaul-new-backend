@@ -7,7 +7,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { ModerationLogEntity } from './moderation-log.entity';
-import { UserEntity } from '../../users/entities/user.entity';
+import { UserEntity } from '../../../users/entities/user.entity';
 
 @Entity('appeals')
 export class AppealEntity {
