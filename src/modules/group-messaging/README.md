@@ -13,6 +13,8 @@ Implementación de las tareas 4.1–4.4 de la especificación entregada: entidad
 
 No se incorporan adjuntos, encuestas, mensajes privados, edición, eliminación ni mensajes fijados. Tampoco se modifican autenticación, perfiles, publicaciones, reseñas o administración.
 
+Integración posterior solicitada: se confirmó que main ya contenía SPEC-01, SPEC-02 y SPEC-03 (esta última a través del PR #6). Se incorporó mediante merge el ajuste publicado `415de10` de SPEC-03 que admite `/auth/account` como alias de `/auth/me` al eliminar la cuenta, para compatibilidad con el frontend del equipo. Se conserva su autoría; no se implementa otro sistema de autenticación. El frontend incluye el ajuste correspondiente `859515b` y una ampliación visual de presentación/acceso, documentada en su carpeta `features/welcome/`. Main permanece intacto y no se crea un PR.
+
 Los ajustes de integración fuera de esta carpeta registran `GroupMessagingModule` en `src/app.module.ts`, retiran de allí el módulo antiguo de solicitudes y desregistran el controlador antiguo de `src/groups/groups.module.ts`. Sus proveedores y exportaciones siguen disponibles para publicaciones. Esto evita dos controladores respondiendo las mismas rutas. Por la decisión de entrega sin contenedores, esta rama también retira `Dockerfile` y `.dockerignore` heredados y adapta el requisito de PostgreSQL del README raíz. No cambia main.
 
 ## Decisiones frente al código real de main
