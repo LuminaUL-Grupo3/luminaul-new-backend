@@ -13,7 +13,7 @@ Implementación de las tareas 4.1–4.4 de la especificación entregada: entidad
 
 No se incorporan adjuntos, encuestas, mensajes privados, edición, eliminación ni mensajes fijados. Tampoco se modifican autenticación, perfiles, publicaciones, reseñas o administración.
 
-Integración posterior solicitada: se confirmó que main ya contenía SPEC-01, SPEC-02 y SPEC-03 (esta última a través del PR #6). Se incorporó mediante merge el ajuste publicado `415de10` de SPEC-03 que admite `/auth/account` como alias de `/auth/me` al eliminar la cuenta, para compatibilidad con el frontend del equipo. Se conserva su autoría; no se implementa otro sistema de autenticación. El frontend incluye el ajuste correspondiente `859515b` y una ampliación visual de presentación/acceso, documentada en su carpeta `features/welcome/`. Main permanece intacto y no se crea un PR.
+Integración posterior solicitada: se confirmó que main ya contenía SPEC-01, SPEC-02 y SPEC-03 (esta última a través del PR #6). Se incorporó mediante merge el ajuste publicado `415de10` de SPEC-03 que admite `/auth/account` como alias de `/auth/me` al eliminar la cuenta, para compatibilidad con el frontend del equipo. Se conserva su autoría; no se implementa otro sistema de autenticación. El frontend incluye el ajuste correspondiente `859515b` y una ampliación visual de presentación/acceso, documentada en su carpeta `features/welcome/`. Main permanece intacto; se prepara un PR para revisión.
 
 Actualización durante esta revisión: el equipo fusionó SPEC-05 y el ajuste de SPEC-03 en main `25df6c06882a75a148b0f4921036b8766aeac2d4` (PR #11/#12). Esa versión se incorporó a SPEC-04 mediante merge, conservando la implementación de reseñas del equipo; el frontend integra su main correspondiente `1da721f`. La conservación de `joined_at`/`left_at` se verifica mediante una reseña real posterior a una expulsión, sin modificar reglas de SPEC-05.
 
@@ -172,3 +172,5 @@ Después de adaptar la ejecución directa, se repitió la suite conjunta: los 13
 Después de integrar el main actualizado y la presentación pública, la suite conjunta suma 18 grupos aprobados, incluyendo una reseña real tras una expulsión y sus permisos/borrado lógico. También pasaron las 17 pruebas unitarias de SPEC-05 publicadas por el equipo. Esa comprobación confirma que la membresía histórica conservada por SPEC-04 puede utilizarse desde el módulo de reseñas integrado, sin duplicar sus reglas.
 
 Referencias técnicas: [Gateways de NestJS](https://docs.nestjs.com/websockets/gateways), [garantías de entrega de Socket.IO](https://socket.io/docs/v4/delivery-guarantees/), [middleware de Socket.IO](https://socket.io/docs/v4/middlewares/).
+
+Actualización final: se incorporó main 8181e32 con SPEC-07. Se conservan AdministrationModule y sus notificaciones; GroupMessagingModule utiliza el bus EventEmitter2 del AppModule del equipo, sin registrar un segundo bus. El PR mantiene intacta la lógica de las otras SPEC.
