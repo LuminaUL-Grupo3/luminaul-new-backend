@@ -93,7 +93,7 @@ node dist/main.js
 
 El helper de migración lee la configuración existente, ejecuta `up` dentro de una transacción y es repetible; no registra una segunda infraestructura de migraciones. **No ejecutar `db:init`/`init-db.sql` sobre una base existente:** el SQL de main reinicia tablas. No se ha ejecutado esta migración en la nube del equipo.
 
-El plugin Swagger puede dejar referencias absolutas a archivos TypeScript cuando la ruta de Windows contiene tildes. `scripts/normalize-openapi-paths.cjs`, ejecutado después de `nest build`, convierte exclusivamente los `require` absolutos que apuntan a `src` en rutas relativas al JavaScript correspondiente de `dist`. Utiliza el AST para decodificar Unicode y comprueba que el destino exista. No cambia fuentes, dependencias, paquetes externos ni contratos OpenAPI. Se mantiene el plugin y se verifica el arranque real con `npm run start:prod`, `/health` y `/docs-json`. Para desarrollo local sin ese plugin, el helper `serve` sigue utilizando `ts-node`.
+El build estándar con `nest build` compila limpiamente la aplicación y genera la documentación OpenAPI. Se verifica el arranque real con `npm run start:prod`, `/health` y `/docs`. Para desarrollo local, el helper `serve` sigue utilizando `ts-node`.
 
 Permitir en `WEB_ORIGIN` los orígenes reales del frontend, separados por coma. Para desarrollo, Vite usa `BACKEND_URL` para reenviar HTTP y `/socket.io`. Para otro despliegue, conservar el cliente y la configuración compartidos del equipo.
 

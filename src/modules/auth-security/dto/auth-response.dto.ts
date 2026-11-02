@@ -14,10 +14,10 @@ export class AuthUserDto {
   @ApiProperty({ example: 'Martín Vizcarra' })
   name!: string;
 
-  @ApiProperty({ enum: USER_ROLES, example: UserRole.STUDENT })
+  @ApiProperty({ enum: UserRole, enumName: 'UserRole', example: UserRole.STUDENT })
   role!: UserRole;
 
-  @ApiProperty({ enum: USER_ACCOUNT_STATUSES, example: UserAccountStatus.ACTIVE })
+  @ApiProperty({ enum: UserAccountStatus, enumName: 'UserAccountStatus', example: UserAccountStatus.ACTIVE })
   status!: UserAccountStatus;
 
   @ApiProperty({ example: true })
@@ -44,7 +44,7 @@ export class RegisterResponseDto {
   @ApiProperty({ format: 'uuid', example: 'd290f1ee-6c54-4b01-90e6-d701748f0851' })
   userId!: string;
 
-  @ApiProperty({ enum: USER_ACCOUNT_STATUSES, example: UserAccountStatus.PENDING_VERIFICATION })
+  @ApiProperty({ enum: UserAccountStatus, enumName: 'UserAccountStatus', example: UserAccountStatus.PENDING_VERIFICATION })
   status!: UserAccountStatus;
 }
 

@@ -14,13 +14,15 @@ export const getTypeOrmConfig = (
   }
 
   const isProduction = configService.get<string>('NODE_ENV') === 'production';
+  const rejectUnauthorized =
+    configService.get<string>('DATABASE_SSL_REJECT_UNAUTHORIZED') === 'true';
 
   return {
     type: 'postgres',
     url: databaseUrl,
     autoLoadEntities: true,
     synchronize: false, // Migraciones y esquema gestionados manualmente de forma segura
-    ssl: isProduction ? { rejectUnauthorized: false } : false,
+    ssl: isProduction ? { rejectUnauthorized } : false,
     extra: {
       max: 10,
       idleTimeoutMillis: 30000,

@@ -10,12 +10,14 @@ import {
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiParam,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { PostsService } from './posts.service';
 import { PostCreateDto } from './dto/post-create.dto';
@@ -26,6 +28,7 @@ import { PostFeedResponseDto } from './dto/post-feed-response.dto';
 import { MyPostHistoryResponseDto } from './dto/my-post-history-response.dto';
 import { DeletePostResponseDto } from './dto/delete-post-response.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 @ApiTags('Posts')
 @Controller('posts')
@@ -34,12 +37,18 @@ export class PostsController {
 
   // H.U 1.1: POST /posts (Crear publicación)
   @Post()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Crear una nueva publicación (H.U 1.1 / SPEC-03)' })
   @ApiResponse({
     status: 201,
     description: 'Publicación creada exitosamente',
     type: PostResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Falta token de autenticación o es inválido',
   })
   @ApiResponse({
     status: 422,
@@ -59,10 +68,10 @@ export class PostsController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Lista de publicaciones del feed con soporte de paginación',
+    description: 'Feed de publicaciones activas con paginación',
     type: [PostFeedResponseDto],
   })
-  async listPosts(
+  async getPosts(
     @Query() query: PostFilterQueryDto,
   ): Promise<PostFeedResponseDto[]> {
     const limit = query.limit ?? 15;
@@ -90,6 +99,8 @@ export class PostsController {
 
   // H.U 1.6: GET /posts/me (Historial propio)
   @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Historial de publicaciones del usuario autenticado (H.U 1.6 / SPEC-03)',
   })
@@ -97,6 +108,10 @@ export class PostsController {
     status: 200,
     description: 'Lista de publicaciones del usuario actual',
     type: [MyPostHistoryResponseDto],
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Falta token de autenticación o es inválido',
   })
   async getMyPosts(
     @Query() query: PaginationQueryDto,
@@ -110,6 +125,8 @@ export class PostsController {
 
   // H.U 1.2: PUT /posts/:post_id (Editar publicación)
   @Put(':post_id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Editar una publicación existente (H.U 1.2 / SPEC-03)' })
   @ApiParam({
     name: 'post_id',
@@ -121,6 +138,10 @@ export class PostsController {
     status: 200,
     description: 'Publicación editada exitosamente',
     type: PostResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Falta token de autenticación o es inválido',
   })
   @ApiResponse({
     status: 403,
@@ -140,6 +161,8 @@ export class PostsController {
 
   // H.U 1.4: DELETE /posts/:post_id (Eliminar publicación)
   @Delete(':post_id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Eliminar una publicación existente (soft delete) (H.U 1.4 / SPEC-03)',
   })
@@ -153,6 +176,10 @@ export class PostsController {
     status: 200,
     description: 'Publicación eliminada exitosamente',
     type: DeletePostResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Falta token de autenticación o es inválido',
   })
   @ApiResponse({
     status: 403,
