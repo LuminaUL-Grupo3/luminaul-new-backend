@@ -8,9 +8,9 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
-import { UserEntity } from '../../users/entities/user.entity';
-import { GroupEntity } from '../../groups/entities/group.entity';
-import { CourseEntity } from '../../courses/entities/course.entity';
+import { UserEntity } from '../../../users/entities/user.entity';
+import { GroupEntity } from '../../../groups/entities/group.entity';
+import { CourseEntity } from '../../../courses/entities/course.entity';
 
 @Entity('publications')
 @Index('idx_posts_feed', ['status', 'deletedAt', 'createdAt'])

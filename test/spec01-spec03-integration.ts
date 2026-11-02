@@ -13,24 +13,24 @@ import {
 } from '@nestjs/common';
 
 // Controladores y Servicios de SPEC-01
-import { AuthController } from '../src/auth/auth.controller';
-import { AuthService } from '../src/auth/services/auth.service';
-import { SessionService } from '../src/auth/services/session.service';
-import { AccountVerificationService } from '../src/auth/services/account-verification.service';
-import { PasswordRecoveryService } from '../src/auth/services/password-recovery.service';
-import { JwtAuthGuard, AuthenticatedRequest } from '../src/auth/guards/jwt-auth.guard';
-import { AUTH_COOKIE } from '../src/auth/token.util';
-import { RegisterDto } from '../src/auth/dto/register.dto';
-import { LoginDto } from '../src/auth/dto/login.dto';
-import { VerifyEmailDto } from '../src/auth/dto/verify-email.dto';
-import { ResetPasswordDto } from '../src/auth/dto/reset-password.dto';
-import { UserAccountStatus } from '../src/auth/enums/user-account-status.enum';
+import { AuthController } from '../src/modules/auth-security/auth.controller';
+import { AuthService } from '../src/modules/auth-security/services/auth.service';
+import { SessionService } from '../src/modules/auth-security/services/session.service';
+import { AccountVerificationService } from '../src/modules/auth-security/services/account-verification.service';
+import { PasswordRecoveryService } from '../src/modules/auth-security/services/password-recovery.service';
+import { JwtAuthGuard, AuthenticatedRequest } from '../src/modules/auth-security/guards/jwt-auth.guard';
+import { AUTH_COOKIE } from '../src/modules/auth-security/token.util';
+import { RegisterDto } from '../src/modules/auth-security/dto/register.dto';
+import { LoginDto } from '../src/modules/auth-security/dto/login.dto';
+import { VerifyEmailDto } from '../src/modules/auth-security/dto/verify-email.dto';
+import { ResetPasswordDto } from '../src/modules/auth-security/dto/reset-password.dto';
+import { UserAccountStatus } from '../src/modules/auth-security/enums/user-account-status.enum';
 
 // Controladores y Servicios de SPEC-03
-import { PostsController } from '../src/posts/posts.controller';
-import { PostsService } from '../src/posts/posts.service';
-import { PostCreateDto } from '../src/posts/dto/post-create.dto';
-import { PostUpdateDto } from '../src/posts/dto/post-update.dto';
+import { PostsController } from '../src/modules/posts/posts.controller';
+import { PostsService } from '../src/modules/posts/posts.service';
+import { PostCreateDto } from '../src/modules/posts/dto/post-create.dto';
+import { PostUpdateDto } from '../src/modules/posts/dto/post-update.dto';
 
 interface TestCaseResult {
   id: string;

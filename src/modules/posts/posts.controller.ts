@@ -25,7 +25,7 @@ import { PostResponseDto } from './dto/post-response.dto';
 import { PostFeedResponseDto } from './dto/post-feed-response.dto';
 import { MyPostHistoryResponseDto } from './dto/my-post-history-response.dto';
 import { DeletePostResponseDto } from './dto/delete-post-response.dto';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('Posts')
 @Controller('posts')

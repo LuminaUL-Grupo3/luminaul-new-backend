@@ -7,7 +7,7 @@ import {
   Inject,
 } from '@nestjs/common';
 import { PostsRepository } from './posts.repository';
-import { CoursesRepository } from '../courses/courses.repository';
+import { CoursesRepository } from '../../courses/courses.repository';
 import { PostCreateDto } from './dto/post-create.dto';
 import { PostUpdateDto } from './dto/post-update.dto';
 import { PostResponseDto } from './dto/post-response.dto';

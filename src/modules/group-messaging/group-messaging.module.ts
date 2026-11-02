@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { AuthModule } from "../../auth/auth.module";
+import { AuthModule } from "../auth-security/auth.module";
 import { GroupEntity } from "./entities/group.entity";
 import { GroupMemberEntity } from "./entities/group-member.entity";
 import { GroupMessageEntity } from "./entities/group-message.entity";

@@ -8,8 +8,8 @@ import {
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { Request } from "express";
-import { SessionService } from "../../../auth/services/session.service";
-import { extractToken } from "../../../auth/token.util";
+import { SessionService } from "../../auth-security/services/session.service";
+import { extractToken } from "../../auth-security/token.util";
 import { ChatIdentity } from "../types/messaging.types";
 
 export type GroupRequest = Request & { chatUser: ChatIdentity };
