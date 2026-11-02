@@ -10,7 +10,7 @@ import { UsersModule } from './users/users.module';
 import { GroupsModule } from './groups/groups.module';
 import { CoursesModule } from './courses/courses.module';
 import { PostsModule } from './posts/posts.module';
-import { JoinRequestsModule } from './join-requests/join-requests.module';
+import { GroupMessagingModule } from './modules/group-messaging/group-messaging.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { ModerationModule } from './moderation/moderation.module';
 import { UserProfileModule } from './modules/user-profile/user-profile.module';
@@ -38,7 +38,7 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
     GroupsModule,
     CoursesModule,
     PostsModule,
-    JoinRequestsModule,
+    GroupMessagingModule,
     ReviewsModule,
     ModerationModule,
     AdministrationModule,

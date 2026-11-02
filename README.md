@@ -7,7 +7,7 @@ Backend modular de la plataforma **LuminaUL**, desarrollado con **NestJS 10**, *
 ## 1. Requisitos Previos
 
 * **Node.js:** Versión 20 o superior (recomendado Node.js 22 LTS).
-* **PostgreSQL:** Versión 15 o 16 activo localmente o mediante Docker en el puerto `5432`.
+* **PostgreSQL:** Versión 16 instalado directamente y activo; configura su puerto y credenciales en `DATABASE_URL`.
 * **npm:** Versión 10 o superior.
 
 ---
