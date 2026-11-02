@@ -8,15 +8,15 @@ import {
   OneToMany,
   Index,
 } from 'typeorm';
-import { ProfileEntity } from '../../modules/user-profile/entities/profile.entity';
-import { PostEntity } from '../../modules/posts/entities/post.entity';
+import { ProfileEntity } from '../../user-profile/entities/profile.entity';
+import { PostEntity } from '../../posts/entities/post.entity';
 import { GroupEntity } from '../../groups/entities/group.entity';
 import { GroupMemberEntity } from '../../groups/entities/group-member.entity';
-import { JoinRequestEntity } from '../../join-requests/entities/join-request.entity';
-import { ReviewEntity } from '../../modules/reviews/entities/review.entity';
+import { JoinRequestEntity } from '../../groups/entities/join-request.entity';
+import { ReviewEntity } from '../../reviews/entities/review.entity';
 import { GroupMessageEntity } from '../../groups/entities/group-message.entity';
-import { ReportEntity } from '../../modules/moderation/entities/report.entity';
-import { AppealEntity } from '../../modules/moderation/entities/appeal.entity';
+import { ReportEntity } from '../../moderation/entities/report.entity';
+import { AppealEntity } from '../../moderation/entities/appeal.entity';
 
 @Entity('users')
 export class UserEntity {

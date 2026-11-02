@@ -7,9 +7,9 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
-import { UserEntity } from '../../../users/entities/user.entity';
+import { UserEntity } from '../../users/entities/user.entity';
 import { PostEntity } from '../../posts/entities/post.entity';
-import { GroupMessageEntity } from '../../../groups/entities/group-message.entity';
+import { GroupMessageEntity } from '../../groups/entities/group-message.entity';
 import { ReviewEntity } from '../../reviews/entities/review.entity';
 
 @Entity('reports')

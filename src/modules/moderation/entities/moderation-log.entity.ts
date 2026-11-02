@@ -8,7 +8,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { PostEntity } from '../../posts/entities/post.entity';
-import { GroupMessageEntity } from '../../../groups/entities/group-message.entity';
+import { GroupMessageEntity } from '../../groups/entities/group-message.entity';
 import { ReviewEntity } from '../../reviews/entities/review.entity';
 import { AppealEntity } from './appeal.entity';
 

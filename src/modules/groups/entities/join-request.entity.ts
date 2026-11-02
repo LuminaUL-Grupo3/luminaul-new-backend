@@ -7,7 +7,7 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
-import { GroupEntity } from '../../groups/entities/group.entity';
+import { GroupEntity } from './group.entity';
 import { UserEntity } from '../../users/entities/user.entity';
 
 export type JoinRequestStatus = 'pending' | 'accepted' | 'rejected';

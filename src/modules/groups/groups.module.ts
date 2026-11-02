@@ -5,7 +5,7 @@ import { GroupMemberEntity } from './entities/group-member.entity';
 import { GroupMessageEntity } from './entities/group-message.entity';
 import { GroupsRepository } from './groups.repository';
 import { GroupsService } from './groups.service';
-import { JoinRequestEntity } from '../join-requests/entities/join-request.entity';
+import { JoinRequestEntity } from './entities/join-request.entity';
 
 @Module({
   imports: [
