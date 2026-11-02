@@ -59,7 +59,7 @@ npm run build
 npm run start:prod
 ```
 
-El build conserva el plugin Swagger y normaliza sus referencias locales a rutas portables de `dist`. Esto evita que las rutas de Windows con tildes impidan iniciar la aplicación compilada. No se requiere Docker.
+El build compila directamente con NestJS y genera la documentación OpenAPI para producción sin requerir Docker ni scripts adicionales.
 
 ### Puntos de acceso:
 * **API REST:** `http://localhost:8000`
