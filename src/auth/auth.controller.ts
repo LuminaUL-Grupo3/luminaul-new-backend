@@ -154,7 +154,7 @@ export class AuthController {
     return { message: AUTH_MESSAGES.LOGGED_OUT };
   }
 
-  @Delete('me')
+  @Delete(['me', 'account'])
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
