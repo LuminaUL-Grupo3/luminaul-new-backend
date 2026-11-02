@@ -13,11 +13,11 @@ Implementación de las tareas 4.1–4.4 de la especificación entregada: entidad
 
 No se incorporan adjuntos, encuestas, mensajes privados, edición, eliminación ni mensajes fijados. Tampoco se modifican autenticación, perfiles, publicaciones, reseñas o administración.
 
-Los únicos ajustes fuera de esta carpeta son los autorizados de integración: registrar `GroupMessagingModule` en `src/app.module.ts`, retirar de allí el módulo antiguo de solicitudes y desregistrar el controlador antiguo de `src/groups/groups.module.ts`. Sus proveedores y exportaciones siguen disponibles para publicaciones. Esto evita dos controladores respondiendo las mismas rutas.
+Los ajustes de integración fuera de esta carpeta registran `GroupMessagingModule` en `src/app.module.ts`, retiran de allí el módulo antiguo de solicitudes y desregistran el controlador antiguo de `src/groups/groups.module.ts`. Sus proveedores y exportaciones siguen disponibles para publicaciones. Esto evita dos controladores respondiendo las mismas rutas. Por la decisión de entrega sin contenedores, esta rama también retira `Dockerfile` y `.dockerignore` heredados y adapta el requisito de PostgreSQL del README raíz. No cambia main.
 
 ## Decisiones frente al código real de main
 
-Se conserva el stack y las dependencias existentes; no se modifica `package.json`, el lock, `.env`, Docker ni los archivos de configuración compartida. Main usa NestJS 12/TypeScript 6 en backend y React 19/TypeScript 5.9 en frontend. No se degrada el proyecto a las versiones antiguas del protocolo.
+Se conserva el stack y las dependencias existentes; no se modifica `package.json`, el lock ni `.env`. La ejecución usa Node y una conexión PostgreSQL directa, sin infraestructura de contenedores. Main usa NestJS 12/TypeScript 6 en backend y React 19/TypeScript 5.9 en frontend. No se degrada el proyecto a las versiones antiguas del protocolo.
 
 El contrato específico y el código actual usan `student`/`admin` para plataforma y `leader`/`member` para grupos, en minúsculas. El rol `admin` no se utiliza como rol canónico de grupo. Se mantiene `admin_id` únicamente como columna heredada que main sincroniza con `leader_id`.
 
@@ -40,21 +40,21 @@ Todas las entradas usan clases con `class-validator`/`class-transformer`; no se 
 
 ## Preparación local aislada
 
-Requisitos: Node compatible con main, Docker para la base de demostración o un PostgreSQL local equivalente, y las dos ramas descargadas. Estos comandos se ejecutan desde la raíz del backend en PowerShell.
+Requisitos: Node compatible con main, PostgreSQL 16 instalado directamente y las dos ramas descargadas. Puede obtenerse PostgreSQL desde su [sitio oficial para Windows](https://www.postgresql.org/download/windows/). Debe estar iniciado; el usuario de preparación necesita permiso para crear las dos bases locales de demostración/pruebas. Estos comandos se ejecutan desde la raíz del backend en PowerShell.
 
 El lock publicado en main no permite `npm ci`: faltan entradas transitivas de `@istanbuljs/load-nyc-config` y `es-object-atoms`. Hasta que el integrador lo corrija, la instalación local comprobada sin cambiarlo es:
 
 ```powershell
 npm install --package-lock=false --ignore-scripts
 node node_modules/typescript/bin/tsc -p tsconfig.build.json --incremental false
-docker run --name luminaul-spec04-pg -e POSTGRES_PASSWORD=spec04_local_only -p 127.0.0.1:55436:5432 -d postgres:16-alpine
+$env:SPEC04_DATABASE_URL='postgresql://postgres:TU_CLAVE_POSTGRES@127.0.0.1:5432/luminaul_spec04_demo'
 node src/modules/group-messaging/tools/local.cjs prepare
 node src/modules/group-messaging/tools/local.cjs serve
 ```
 
-Si el contenedor ya existe, usar `docker start luminaul-spec04-pg` en lugar de crearlo otra vez. No se necesita modificar los Dockerfiles compartidos. Backend de demostración: `http://127.0.0.1:8004`; documentación HTTP: `/docs`.
+Sustituir `TU_CLAVE_POSTGRES` y el puerto por los de tu instalación; codificar los caracteres especiales de la contraseña como parte de la URL. Las credenciales de PostgreSQL son distintas de las cuentas de la aplicación. Backend de demostración: `http://127.0.0.1:8004`; documentación HTTP: `/docs`.
 
-`local.cjs` solo admite las bases `luminaul_spec04_demo` y `luminaul_spec04_test` en localhost:55436. Ejecuta el SQL inicial únicamente en una base vacía propia. Nunca apunta a Neon ni reinicia la base del equipo. La contraseña local anterior no es una credencial de producción.
+`local.cjs` exige `SPEC04_DATABASE_URL` para la demostración y `SPEC04_TEST_DATABASE_URL` para las pruebas. Solo admite las bases `luminaul_spec04_demo` y `luminaul_spec04_test`, respectivamente, en localhost, con el puerto configurable. Ejecuta el SQL inicial únicamente en una base vacía propia. Nunca apunta a Neon ni reinicia la base del equipo. No incorpora contraseñas predeterminadas para el servidor PostgreSQL.
 
 En otra terminal, desde la raíz del frontend:
 
@@ -155,11 +155,14 @@ node --experimental-vm-modules node_modules/jest/bin/jest.js src/modules/group-m
 Desde frontend, con las carpetas de ambos repos como hermanas `frontend` y `backend` (o `SPEC04_BACKEND_DIR` apuntando al backend):
 
 ```powershell
+$env:SPEC04_TEST_DATABASE_URL='postgresql://postgres:TU_CLAVE_POSTGRES@127.0.0.1:5432/luminaul_spec04_test'
 node src/features/chat/tests/run-integration.mjs
 ```
 
-La suite arranca servidores reales en 8005/5176, usa exclusivamente `luminaul_spec04_test` local, inicia tres usuarios con SPEC-01 y abre Edge headless mediante Playwright ya incluido en main. `BROWSER_CHANNEL=chrome` permite otro navegador instalado. Puede separarse con `--network-only` o `--browser-only`.
+La suite arranca servidores reales en 8005/5176, usa exclusivamente `luminaul_spec04_test` en tu PostgreSQL local, inicia tres usuarios con SPEC-01 y abre Edge headless mediante Playwright ya incluido en main. No instala ni inicia el motor de base de datos: PostgreSQL debe estar activo. `BROWSER_CHANNEL=chrome` permite otro navegador instalado. Puede separarse con `--network-only` o `--browser-only`.
 
 Resultado del 1 de noviembre: 13 grupos de comprobaciones de REST/Socket.IO/navegador aprobados, 3 pruebas unitarias de presencia aprobadas y las 22 pruebas existentes `test/spec01-spec03.spec.ts` aprobadas sobre la base local de test. Se verificaron permisos, último cupo concurrente, reintentos concurrentes, fallo real de PostgreSQL sin mensajes fantasma, cursor estable, moderación de citas, expulsión, token revocado, reconexión, múltiples pestañas y móvil sin desbordamiento. Las capturas, logs y `results.json` se escriben en `frontend/analysis/spec04`, excluidos del commit. No constituyen pruebas de carga ni validación de un despliegue en la nube.
+
+Después de adaptar la ejecución directa, se repitió la suite conjunta: los 13 grupos de comprobaciones pasaron con PostgreSQL 16.15 nativo en Windows. El backend de demostración también quedó comprobado con la instancia anterior de contenedores detenida. Los binarios, datos y credenciales locales no se incluyen en Git.
 
 Referencias técnicas: [Gateways de NestJS](https://docs.nestjs.com/websockets/gateways), [garantías de entrega de Socket.IO](https://socket.io/docs/v4/delivery-guarantees/), [middleware de Socket.IO](https://socket.io/docs/v4/middlewares/).

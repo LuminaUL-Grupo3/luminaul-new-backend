@@ -9,16 +9,21 @@ const { hash } = require(resolve(root, "node_modules/bcryptjs"));
 /** Solo prepara la base exclusiva de SPEC-04; jamás acepta Neon ni la base anterior del proyecto. */
 async function prepare(test = false) {
   const name = test ? "luminaul_spec04_test" : "luminaul_spec04_demo";
-  const url = new URL(
-    process.env.SPEC04_DATABASE_URL ||
-      `postgresql://postgres:spec04_local_only@127.0.0.1:55436/${name}`,
-  );
+  const variable = test ? "SPEC04_TEST_DATABASE_URL" : "SPEC04_DATABASE_URL";
+  const configured = process.env[variable];
+  if (!configured)
+    throw new Error(
+      `Configura ${variable} con tu PostgreSQL local y la base ${name}.`,
+    );
+  const url = new URL(configured);
   if (
+    !["postgres:", "postgresql:"].includes(url.protocol) ||
     !["127.0.0.1", "localhost"].includes(url.hostname) ||
-    url.port !== "55436" ||
     url.pathname !== `/${name}`
   )
-    throw new Error("Se requiere la base local aislada de SPEC-04 en 55436.");
+    throw new Error(
+      `${variable} debe apuntar a localhost y exclusivamente a ${name}.`,
+    );
   const adminUrl = new URL(url);
   adminUrl.pathname = "/postgres";
   const admin = new DataSource({ type: "postgres", url: adminUrl.href });

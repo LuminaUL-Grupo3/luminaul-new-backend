@@ -12,7 +12,7 @@ async function bootstrapTest(): Promise<void> {
   const target = new URL(process.env.DATABASE_URL || "");
   if (
     process.env.NODE_ENV !== "test" ||
-    target.port !== "55436" ||
+    !["postgres:", "postgresql:"].includes(target.protocol) ||
     !["127.0.0.1", "localhost"].includes(target.hostname) ||
     target.pathname !== "/luminaul_spec04_test"
   )
