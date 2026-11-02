@@ -1,0 +1,108 @@
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ContentModerationService } from './content-moderation.service';
+import { ModerationRepository } from '../repositories/moderation.repository';
+import { TargetContentType } from '../enums/moderation.enums';
+import { CHAT_MESSAGE_HIDDEN_EVENT, NOTIFICATION_SEND_EVENT } from '../moderation.constants';
+
+/** SPEC-06 / HU 6.2: el listener oculta, registra y avisa; el repositorio va simulado. */
+describe('SPEC-06 ContentModerationService', () => {
+  const AUTHOR = 'd290f1ee-6c54-4b01-90e6-d701748f0851';
+  const GROUP = '7b134111-9a22-48df-9fa0-cd8213aa0981';
+  const CONTENT = '18938a12-6f2b-4d43-9801-bca908234fed';
+
+  let repository: jest.Mocked<
+    Pick<ModerationRepository, 'listBannedWords' | 'findContent' | 'hideContent' | 'saveLog'>
+  >;
+  let events: { emit: jest.Mock };
+  let service: ContentModerationService;
+
+  beforeEach(() => {
+    repository = {
+      listBannedWords: jest.fn().mockResolvedValue(['estafa', 'spam']),
+      findContent: jest.fn().mockResolvedValue({ authorId: AUTHOR, groupId: GROUP, status: 'published' }),
+      hideContent: jest.fn().mockResolvedValue(true),
+      saveLog: jest.fn().mockResolvedValue({ id: 'log-1' }),
+    };
+    events = { emit: jest.fn() };
+    service = new ContentModerationService(
+      repository as unknown as ModerationRepository,
+      events as unknown as EventEmitter2,
+    );
+  });
+
+  it('no toca la base si el texto es limpio', async () => {
+    const outcome = await service.moderate({
+      contentType: TargetContentType.PUBLICATION,
+      contentId: CONTENT,
+      authorId: AUTHOR,
+      text: 'Repaso de cálculo',
+    });
+    expect(outcome).toEqual({ status: 'clean' });
+    expect(repository.hideContent).not.toHaveBeenCalled();
+    expect(events.emit).not.toHaveBeenCalled();
+  });
+
+  it('oculta, registra y notifica al autor una publicación infractora', async () => {
+    const outcome = await service.moderate({
+      contentType: TargetContentType.PUBLICATION,
+      contentId: CONTENT,
+      authorId: AUTHOR,
+      text: 'Es una estafa',
+    });
+    expect(outcome).toEqual({ status: 'hidden', moderationLogId: 'log-1', detectedWords: ['estafa'] });
+    expect(repository.saveLog).toHaveBeenCalledWith('publication', CONTENT, AUTHOR, ['estafa']);
+    expect(events.emit).toHaveBeenCalledWith(
+      NOTIFICATION_SEND_EVENT,
+      expect.objectContaining({ userId: AUTHOR, type: 'MODERATION' }),
+    );
+    expect(events.emit).not.toHaveBeenCalledWith(CHAT_MESSAGE_HIDDEN_EVENT, expect.anything());
+  });
+
+  it('avisa al chat cuando el contenido oculto es un mensaje', async () => {
+    await service.moderate({
+      contentType: TargetContentType.MESSAGE,
+      contentId: CONTENT,
+      authorId: AUTHOR,
+      text: 'spam spam',
+      groupId: GROUP,
+    });
+    expect(events.emit).toHaveBeenCalledWith(CHAT_MESSAGE_HIDDEN_EVENT, {
+      groupId: GROUP,
+      messageId: CONTENT,
+    });
+  });
+
+  it('usa el autor guardado en la base y no el que dice el evento', async () => {
+    await service.moderate({
+      contentType: TargetContentType.REVIEW,
+      contentId: CONTENT,
+      authorId: 'otro-usuario',
+      text: 'estafa',
+    });
+    expect(repository.saveLog).toHaveBeenCalledWith('review', CONTENT, AUTHOR, ['estafa']);
+  });
+
+  it('no registra nada si el contenido ya no estaba publicado', async () => {
+    repository.hideContent.mockResolvedValue(false);
+    const outcome = await service.moderate({
+      contentType: TargetContentType.PUBLICATION,
+      contentId: CONTENT,
+      authorId: AUTHOR,
+      text: 'estafa',
+    });
+    expect(outcome.status).toBe('skipped');
+    expect(repository.saveLog).not.toHaveBeenCalled();
+    expect(events.emit).not.toHaveBeenCalled();
+  });
+
+  it('ignora tipos de contenido desconocidos', async () => {
+    const outcome = await service.moderate({
+      contentType: 'foto' as TargetContentType,
+      contentId: CONTENT,
+      authorId: AUTHOR,
+      text: 'estafa',
+    });
+    expect(outcome.status).toBe('skipped');
+    expect(repository.listBannedWords).not.toHaveBeenCalled();
+  });
+});
