@@ -38,6 +38,8 @@ async function bootstrap(): Promise<void> {
     .addTag('Posts', 'Módulo de publicaciones (feed, historial, creación, edición, eliminación)')
     .addTag('Groups', 'Módulo de grupos de estudio (H.U 2.1: detalle del grupo)')
     .addTag('Join Requests', 'Módulo de solicitudes de unión a grupos de estudio (H.U 2.1 y 2.2)')
+    .addTag('Administration', 'Panel de administración: reportes, apelaciones y cuentas (SPEC-07)')
+    .addTag('Notifications', 'Centro de notificaciones del alumno (SPEC-07)')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);

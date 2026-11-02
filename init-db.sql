@@ -524,7 +524,7 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO moderation_logs (id, content_type, content_id, author_id, detected_words, result, moderated_at)
 VALUES (
-  'e6a21033-88bb-4900-c2d3-450912390abc',
+  'e6a21033-88bb-4900-a2d3-450912390abc',
   'publication',
   '18938a12-6f2b-4d43-9801-bca908234fed',
   'd290f1ee-6c54-4b01-90e6-d701748f0851',
@@ -536,8 +536,8 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO appeals (id, moderation_log_id, user_id, justification, status, created_at)
 VALUES (
-  'f7b32144-99cc-4011-d3e4-561023401bcd',
-  'e6a21033-88bb-4900-c2d3-450912390abc',
+  'f7b32144-99cc-4011-b3e4-561023401bcd',
+  'e6a21033-88bb-4900-a2d3-450912390abc',
   'd290f1ee-6c54-4b01-90e6-d701748f0851',
   'La publicación fue realizada para coordinar el grupo de estudio y no infringe normas comunitarias.',
   'pending',

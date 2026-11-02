@@ -14,7 +14,6 @@ import { GroupEntity } from '../../groups/entities/group.entity';
 import { GroupMemberEntity } from '../../groups/entities/group-member.entity';
 import { JoinRequestEntity } from '../../join-requests/entities/join-request.entity';
 import { ReviewEntity } from '../../reviews/entities/review.entity';
-import { NotificationEntity } from '../../notifications/entities/notification.entity';
 import { GroupMessageEntity } from '../../groups/entities/group-message.entity';
 import { ReportEntity } from '../../moderation/entities/report.entity';
 import { AppealEntity } from '../../moderation/entities/appeal.entity';
@@ -85,9 +84,6 @@ export class UserEntity {
 
   @OneToMany(() => ReviewEntity, (rev) => rev.reviewedUser)
   reviewsReceived?: ReviewEntity[];
-
-  @OneToMany(() => NotificationEntity, (notif) => notif.user)
-  notifications?: NotificationEntity[];
 
   @OneToMany(() => GroupMessageEntity, (msg) => msg.sender)
   sentMessages?: GroupMessageEntity[];

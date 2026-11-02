@@ -1,6 +1,5 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { EventEmitterModule } from "@nestjs/event-emitter";
 import { AuthModule } from "../../auth/auth.module";
 import { GroupEntity } from "./entities/group.entity";
 import { GroupMemberEntity } from "./entities/group-member.entity";
@@ -21,7 +20,6 @@ import { RoomPresence } from "./gateways/room-presence";
 @Module({
   imports: [
     AuthModule,
-    EventEmitterModule.forRoot(),
     TypeOrmModule.forFeature([
       GroupEntity,
       GroupMemberEntity,

@@ -1,6 +1,7 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { envValidationSchema } from './config/env.validation';
 import { getTypeOrmConfig } from './config/database.config';
 import { AuthModule } from './auth/auth.module';
@@ -10,10 +11,10 @@ import { GroupsModule } from './groups/groups.module';
 import { CoursesModule } from './courses/courses.module';
 import { PostsModule } from './posts/posts.module';
 import { GroupMessagingModule } from './modules/group-messaging/group-messaging.module';
-import { NotificationsModule } from './notifications/notifications.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { ModerationModule } from './moderation/moderation.module';
 import { UserProfileModule } from './modules/user-profile/user-profile.module';
+import { AdministrationModule } from './modules/administration/administration.module';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 
 @Module({
@@ -28,6 +29,8 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
       inject: [ConfigService],
       useFactory: getTypeOrmConfig,
     }),
+    // Bus de eventos en memoria: content.created (moderación) y notification.send (SPEC-07)
+    EventEmitterModule.forRoot(),
     HealthModule,
     AuthModule,
     UsersModule,
@@ -36,9 +39,9 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
     CoursesModule,
     PostsModule,
     GroupMessagingModule,
-    NotificationsModule,
     ReviewsModule,
     ModerationModule,
+    AdministrationModule,
   ],
 })
 export class AppModule implements NestModule {
