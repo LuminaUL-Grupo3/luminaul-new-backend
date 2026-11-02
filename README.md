@@ -1,6 +1,6 @@
 # LuminaUL Backend (NestJS + TypeScript)
 
-Backend modular de la plataforma **LuminaUL**, desarrollado con **NestJS 10**, **TypeScript 5**, **TypeORM**, **PostgreSQL 16**, arquitectura limpia y documentación interactiva mediante **OpenAPI (Swagger)**.
+Backend modular de la plataforma **LuminaUL**, desarrollado con **NestJS 12**, **TypeScript 6**, **TypeORM**, **PostgreSQL 16** y documentación interactiva mediante **OpenAPI (Swagger)**.
 
 ---
 
@@ -16,7 +16,7 @@ Backend modular de la plataforma **LuminaUL**, desarrollado con **NestJS 10**, *
 
 ### 2.1 Instalar dependencias
 ```bash
-npm install
+npm ci
 ```
 
 ### 2.2 Variables de Entorno
@@ -42,6 +42,8 @@ npm run db:init
 ```
 *(Alternativamente, puedes ejecutar directamente el script `init-db.sql` en psql, DBeaver o pgAdmin)*.
 
+`db:init` reinicia tablas: usarlo únicamente para una base nueva y vacía. En una base existente del equipo, aplicar solo las migraciones del módulo correspondiente; para SPEC-04, consultar `src/modules/group-messaging/README.md`.
+
 ---
 
 ## 3. Ejecución del Servidor
@@ -56,6 +58,8 @@ npm run start:dev
 npm run build
 npm run start:prod
 ```
+
+El build conserva el plugin Swagger y normaliza sus referencias locales a rutas portables de `dist`. Esto evita que las rutas de Windows con tildes impidan iniciar la aplicación compilada. No se requiere Docker.
 
 ### Puntos de acceso:
 * **API REST:** `http://localhost:8000`
