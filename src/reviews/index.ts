@@ -1,3 +1,14 @@
 export * from './reviews.module';
+export * from './reviews.constants';
 export * from './entities/review.entity';
-
+export * from './controller/ReviewsController';
+export * from './service/ReviewsService';
+export * from './dao/Dao';
+export * from './dao/ReviewsDAO';
+export * from './exception/ReviewException';
+export * from './dto/CreateReviewDto';
+export * from './dto/UpdateReviewDto';
+export * from './dto/ReviewResponseDto';
+export * from './dto/UserReviewsSummaryDto';
+export * from './dto/ReviewEligibilityResponseDto';
+export * from './dto/DeleteReviewResponseDto';
