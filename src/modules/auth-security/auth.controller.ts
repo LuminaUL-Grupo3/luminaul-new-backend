@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   Post,
+  Put,
   Req,
   Res,
   UnauthorizedException,
@@ -26,6 +27,7 @@ import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendCodeDto } from './dto/resend-code.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import {
   AuthUserDto,
   LoginResponseDto,
@@ -129,6 +131,22 @@ export class AuthController {
   @ApiResponse({ status: 400, description: AUTH_MESSAGES.INVALID_CODE })
   resetPassword(@Body() dto: ResetPasswordDto): Promise<MessageResponseDto> {
     return this.passwordRecoveryService.resetPassword(dto);
+  }
+
+  @Put('password')
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cambiar la contraseña del usuario autenticado (Settings)' })
+  @ApiResponse({ status: 200, type: MessageResponseDto })
+  @ApiResponse({ status: 400, description: 'Contraseña actual incorrecta o formato inválido' })
+  changePassword(
+    @CurrentUser() userId: string,
+    @Body() dto: ChangePasswordDto,
+  ): Promise<MessageResponseDto> {
+    const currentPass = dto.current_password || dto.currentPassword || '';
+    const newPass = dto.password || dto.newPassword || '';
+    return this.passwordRecoveryService.changePassword(userId, currentPass, newPass);
   }
 
   @Post('logout')
