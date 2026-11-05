@@ -60,7 +60,7 @@ export class PostEntity {
   @JoinColumn({ name: 'user_id' })
   profile?: ProfileEntity;
 
-  @ManyToOne(() => CourseEntity, (course) => course.posts)
+  @ManyToOne(() => CourseEntity)
   @JoinColumn({ name: 'course_id' })
   course?: CourseEntity;
 }

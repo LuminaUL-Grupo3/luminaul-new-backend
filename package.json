@@ -13,9 +13,12 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "db:init": "ts-node scripts/init-db.ts",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
-    "test:integration": "node --experimental-vm-modules node_modules/jest/bin/jest.js test/spec01-spec03.spec.ts --runInBand",
-    "test:e2e": "ts-node test/e2e-integration-flow.ts"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js \"src/.*\\.spec\\.ts$\" --runInBand",
+    "test:unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js \"src/.*\\.spec\\.ts$\" --runInBand",
+    "test:e2e": "node --experimental-vm-modules node_modules/jest/bin/jest.js test/e2e-integration.spec.ts --runInBand",
+    "test:ws": "node --experimental-vm-modules node_modules/jest/bin/jest.js test/websockets-chat.spec.ts --runInBand",
+    "test:security": "node --experimental-vm-modules node_modules/jest/bin/jest.js test/security-owasp.spec.ts --runInBand",
+    "test:all": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand"
   },
   "dependencies": {
     "@nestjs/common": "^12.3.2",

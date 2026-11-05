@@ -1,4 +1,8 @@
 import 'reflect-metadata';
+process.env.JWT_SECRET =
+  process.env.JWT_SECRET || 'luminaul-e2e-integration-secret-key-2026-secure';
+process.env.WEB_ORIGIN = 'http://localhost:5173,http://127.0.0.1:5173';
+
 import { NestFactory } from '@nestjs/core';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { DataSource } from 'typeorm';
