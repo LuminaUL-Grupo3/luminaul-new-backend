@@ -5,11 +5,6 @@ import { BannedWordEntity } from './entities/banned-word.entity';
 import { ContentModerationLogEntity } from './entities/content-moderation-log.entity';
 import { ContentReportEntity } from './entities/content-report.entity';
 import { ContentAppealEntity } from './entities/content-appeal.entity';
-// Entidades heredadas de Soft I: siguen registradas porque UserEntity (src/modules/users)
-// todavía las referencia en sus relaciones. SPEC-06 no las usa.
-import { ReportEntity } from './entities/report.entity';
-import { ModerationLogEntity } from './entities/moderation-log.entity';
-import { AppealEntity } from './entities/appeal.entity';
 import { ModerationRepository } from './repositories/moderation.repository';
 import { ModerationService } from './services/moderation.service';
 import { ContentModerationService } from './services/content-moderation.service';
@@ -25,9 +20,6 @@ import { ModerationController } from './controllers/moderation.controller';
       ContentModerationLogEntity,
       ContentReportEntity,
       ContentAppealEntity,
-      ReportEntity,
-      ModerationLogEntity,
-      AppealEntity,
     ]),
     AuthModule,
   ],

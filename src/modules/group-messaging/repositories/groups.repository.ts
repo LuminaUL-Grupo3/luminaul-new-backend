@@ -4,7 +4,8 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { DataSource, EntityManager } from "typeorm";
+import { DataSource, EntityManager, IsNull } from "typeorm";
+import { GroupEntity } from "../entities/group.entity";
 import { CreateGroupDto, GroupFilterDto } from "../dto/group.dto";
 import {
   GroupDetailDto,
@@ -30,7 +31,7 @@ interface RequestRow extends Omit<JoinRequestDto, "createdAt"> {
   createdAt: Date;
 }
 
-/** DAO del dominio de grupos: las consultas a cuentas/perfiles usan SQL, nunca entidades externas. */
+/** Repositorio del dominio de grupos: las consultas a cuentas/perfiles usan SQL, nunca entidades externas. */
 @Injectable()
 export class GroupsRepository {
   constructor(private readonly db: DataSource) {}
@@ -218,6 +219,64 @@ export class GroupsRepository {
     );
     if (rows[0].count >= group.maxCapacity)
       throw new ConflictException("El grupo alcanzó su capacidad máxima.");
+  }
+
+  /** Busca un grupo activo por id para validar su existencia en otros dominios. */
+  async findActiveById(id: string): Promise<GroupEntity | null> {
+    const rows = await this.db.getRepository(GroupEntity).findOne({
+      where: { id, deletedAt: IsNull() },
+    });
+    return rows;
+  }
+
+  /**
+   * Crea un grupo vinculando al usuario como líder dentro de una transacción.
+   */
+  async createWithAdmin(
+    input: {
+      name: string;
+      description?: string | null;
+      benefits?: string | null;
+      requirements?: string | null;
+      courseCode?: string;
+      meetingMode?: string;
+      meetingShift?: string;
+      maxCapacity?: number;
+    },
+    adminId: string,
+    externalManager?: EntityManager,
+  ): Promise<GroupEntity> {
+    const execute = async (manager: EntityManager) => {
+      const inserted: { id: string }[] = await manager.query(
+        `INSERT INTO groups(name, description, benefits, requirements, course_code, leader_id, admin_id, meeting_mode, meeting_shift, max_capacity)
+         VALUES($1, $2, $3, $4, $5, $6, $6, $7, $8, $9)
+         RETURNING id`,
+        [
+          input.name,
+          input.description || null,
+          input.benefits || null,
+          input.requirements || null,
+          input.courseCode || 'CS001',
+          adminId,
+          input.meetingMode || 'virtual',
+          input.meetingShift || 'manana',
+          input.maxCapacity ?? 6,
+        ],
+      );
+      const groupId = inserted[0].id;
+      await manager.query(
+        `INSERT INTO group_members(group_id, user_id, role, status)
+         VALUES($1, $2, 'leader', 'active')`,
+        [groupId, adminId],
+      );
+      const group = await manager.getRepository(GroupEntity).findOneOrFail({ where: { id: groupId } });
+      return group;
+    };
+
+    if (externalManager) {
+      return execute(externalManager);
+    }
+    return this.db.transaction(execute);
   }
 
   /** Proyecta solicitantes solo para el líder; los correos nunca aparecen en el directorio. */

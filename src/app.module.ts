@@ -8,8 +8,6 @@ import { validateEnv } from './config/env.validation';
 import { getTypeOrmConfig } from './config/database.config';
 import { AuthModule } from './modules/auth-security/auth.module';
 import { HealthModule } from './health/health.module';
-import { UsersModule } from './modules/users/users.module';
-import { GroupsModule } from './modules/groups/groups.module';
 import { CoursesModule } from './modules/courses/courses.module';
 import { PostsModule } from './modules/posts/posts.module';
 import { GroupMessagingModule } from './modules/group-messaging/group-messaging.module';
@@ -42,9 +40,7 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
     EventEmitterModule.forRoot(),
     HealthModule,
     AuthModule,
-    UsersModule,
     UserProfileModule,
-    GroupsModule,
     CoursesModule,
     PostsModule,
     GroupMessagingModule,

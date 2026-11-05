@@ -12,7 +12,6 @@ DROP TABLE IF EXISTS audit_logs CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS appeals CASCADE;
 DROP TABLE IF EXISTS moderation_logs CASCADE;
-DROP TABLE IF EXISTS moderation_log CASCADE;
 DROP TABLE IF EXISTS reports CASCADE;
 DROP TABLE IF EXISTS banned_words CASCADE;
 DROP TABLE IF EXISTS reviews CASCADE;
@@ -25,8 +24,6 @@ DROP TABLE IF EXISTS courses CASCADE;
 DROP TABLE IF EXISTS availabilities CASCADE;
 DROP TABLE IF EXISTS profile_interests CASCADE;
 DROP TABLE IF EXISTS profile_skills CASCADE;
-DROP TABLE IF EXISTS interests CASCADE;
-DROP TABLE IF EXISTS skills CASCADE;
 DROP TABLE IF EXISTS profiles CASCADE;
 DROP TABLE IF EXISTS revoked_tokens CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
@@ -381,9 +378,6 @@ ON CONFLICT (word) DO NOTHING;
 -- E. Catálogo de Cursos de la Universidad de Lima (57 cursos)
 INSERT INTO courses (id, name, cycle)
 VALUES 
-  ('8c537243-ea7d-411a-8bb7-fce5230bfdf2', 'Ingeniería de Software I', 5),
-  ('00000000-0000-0000-0000-000000000030', 'REDES DE COMPUTADORAS', 6),
-  (gen_random_uuid(), 'Cálculo I', 1),
   (gen_random_uuid(), 'ÉTICA CIUDADANA', 1),
   (gen_random_uuid(), 'INTRODUCCIÓN A LA INGENIERÍA', 1),
   (gen_random_uuid(), 'LENGUAJE Y COMUNICACIÓN I', 1),
@@ -393,13 +387,10 @@ VALUES
   (gen_random_uuid(), 'ALGEBRA LINEAL', 2),
   (gen_random_uuid(), 'CÁLCULO I', 2),
   (gen_random_uuid(), 'FILOSOFÍA APLICADA', 2),
-  (gen_random_uuid(), 'Física I', 2),
   (gen_random_uuid(), 'FUNDAMENTOS DE ECONOMÍA', 2),
   (gen_random_uuid(), 'INTRODUCCIÓN AL COMERCIO INTERNACIONAL', 2),
   (gen_random_uuid(), 'LENGUAJE Y COMUNICACIÓN II', 2),
-  (gen_random_uuid(), 'Programación Orientada a Objetos', 2),
   (gen_random_uuid(), 'CÁLCULO II', 3),
-  (gen_random_uuid(), 'Estructuras de Datos', 3),
   (gen_random_uuid(), 'ESTRUCTURAS DISCRETAS DE COMPUTACIÓN', 3),
   (gen_random_uuid(), 'FÍSICA PARA SISTEMAS', 3),
   (gen_random_uuid(), 'INTELIGENCIA ARTIFICIAL APLICADA', 3),
@@ -421,6 +412,7 @@ VALUES
   (gen_random_uuid(), 'GESTIÓN FINANCIERA', 6),
   (gen_random_uuid(), 'INGENIERÍA DE PROCESOS DE NEGOCIO', 6),
   (gen_random_uuid(), 'PROGRAMACIÓN WEB', 6),
+  (gen_random_uuid(), 'REDES DE COMPUTADORAS', 6),
   (gen_random_uuid(), 'SIMULACIÓN', 6),
   (gen_random_uuid(), 'APRENDIZAJE DE MÁQUINA / MACHINE LEARNING', 7),
   (gen_random_uuid(), 'CIBERSEGURIDAD / CYBERSECURITY', 7),

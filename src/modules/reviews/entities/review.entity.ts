@@ -4,11 +4,8 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  ManyToOne,
-  JoinColumn,
   Index,
 } from 'typeorm';
-import { UserEntity } from '../../users/entities/user.entity';
 
 @Entity('reviews')
 @Index('ix_reviews_reviewed_user', ['reviewedUserId'])
@@ -40,12 +37,4 @@ export class ReviewEntity {
 
   @Column({ type: 'timestamp', nullable: true, name: 'deleted_at' })
   deletedAt!: Date | null;
-
-  @ManyToOne(() => UserEntity, (user) => user.reviewsGiven, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'reviewer_id' })
-  reviewer?: UserEntity;
-
-  @ManyToOne(() => UserEntity, (user) => user.reviewsReceived, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'reviewed_user_id' })
-  reviewedUser?: UserEntity;
 }

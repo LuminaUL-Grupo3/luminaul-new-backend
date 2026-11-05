@@ -38,7 +38,7 @@ Se reutiliza `SessionService` de autenticación a través de `GroupSession`. Las
 | `GroupSession` | Adaptar el contrato de sesión existente al dominio de grupos. |
 | `RoomPresence` | Presencia y escritura efímeras por sala, usuario y conexión. |
 
-La separación implementa responsabilidad única y evita duplicar lógica entre HTTP y WebSocket. La inyección de dependencias permite sustituir colaboradores; los DTOs e interfaces definen contratos explícitos. Repositorios/DAO concentran persistencia, el adaptador de sesión desacopla autenticación y EventEmitter2 aplica comunicación mediante eventos con moderación. No se añaden patrones que no tengan un uso concreto.
+La separación implementa responsabilidad única y evita duplicar lógica entre HTTP y WebSocket. La inyección de dependencias permite sustituir colaboradores; los DTOs e interfaces definen contratos explícitos. Los repositorios concentran la persistencia, el adaptador de sesión desacopla autenticación y EventEmitter2 aplica comunicación mediante eventos con moderación. No se añaden patrones que no tengan un uso concreto.
 
 Todas las entradas usan clases con `class-validator`/`class-transformer`; no se usa `any` explícito en la implementación nueva. El Gateway recibe `unknown` y valida la clase dentro de su envoltorio para devolver siempre ACK de error: el ValidationPipe HTTP global no debe interrumpir esa confirmación.
 
