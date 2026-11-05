@@ -55,4 +55,19 @@ export class PasswordRecoveryService {
 
     return { message: AUTH_MESSAGES.PASSWORD_RESET };
   }
+
+  async changePassword(userId: string, currentPass: string, newPass: string): Promise<MessageResponseDto> {
+    const user = await this.users.findById(userId);
+    if (!user) {
+      throw new BadRequestException('Usuario no encontrado');
+    }
+    const matches = await this.passwordHasher.compare(currentPass, user.passwordHash);
+    if (!matches) {
+      throw new BadRequestException('La contraseña actual es incorrecta');
+    }
+    user.passwordHash = await this.passwordHasher.hash(newPass);
+    user.tokensValidAfter = new Date();
+    await this.users.save(user);
+    return { message: 'Contraseña actualizada con éxito' };
+  }
 }
