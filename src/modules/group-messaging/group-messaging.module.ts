@@ -37,6 +37,6 @@ import { RoomPresence } from "./gateways/room-presence";
     ChatGateway,
     RoomPresence,
   ],
-  exports: [GroupMessagingService],
+  exports: [GroupMessagingService, GroupsRepository, TypeOrmModule],
 })
 export class GroupMessagingModule {}

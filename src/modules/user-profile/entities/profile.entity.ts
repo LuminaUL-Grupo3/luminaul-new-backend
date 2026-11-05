@@ -1,5 +1,4 @@
-import { Entity, PrimaryColumn, Column, UpdateDateColumn, OneToOne, JoinColumn } from 'typeorm';
-import { UserEntity } from '../../users/entities/user.entity';
+import { Entity, PrimaryColumn, Column, UpdateDateColumn } from 'typeorm';
 
 @Entity('profiles')
 export class ProfileEntity {
@@ -23,9 +22,4 @@ export class ProfileEntity {
 
   @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
   updatedAt!: Date;
-
-  // Relación heredada: posts y grupos la usan para mostrar los datos del autor
-  @OneToOne(() => UserEntity, (user) => user.profile)
-  @JoinColumn({ name: 'user_id' })
-  user?: UserEntity;
 }

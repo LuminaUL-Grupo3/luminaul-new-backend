@@ -21,7 +21,7 @@ interface StoredMessage {
   status: MessageStatus;
 }
 
-/** DAO del chat: historial, reintentos, reacciones y lectura permanecen en PostgreSQL. */
+/** Repositorio del chat: historial, reintentos, reacciones y lectura permanecen en PostgreSQL. */
 @Injectable()
 export class MessagesRepository {
   constructor(

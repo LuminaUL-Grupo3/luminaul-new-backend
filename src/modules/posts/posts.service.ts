@@ -31,7 +31,7 @@ export class PostsService {
   ) {}
 
   private mapToPostResponseDto(post: PostEntity): PostResponseDto {
-    const profile = post.author?.profile;
+    const profile = post.profile;
     return {
       id: post.id,
       userId: post.userId,
@@ -67,7 +67,7 @@ export class PostsService {
   }
 
   mapToFeedDto(post: PostEntity): PostFeedResponseDto {
-    const profile = post.author?.profile;
+    const profile = post.profile;
     return {
       id: post.id,
       userId: post.userId,

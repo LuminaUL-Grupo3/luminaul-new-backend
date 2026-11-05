@@ -8,9 +8,8 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
-import { UserEntity } from '../../users/entities/user.entity';
-import { GroupEntity } from '../../groups/entities/group.entity';
 import { CourseEntity } from '../../courses/entities/course.entity';
+import { ProfileEntity } from '../../user-profile/entities/profile.entity';
 
 @Entity('publications')
 @Index('idx_posts_feed', ['status', 'deletedAt', 'createdAt'])
@@ -57,15 +56,11 @@ export class PostEntity {
   @Column({ type: 'timestamptz', nullable: true, name: 'deleted_at' })
   deletedAt!: Date | null;
 
-  @ManyToOne(() => UserEntity, (user) => user.posts)
+  @ManyToOne(() => ProfileEntity)
   @JoinColumn({ name: 'user_id' })
-  author?: UserEntity;
+  profile?: ProfileEntity;
 
-  @ManyToOne(() => GroupEntity, (group) => group.posts)
-  @JoinColumn({ name: 'group_id' })
-  group?: GroupEntity | null;
-
-  @ManyToOne(() => CourseEntity, (course) => course.posts)
+  @ManyToOne(() => CourseEntity)
   @JoinColumn({ name: 'course_id' })
   course?: CourseEntity;
 }

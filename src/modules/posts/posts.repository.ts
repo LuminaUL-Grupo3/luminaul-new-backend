@@ -3,8 +3,8 @@ import { DataSource, Repository, IsNull } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'node:crypto';
 import { PostEntity } from './entities/post.entity';
-import { GroupEntity } from '../groups/entities/group.entity';
-import { GroupsRepository } from '../groups/groups.repository';
+import { GroupEntity } from '../group-messaging/entities/group.entity';
+import { GroupsRepository } from '../group-messaging/repositories/groups.repository';
 import { PostCreateDto } from './dto/post-create.dto';
 import { PostUpdateDto } from './dto/post-update.dto';
 
@@ -18,8 +18,6 @@ export class PostsRepository {
   constructor(
     @InjectRepository(PostEntity)
     private readonly postRepo: Repository<PostEntity>,
-    @InjectRepository(GroupEntity)
-    private readonly groupRepo: Repository<GroupEntity>,
     private readonly groupsRepository: GroupsRepository,
     private readonly dataSource: DataSource,
   ) {}
@@ -88,8 +86,7 @@ export class PostsRepository {
   ): Promise<PaginatedResult<PostEntity>> {
     const qb = this.postRepo
       .createQueryBuilder('post')
-      .leftJoinAndSelect('post.author', 'author')
-      .leftJoinAndSelect('author.profile', 'profile')
+      .leftJoinAndSelect('post.profile', 'profile')
       .leftJoinAndSelect('post.course', 'course')
       .where('post.deletedAt IS NULL')
       .andWhere('post.status = :status', { status: 'published' });
@@ -116,7 +113,7 @@ export class PostsRepository {
         id: postId,
         deletedAt: IsNull(),
       },
-      relations: ['author', 'author.profile', 'course'],
+      relations: ['profile', 'course'],
     });
   }
 
@@ -127,8 +124,7 @@ export class PostsRepository {
   ): Promise<PaginatedResult<PostEntity>> {
     const [items, total] = await this.postRepo
       .createQueryBuilder('post')
-      .leftJoinAndSelect('post.author', 'author')
-      .leftJoinAndSelect('author.profile', 'profile')
+      .leftJoinAndSelect('post.profile', 'profile')
       .leftJoinAndSelect('post.course', 'course')
       .where('post.userId = :userId', { userId })
       .andWhere('post.deletedAt IS NULL')
@@ -151,8 +147,7 @@ export class PostsRepository {
   ): Promise<PaginatedResult<PostEntity>> {
     const qb = this.postRepo
       .createQueryBuilder('post')
-      .leftJoinAndSelect('post.author', 'author')
-      .leftJoinAndSelect('author.profile', 'profile')
+      .leftJoinAndSelect('post.profile', 'profile')
       .leftJoinAndSelect('post.course', 'course')
       .where('post.deletedAt IS NULL')
       .andWhere('post.status = :status', { status: 'published' });
