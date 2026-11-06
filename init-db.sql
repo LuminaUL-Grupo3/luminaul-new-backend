@@ -51,8 +51,8 @@ CREATE TABLE users (
   deleted_at TIMESTAMPTZ
 );
 
-CREATE INDEX ix_users_email ON users (email);
 CREATE INDEX ix_users_status ON users (status);
+CREATE INDEX ix_users_role_status ON users (role, status) WHERE deleted_at IS NULL;
 
 CREATE TABLE revoked_tokens (
   token_hash VARCHAR(64) PRIMARY KEY,
@@ -62,6 +62,7 @@ CREATE TABLE revoked_tokens (
 );
 
 CREATE INDEX ix_revoked_tokens_expires_at ON revoked_tokens (expires_at);
+CREATE INDEX ix_revoked_tokens_user ON revoked_tokens (user_id);
 
 -- ============================================================
 -- 2. SPEC-02: Perfil de Alumno y Horarios
@@ -111,6 +112,7 @@ CREATE TABLE courses (
 );
 
 CREATE INDEX ix_courses_name ON courses (name);
+CREATE INDEX ix_courses_cycle ON courses (cycle);
 
 -- ============================================================
 -- 4. SPEC-04: Grupos de Estudio y Chat en Tiempo Real
@@ -131,6 +133,10 @@ CREATE TABLE groups (
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   deleted_at TIMESTAMPTZ
 );
+
+CREATE INDEX ix_groups_leader ON groups (leader_id) WHERE deleted_at IS NULL;
+CREATE INDEX ix_groups_course ON groups (course_code) WHERE deleted_at IS NULL;
+CREATE INDEX ix_groups_active ON groups (created_at DESC) WHERE deleted_at IS NULL;
 
 CREATE OR REPLACE FUNCTION fn_sync_group_leader()
 RETURNS TRIGGER AS $$
@@ -166,6 +172,10 @@ CREATE TABLE publications (
 
 CREATE INDEX ix_publications_user ON publications (user_id);
 CREATE INDEX ix_publications_course ON publications (course_id);
+CREATE INDEX ix_publications_group ON publications (group_id) WHERE group_id IS NOT NULL;
+CREATE INDEX ix_publications_feed_active ON publications (created_at DESC) WHERE deleted_at IS NULL AND status = 'published';
+CREATE INDEX ix_publications_course_type ON publications (course_id, type, created_at DESC) WHERE deleted_at IS NULL AND status = 'published';
+CREATE INDEX ix_publications_unmoderated ON publications (created_at DESC) WHERE deleted_at IS NULL;
 CREATE INDEX idx_posts_feed ON publications (status, deleted_at, created_at);
 
 CREATE TABLE group_members (
@@ -180,6 +190,7 @@ CREATE TABLE group_members (
 );
 
 CREATE INDEX ix_group_members_history ON group_members (group_id, user_id, status);
+CREATE INDEX ix_group_members_user_status ON group_members (user_id, status);
 
 CREATE TABLE join_requests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -212,6 +223,7 @@ FOR EACH ROW EXECUTE FUNCTION fn_sync_join_request_user();
 
 CREATE UNIQUE INDEX ux_join_requests_pending ON join_requests (group_id, user_id) WHERE status = 'pending';
 CREATE INDEX idx_join_requests_group_status ON join_requests (group_id, status);
+CREATE INDEX ix_join_requests_user ON join_requests (user_id, status);
 
 CREATE TABLE group_messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -224,6 +236,9 @@ CREATE TABLE group_messages (
 );
 
 CREATE INDEX ix_group_messages_room ON group_messages (group_id, created_at);
+CREATE INDEX ix_group_messages_room_active ON group_messages (group_id, created_at DESC) WHERE deleted_at IS NULL AND status = 'published';
+CREATE INDEX ix_group_messages_unmoderated ON group_messages (created_at DESC) WHERE deleted_at IS NULL;
+CREATE INDEX ix_group_messages_sender ON group_messages (sender_id);
 
 -- ============================================================
 -- 5. SPEC-05: Reseñas y Calificaciones
@@ -242,6 +257,9 @@ CREATE TABLE reviews (
 );
 
 CREATE INDEX ix_reviews_reviewed_user ON reviews (reviewed_user_id);
+CREATE INDEX ix_reviews_reviewer ON reviews (reviewer_id);
+CREATE INDEX ix_reviews_rating_calc ON reviews (reviewed_user_id, rating) WHERE deleted_at IS NULL AND status = 'published';
+CREATE INDEX ix_reviews_unmoderated ON reviews (created_at DESC) WHERE deleted_at IS NULL;
 CREATE UNIQUE INDEX uq_active_review ON reviews (reviewer_id, reviewed_user_id) WHERE deleted_at IS NULL;
 
 -- ============================================================
@@ -273,11 +291,21 @@ CREATE TABLE moderation_tasks (
 );
 
 CREATE INDEX ix_moderation_tasks_claim 
-  ON moderation_tasks (status, available_at) 
+  ON moderation_tasks (created_at ASC, available_at) 
   WHERE status IN ('pending', 'retry');
 
 CREATE UNIQUE INDEX uq_moderation_tasks_content 
   ON moderation_tasks (content_type, content_id, content_version);
+
+CREATE INDEX ix_moderation_tasks_content_id 
+  ON moderation_tasks (content_id);
+
+CREATE INDEX ix_moderation_tasks_status 
+  ON moderation_tasks (status);
+
+CREATE INDEX ix_moderation_tasks_stale 
+  ON moderation_tasks (lease_expires_at) 
+  WHERE status = 'processing';
 
 CREATE TABLE moderation_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -294,6 +322,9 @@ CREATE TABLE moderation_logs (
 );
 
 CREATE UNIQUE INDEX uq_moderation_logs_task ON moderation_logs (moderation_task_id);
+CREATE INDEX ix_moderation_logs_author ON moderation_logs (author_id, moderated_at DESC);
+CREATE INDEX ix_moderation_logs_content ON moderation_logs (content_type, content_id);
+CREATE INDEX ix_moderation_logs_content_id ON moderation_logs (content_id);
 
 CREATE TABLE reports (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -310,6 +341,8 @@ CREATE TABLE reports (
 
 CREATE UNIQUE INDEX uq_reporter_target ON reports (reporter_id, target_type, target_id) WHERE status = 'pending';
 CREATE INDEX ix_reports_status ON reports (status);
+CREATE INDEX ix_reports_reporter ON reports (reporter_id, created_at DESC);
+CREATE INDEX ix_reports_target ON reports (target_type, target_id);
 
 CREATE TABLE appeals (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -323,6 +356,8 @@ CREATE TABLE appeals (
 );
 
 CREATE UNIQUE INDEX uq_appeals_one_per_log ON appeals (moderation_log_id);
+CREATE INDEX ix_appeals_user ON appeals (user_id);
+CREATE INDEX ix_appeals_pending ON appeals (created_at ASC) WHERE status = 'pending';
 
 -- ============================================================
 -- 7. SPEC-07: Administración y Notificaciones
@@ -349,6 +384,10 @@ CREATE TABLE audit_logs (
   details JSONB,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX ix_audit_logs_created ON audit_logs (created_at DESC);
+CREATE INDEX ix_audit_logs_admin ON audit_logs (admin_id);
+CREATE INDEX ix_audit_logs_target ON audit_logs (target_entity, target_id);
 
 -- ============================================================
 -- 8. SEMILLAS (SEEDS) Y GOLDEN MOCKS OFICIALES
@@ -400,12 +439,69 @@ ON CONFLICT (user_id, interest_name) DO NOTHING;
 -- D. Catálogo de Palabras Prohibidas (Banned Words)
 INSERT INTO banned_words (id, word, severity)
 VALUES 
+  -- 1. Fraude Académico y Faltas Disciplinarias (High)
   (gen_random_uuid(), 'estafa', 'high'),
   (gen_random_uuid(), 'plagio', 'high'),
   (gen_random_uuid(), 'fraude', 'high'),
-  (gen_random_uuid(), 'spam', 'medium'),
   (gen_random_uuid(), 'compra_notas', 'high'),
-  (gen_random_uuid(), 'insulto', 'medium')
+  (gen_random_uuid(), 'venta_examenes', 'high'),
+  (gen_random_uuid(), 'suplantacion', 'high'),
+  (gen_random_uuid(), 'filtrar_examen', 'high'),
+  (gen_random_uuid(), 'soborno', 'high'),
+  (gen_random_uuid(), 'hackear_sistema', 'high'),
+
+  -- 2. Amenazas Graves, Violencia y Daño Físico (High)
+  (gen_random_uuid(), 'asesinato', 'high'),
+  (gen_random_uuid(), 'sicario', 'high'),
+  (gen_random_uuid(), 'matar', 'high'),
+  (gen_random_uuid(), 'acuchillar', 'high'),
+  (gen_random_uuid(), 'secuestro', 'high'),
+  (gen_random_uuid(), 'violacion', 'high'),
+  (gen_random_uuid(), 'violar', 'high'),
+  (gen_random_uuid(), 'bomba', 'high'),
+  (gen_random_uuid(), 'terrorismo', 'high'),
+  (gen_random_uuid(), 'atentado', 'high'),
+
+  -- 3. Autolesiones y Suicidio (High)
+  (gen_random_uuid(), 'suicidio', 'high'),
+  (gen_random_uuid(), 'suicidate', 'high'),
+  (gen_random_uuid(), 'matate', 'high'),
+
+  -- 4. Sustancias Ilícitas y Contenido Ilegal (High)
+  (gen_random_uuid(), 'cocaina', 'high'),
+  (gen_random_uuid(), 'marihuana', 'high'),
+  (gen_random_uuid(), 'drogas', 'high'),
+  (gen_random_uuid(), 'clonazepam', 'high'),
+  (gen_random_uuid(), 'pedofilia', 'high'),
+  (gen_random_uuid(), 'pornografia', 'high'),
+
+  -- 5. Discurso de Odio, Discriminación y Agresiones Graves (High)
+  (gen_random_uuid(), 'conchatumadre', 'high'),
+  (gen_random_uuid(), 'concha_de_tu_madre', 'high'),
+  (gen_random_uuid(), 'hijo_de_puta', 'high'),
+  (gen_random_uuid(), 'hija_de_puta', 'high'),
+  (gen_random_uuid(), 'serrano_de_mierda', 'high'),
+  (gen_random_uuid(), 'cholo_de_mierda', 'high'),
+  (gen_random_uuid(), 'negro_de_mierda', 'high'),
+  (gen_random_uuid(), 'maricon', 'high'),
+  (gen_random_uuid(), 'cabro_de_mierda', 'high'),
+
+  -- 6. Hostigamiento, Ofensas y Spam (Medium / Low)
+  (gen_random_uuid(), 'spam', 'medium'),
+  (gen_random_uuid(), 'insulto', 'medium'),
+  (gen_random_uuid(), 'puta', 'medium'),
+  (gen_random_uuid(), 'mierda', 'medium'),
+  (gen_random_uuid(), 'malparido', 'medium'),
+  (gen_random_uuid(), 'imbecil', 'medium'),
+  (gen_random_uuid(), 'estupido', 'medium'),
+  (gen_random_uuid(), 'idiota', 'medium'),
+  (gen_random_uuid(), 'retrasado', 'medium'),
+  (gen_random_uuid(), 'golpear', 'medium'),
+  (gen_random_uuid(), 'agredir', 'medium'),
+  (gen_random_uuid(), 'amenaza', 'medium'),
+  (gen_random_uuid(), 'maldito', 'low'),
+  (gen_random_uuid(), 'asqueroso', 'low'),
+  (gen_random_uuid(), 'basura', 'low')
 ON CONFLICT (word) DO NOTHING;
 
 -- E. Catálogo de Cursos de la Universidad de Lima (52 cursos oficiales)

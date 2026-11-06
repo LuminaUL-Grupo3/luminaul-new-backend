@@ -22,6 +22,7 @@ describe('ModerationTaskWorkerService', () => {
       claimNextBatch: jest.fn(),
       findContent: jest.fn(),
       completeTaskSuccess: jest.fn(),
+      completeTaskDiscarded: jest.fn(),
       rescheduleTaskRetry: jest.fn(),
     };
     mockProfanity = {
@@ -249,6 +250,32 @@ describe('ModerationTaskWorkerService', () => {
       SemanticStatus.DEGRADED_FALLBACK,
       [],
     );
+  });
+
+  it('debe descartar la tarea sin insertar log falso si el contenido fue eliminado antes de procesarse', async () => {
+    mockRepo.claimNextBatch = jest.fn().mockResolvedValue([
+      {
+        id: 'task-deleted',
+        contentType: TargetContentType.PUBLICATION,
+        contentId: 'pub-deleted',
+        contentVersion: 1,
+        attempts: 0,
+        maxAttempts: 3,
+        lockToken: 'token-del',
+      },
+    ]);
+    mockRepo.findContent = jest.fn().mockResolvedValue(null);
+    mockRepo.completeTaskDiscarded = jest.fn().mockResolvedValue(true);
+
+    const processedCount = await worker.processBatch();
+
+    expect(processedCount).toBe(1);
+    expect(mockRepo.completeTaskDiscarded).toHaveBeenCalledWith(
+      'task-deleted',
+      'token-del',
+      'CONTENT_DELETED_OR_NOT_FOUND',
+    );
+    expect(mockRepo.completeTaskSuccess).not.toHaveBeenCalled();
   });
 });
 

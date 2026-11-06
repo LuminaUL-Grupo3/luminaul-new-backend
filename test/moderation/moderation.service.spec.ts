@@ -19,7 +19,6 @@ describe('ModerationService (Unit)', () => {
     mockRepo = {
       listBannedWords: jest.fn(),
       findContent: jest.fn(),
-      hideAndSaveLog: jest.fn(),
       canAccessGroup: jest.fn(),
       findPendingReport: jest.fn(),
       createReport: jest.fn(),

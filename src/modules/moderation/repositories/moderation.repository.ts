@@ -70,34 +70,24 @@ export class ModerationRepository {
     return rows[0] ?? null;
   }
 
-  // Oculta el contenido y guarda log en una sola transacción
-  async hideAndSaveLog(
-    source: ModeratedContentSource,
-    contentType: TargetContentType,
-    contentId: string,
-    authorId: string,
-    detectedWords: string[],
-  ): Promise<ContentModerationLogEntity | null> {
-    return this.dataSource.transaction(async (manager) => {
-      const [, affected]: [unknown, number] = await manager.query(
-        `UPDATE ${source.table} SET status = 'hidden'
-         WHERE id = $1 AND deleted_at IS NULL`,
-        [contentId],
-      );
-      if (!affected) return null;
-      return manager.save(
-        manager.create(ContentModerationLogEntity, {
-          contentType,
-          contentId,
-          authorId,
-          detectedWords,
-          result: ModerationResult.BLOCKED,
-          lexicalResult: LexicalResult.BLOCKED,
-          semanticStatus: SemanticStatus.NOT_EVALUATED,
-          moderationDecision: ModerationDecision.HIDDEN,
-        }),
-      );
-    });
+  // Resuelve la tarea sin insertar log si el contenido ya fue eliminado o no existe
+  async completeTaskDiscarded(
+    taskId: string,
+    lockToken: string,
+    reason: string,
+  ): Promise<boolean> {
+    const [, affected]: [unknown, number] = await this.dataSource.query(
+      `UPDATE moderation_tasks
+       SET status = 'processed',
+           completed_at = CURRENT_TIMESTAMP,
+           last_error = $1,
+           locked_at = NULL,
+           lock_token = NULL,
+           lease_expires_at = NULL
+       WHERE id = $2 AND lock_token = $3`,
+      [reason, taskId, lockToken],
+    );
+    return affected > 0;
   }
 
   // ---------- Tareas persistidas y Worker en 3 Etapas ----------
