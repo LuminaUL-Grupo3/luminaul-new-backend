@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
 import { ModerationRepository } from '../repositories/moderation.repository';
 import { findBannedWords, normalizeText } from './lexical-filter';
 
@@ -45,10 +46,12 @@ export class ProfanityFilterService {
     return normalizeText(text);
   }
 
+  @OnEvent('banned_words.updated')
   invalidateCache(): void {
     this.cachedBannedWords = null;
     this.lastCacheTime = 0;
     this.logger.debug('Caché de banned_words invalidada manualmente.');
   }
 }
+
 
