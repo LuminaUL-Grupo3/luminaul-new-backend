@@ -254,15 +254,46 @@ CREATE TABLE banned_words (
   severity VARCHAR(20) NOT NULL DEFAULT 'high'
 );
 
+CREATE TABLE moderation_tasks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  content_type VARCHAR(20) NOT NULL,
+  content_id UUID NOT NULL,
+  content_version INT NOT NULL DEFAULT 1,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  attempts INT NOT NULL DEFAULT 0,
+  max_attempts INT NOT NULL DEFAULT 3,
+  available_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  locked_at TIMESTAMPTZ,
+  locked_by VARCHAR(100),
+  lock_token UUID,
+  lease_expires_at TIMESTAMPTZ,
+  last_error TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  completed_at TIMESTAMPTZ
+);
+
+CREATE INDEX ix_moderation_tasks_claim 
+  ON moderation_tasks (status, available_at) 
+  WHERE status IN ('pending', 'retry');
+
+CREATE UNIQUE INDEX uq_moderation_tasks_content 
+  ON moderation_tasks (content_type, content_id, content_version);
+
 CREATE TABLE moderation_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  moderation_task_id UUID REFERENCES moderation_tasks(id),
   content_type VARCHAR(20) NOT NULL,
   content_id UUID NOT NULL,
   author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   detected_words TEXT[] NOT NULL,
   result VARCHAR(20) NOT NULL DEFAULT 'blocked',
+  lexical_result VARCHAR(20) NOT NULL DEFAULT 'NOT_EVALUATED',
+  semantic_status VARCHAR(30) NOT NULL DEFAULT 'NOT_EVALUATED',
+  moderation_decision VARCHAR(20) NOT NULL DEFAULT 'PENDING_REVIEW',
   moderated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE UNIQUE INDEX uq_moderation_logs_task ON moderation_logs (moderation_task_id);
 
 CREATE TABLE reports (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -290,6 +321,8 @@ CREATE TABLE appeals (
   resolved_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE UNIQUE INDEX uq_appeals_one_per_log ON appeals (moderation_log_id);
 
 -- ============================================================
 -- 7. SPEC-07: Administración y Notificaciones

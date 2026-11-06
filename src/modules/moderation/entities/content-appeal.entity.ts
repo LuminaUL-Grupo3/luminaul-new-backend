@@ -1,8 +1,9 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 import { AppealStatus } from '../enums/moderation.enums';
 
 // Apelación del autor sobre una moderación automática. La resuelve el administrador (SPEC-07).
 @Entity('appeals')
+@Index('uq_appeals_one_per_log', ['moderationLogId'], { unique: true })
 export class ContentAppealEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;

@@ -30,4 +30,31 @@ export enum BannedWordSeverity {
   HIGH = 'high',
 }
 
+export enum TaskStatus {
+  PENDING = 'pending',
+  PROCESSING = 'processing',
+  RETRY = 'retry',
+  PROCESSED = 'processed',
+  FAILED = 'failed',
+}
+
+export enum LexicalResult {
+  CLEAN = 'CLEAN',
+  BLOCKED = 'BLOCKED',
+  NOT_EVALUATED = 'NOT_EVALUATED',
+}
+
+export enum SemanticStatus {
+  EVALUATED_CLEAN = 'EVALUATED_CLEAN',
+  FLAGGED = 'FLAGGED',
+  DEGRADED_FALLBACK = 'DEGRADED_FALLBACK',
+  NOT_EVALUATED = 'NOT_EVALUATED',
+}
+
+export enum ModerationDecision {
+  APPROVED = 'APPROVED',
+  HIDDEN = 'HIDDEN',
+  PENDING_REVIEW = 'PENDING_REVIEW',
+}
+
 export const TARGET_CONTENT_TYPES = Object.values(TargetContentType);

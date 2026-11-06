@@ -3,23 +3,36 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { ContentModerationService } from '../services/content-moderation.service';
 import { ContentCreatedEvent } from '../events/content-created.event';
 import { CONTENT_CREATED_EVENT } from '../moderation.constants';
+import { ModerationTaskWorkerService } from '../services/moderation-task-worker.service';
 
-// Observer de 'content.created'. Se ejecuta en segundo plano (async: true), así que crear un
-// post, mensaje o reseña no espera a la moderación. Un fallo queda en el log y no afecta a
-// la operación que originó el evento.
+// Observer de 'content.created' y 'moderation.wakeup'.
+// Se ejecuta en segundo plano (async: true) para no bloquear al usuario.
 @Injectable()
 export class ContentCreatedListener {
-  private readonly logger = new Logger('ContentCreatedListener');
+  private readonly logger = new Logger(ContentCreatedListener.name);
 
-  constructor(private readonly moderation: ContentModerationService) {}
+  constructor(
+    private readonly moderation: ContentModerationService,
+    private readonly worker: ModerationTaskWorkerService,
+  ) {}
 
   @OnEvent(CONTENT_CREATED_EVENT, { async: true })
-  async handle(event: ContentCreatedEvent): Promise<void> {
+  async handleContentCreated(event: ContentCreatedEvent): Promise<void> {
     try {
-      await this.moderation.moderate(event);
+      await this.moderation.enqueueAndProcess(event);
     } catch (error: unknown) {
       const reason = error instanceof Error ? error.message : String(error);
-      this.logger.error(`No se pudo moderar ${event.contentType} ${event.contentId}: ${reason}`);
+      this.logger.error(`No se pudo procesar evento content.created para ${event.contentType} ${event.contentId}: ${reason}`);
+    }
+  }
+
+  @OnEvent('moderation.wakeup', { async: true })
+  async handleWakeup(): Promise<void> {
+    try {
+      await this.worker.processBatch();
+    } catch (error: unknown) {
+      const reason = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Error al procesar lote de moderación tras wakeup: ${reason}`);
     }
   }
 }

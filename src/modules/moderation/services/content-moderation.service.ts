@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ModerationRepository } from '../repositories/moderation.repository';
 import { resolveModeratedContent } from '../policies/moderated-content';
@@ -14,23 +14,38 @@ import {
   MODERATION_MESSAGES,
   NOTIFICATION_SEND_EVENT,
 } from '../moderation.constants';
+import { ModerationTaskWorkerService } from './moderation-task-worker.service';
 
 export type ModerationOutcome =
   | { status: 'clean' }
   | { status: 'skipped'; reason: string }
   | { status: 'hidden'; moderationLogId: string; detectedWords: string[] };
 
-// HU 6.2: revisa el texto recibido, oculta el contenido infractor, deja el registro en
-// moderation_logs y avisa al chat (SPEC-04) y al autor (SPEC-07) mediante eventos.
+// HU 6.2: Orquestador de moderación.
+// Encola tareas persistentes en PostgreSQL y ejecuta el procesamiento desacoplado.
 @Injectable()
 export class ContentModerationService {
-  private readonly logger = new Logger('ContentModeration');
+  private readonly logger = new Logger(ContentModerationService.name);
 
   constructor(
     private readonly repository: ModerationRepository,
     private readonly events: EventEmitter2,
+    @Optional() private readonly worker?: ModerationTaskWorkerService,
   ) {}
 
+  // Encola la tarea en moderation_tasks para garantizar persistencia y despierta al worker
+  async enqueueAndProcess(event: ContentCreatedEvent): Promise<void> {
+    const targetType = event.contentType as TargetContentType;
+    await this.repository.enqueueTask(targetType, event.contentId, 1);
+
+    if (this.worker) {
+      await this.worker.processBatch();
+    } else {
+      await this.moderate(event);
+    }
+  }
+
+  // Ejecución directa de moderación síncrona/inmediata
   async moderate(event: ContentCreatedEvent): Promise<ModerationOutcome> {
     const source = resolveModeratedContent(event.contentType);
     if (!source) {
@@ -45,7 +60,11 @@ export class ContentModerationService {
     if (!content) return { status: 'skipped', reason: 'el contenido ya no existe' };
 
     const log = await this.repository.hideAndSaveLog(
-      source, event.contentType, event.contentId, content.authorId, detectedWords,
+      source,
+      event.contentType,
+      event.contentId,
+      content.authorId,
+      detectedWords,
     );
     if (!log) {
       return { status: 'skipped', reason: `el contenido no estaba publicado (${content.status})` };
