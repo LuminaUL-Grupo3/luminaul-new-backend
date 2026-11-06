@@ -32,19 +32,9 @@ export function normalizeText(text: string): string {
   // 2. Reducir 3 o más repeticiones consecutivas a 1 (e.g. "frauuuude" -> "fraude")
   normalized = normalized.replace(/(.)\1{2,}/gu, '$1');
 
-  // 3. Sustitución de leetspeak contextual: adyacente a letras o límites de palabra
-  let prev = '';
-  let iterations = 0;
-  while (prev !== normalized && iterations < 3) {
-    prev = normalized;
-    // Símbolos @, $, ! al inicio o interior de palabra seguidos de letra
-    normalized = normalized.replace(/(?<=^|[\s\p{L}])[@$!](?=[\p{L}])/gu, (char) => LEET_MAP[char] ?? char);
-    // Símbolos @, $ al final de palabra precedidos de letra
-    normalized = normalized.replace(/(?<=\p{L})[@$](?=[\s\p{L}]|$)/gu, (char) => LEET_MAP[char] ?? char);
-    // Dígitos leetspeak adyacentes a letras
-    normalized = normalized.replace(/(?<=\p{L})[013457]|[013457](?=\p{L})/gu, (char) => LEET_MAP[char] ?? char);
-    iterations++;
-  }
+  // 3. Sustitución de leetspeak contextual: solo si está adyacente a letras (no símbolos aislados o puntuación)
+  normalized = normalized.replace(/(?<=\p{L})[@$!](?=\p{L})/gu, (char) => LEET_MAP[char] ?? char);
+  normalized = normalized.replace(/(?<=\p{L})[013457]|[013457](?=\p{L})/gu, (char) => LEET_MAP[char] ?? char);
 
   // 4. Convertir caracteres que no sean letras o números Unicode a espacios
   normalized = normalized.replace(/[^\p{L}\p{N}]+/gu, ' ').trim();

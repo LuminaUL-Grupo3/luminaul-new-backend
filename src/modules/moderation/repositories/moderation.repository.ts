@@ -231,26 +231,6 @@ export class ModerationRepository {
   }
 
   // Etapa C para reintentos con backoff exponencial
-  async markTaskDiscarded(
-    taskId: string,
-    lockToken: string,
-    reason: string,
-  ): Promise<boolean> {
-    const [, affected]: [unknown, number] = await this.dataSource.query(
-      `UPDATE moderation_tasks
-       SET status = 'discarded',
-           completed_at = CURRENT_TIMESTAMP,
-           last_error = $1,
-           locked_at = NULL,
-           lock_token = NULL,
-           lease_expires_at = NULL
-       WHERE id = $2 AND lock_token = $3`,
-      [reason, taskId, lockToken],
-    );
-    return affected > 0;
-  }
-
-  // Etapa C para reintentos con backoff exponencial
   async rescheduleTaskRetry(
     taskId: string,
     lockToken: string,

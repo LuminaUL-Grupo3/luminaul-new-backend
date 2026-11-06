@@ -80,10 +80,16 @@ export class ModerationTaskWorkerService {
     const content = await this.repository.findContent(source, task.contentId);
     if (!content) {
       this.logger.debug(`El contenido ${task.contentId} ya no existe o fue eliminado.`);
-      await this.repository.markTaskDiscarded(
+      await this.repository.completeTaskSuccess(
         task.id,
         lockToken,
-        'CONTENT_DELETED_OR_NOT_FOUND',
+        source,
+        task.contentId,
+        '00000000-0000-0000-0000-000000000000',
+        ModerationDecision.APPROVED,
+        LexicalResult.CLEAN,
+        SemanticStatus.NOT_EVALUATED,
+        [],
       );
       return;
     }
@@ -166,17 +172,6 @@ export class ModerationTaskWorkerService {
           delaySec,
           err instanceof Error ? err.message : String(err),
         );
-
-        // Despertador reactivo: despierta al worker exactamente cuando venza el delay
-        const timer = setTimeout(() => {
-          this.processBatch().catch((error) =>
-            this.logger.error('Error al procesar reintento programado', error),
-          );
-        }, (delaySec * 1000) + 100);
-
-        if (timer && typeof timer.unref === 'function') {
-          timer.unref();
-        }
       } else {
         // Se agotaron los 2 reintentos o el error es permanente (e.g. sin API key o 401)
         // Aplicar fallback a filtro local: como el léxico fue limpio, se aprueba con DEGRADED_FALLBACK

@@ -35,7 +35,6 @@ export enum TaskStatus {
   PROCESSING = 'processing',
   RETRY = 'retry',
   PROCESSED = 'processed',
-  DISCARDED = 'discarded',
   FAILED = 'failed',
 }
 
