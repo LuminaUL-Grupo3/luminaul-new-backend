@@ -400,12 +400,69 @@ ON CONFLICT (user_id, interest_name) DO NOTHING;
 -- D. Catálogo de Palabras Prohibidas (Banned Words)
 INSERT INTO banned_words (id, word, severity)
 VALUES 
+  -- 1. Fraude Académico y Faltas Disciplinarias (High)
   (gen_random_uuid(), 'estafa', 'high'),
   (gen_random_uuid(), 'plagio', 'high'),
   (gen_random_uuid(), 'fraude', 'high'),
-  (gen_random_uuid(), 'spam', 'medium'),
   (gen_random_uuid(), 'compra_notas', 'high'),
-  (gen_random_uuid(), 'insulto', 'medium')
+  (gen_random_uuid(), 'venta_examenes', 'high'),
+  (gen_random_uuid(), 'suplantacion', 'high'),
+  (gen_random_uuid(), 'filtrar_examen', 'high'),
+  (gen_random_uuid(), 'soborno', 'high'),
+  (gen_random_uuid(), 'hackear_sistema', 'high'),
+
+  -- 2. Amenazas Graves, Violencia y Daño Físico (High)
+  (gen_random_uuid(), 'asesinato', 'high'),
+  (gen_random_uuid(), 'sicario', 'high'),
+  (gen_random_uuid(), 'matar', 'high'),
+  (gen_random_uuid(), 'acuchillar', 'high'),
+  (gen_random_uuid(), 'secuestro', 'high'),
+  (gen_random_uuid(), 'violacion', 'high'),
+  (gen_random_uuid(), 'violar', 'high'),
+  (gen_random_uuid(), 'bomba', 'high'),
+  (gen_random_uuid(), 'terrorismo', 'high'),
+  (gen_random_uuid(), 'atentado', 'high'),
+
+  -- 3. Autolesiones y Suicidio (High)
+  (gen_random_uuid(), 'suicidio', 'high'),
+  (gen_random_uuid(), 'suicidate', 'high'),
+  (gen_random_uuid(), 'matate', 'high'),
+
+  -- 4. Sustancias Ilícitas y Contenido Ilegal (High)
+  (gen_random_uuid(), 'cocaina', 'high'),
+  (gen_random_uuid(), 'marihuana', 'high'),
+  (gen_random_uuid(), 'drogas', 'high'),
+  (gen_random_uuid(), 'clonazepam', 'high'),
+  (gen_random_uuid(), 'pedofilia', 'high'),
+  (gen_random_uuid(), 'pornografia', 'high'),
+
+  -- 5. Discurso de Odio, Discriminación y Agresiones Graves (High)
+  (gen_random_uuid(), 'conchatumadre', 'high'),
+  (gen_random_uuid(), 'concha_de_tu_madre', 'high'),
+  (gen_random_uuid(), 'hijo_de_puta', 'high'),
+  (gen_random_uuid(), 'hija_de_puta', 'high'),
+  (gen_random_uuid(), 'serrano_de_mierda', 'high'),
+  (gen_random_uuid(), 'cholo_de_mierda', 'high'),
+  (gen_random_uuid(), 'negro_de_mierda', 'high'),
+  (gen_random_uuid(), 'maricon', 'high'),
+  (gen_random_uuid(), 'cabro_de_mierda', 'high'),
+
+  -- 6. Hostigamiento, Ofensas y Spam (Medium / Low)
+  (gen_random_uuid(), 'spam', 'medium'),
+  (gen_random_uuid(), 'insulto', 'medium'),
+  (gen_random_uuid(), 'puta', 'medium'),
+  (gen_random_uuid(), 'mierda', 'medium'),
+  (gen_random_uuid(), 'malparido', 'medium'),
+  (gen_random_uuid(), 'imbecil', 'medium'),
+  (gen_random_uuid(), 'estupido', 'medium'),
+  (gen_random_uuid(), 'idiota', 'medium'),
+  (gen_random_uuid(), 'retrasado', 'medium'),
+  (gen_random_uuid(), 'golpear', 'medium'),
+  (gen_random_uuid(), 'agredir', 'medium'),
+  (gen_random_uuid(), 'amenaza', 'medium'),
+  (gen_random_uuid(), 'maldito', 'low'),
+  (gen_random_uuid(), 'asqueroso', 'low'),
+  (gen_random_uuid(), 'basura', 'low')
 ON CONFLICT (word) DO NOTHING;
 
 -- E. Catálogo de Cursos de la Universidad de Lima (52 cursos oficiales)
