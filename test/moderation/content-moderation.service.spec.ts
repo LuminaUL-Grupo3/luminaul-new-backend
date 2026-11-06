@@ -1,78 +1,58 @@
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ContentModerationService } from '../../src/modules/moderation/services/content-moderation.service';
 import { ModerationRepository } from '../../src/modules/moderation/repositories/moderation.repository';
+import { ModerationTaskWorkerService } from '../../src/modules/moderation/services/moderation-task-worker.service';
 import { TargetContentType } from '../../src/modules/moderation/enums/moderation.enums';
-import { CHAT_MESSAGE_HIDDEN_EVENT, NOTIFICATION_SEND_EVENT } from '../../src/modules/moderation/moderation.constants';
 
 describe('SPEC-06 ContentModerationService', () => {
   const AUTHOR = 'd290f1ee-6c54-4b01-90e6-d701748f0851';
-  const GROUP = '7b134111-9a22-48df-9fa0-cd8213aa0981';
   const CONTENT = '18938a12-6f2b-4d43-9801-bca908234fed';
 
-  let repository: jest.Mocked<
-    Pick<ModerationRepository, 'listBannedWords' | 'findContent' | 'hideAndSaveLog'>
-  >;
-  let events: { emit: jest.Mock };
+  let repository: jest.Mocked<Pick<ModerationRepository, 'enqueueTask'>>;
+  let worker: jest.Mocked<Pick<ModerationTaskWorkerService, 'processBatch'>>;
   let service: ContentModerationService;
 
   beforeEach(() => {
     repository = {
-      listBannedWords: jest.fn().mockResolvedValue(['estafa', 'spam']),
-      findContent: jest.fn().mockResolvedValue({ authorId: AUTHOR, groupId: GROUP, status: 'published' }),
-      hideAndSaveLog: jest.fn().mockResolvedValue({ id: 'log-1' } as any),
+      enqueueTask: jest.fn().mockResolvedValue({ id: 'task-1' } as any),
     };
-    events = { emit: jest.fn() };
+    worker = {
+      processBatch: jest.fn().mockResolvedValue(1),
+    };
     service = new ContentModerationService(
       repository as unknown as ModerationRepository,
-      events as unknown as EventEmitter2,
+      worker as unknown as ModerationTaskWorkerService,
     );
   });
 
-  it('no toca la base si el texto es limpio', async () => {
-    const outcome = await service.moderate({
+  it('encola la tarea en PostgreSQL y despierta al worker para procesar el lote', async () => {
+    await service.enqueueAndProcess({
       contentType: TargetContentType.PUBLICATION,
       contentId: CONTENT,
       authorId: AUTHOR,
-      text: 'Repaso de cálculo',
+      text: 'Texto de prueba',
     });
-    expect(outcome).toEqual({ status: 'clean' });
-    expect(repository.hideAndSaveLog).not.toHaveBeenCalled();
-    expect(events.emit).not.toHaveBeenCalled();
-  });
 
-  it('oculta, registra y notifica al autor una publicación infractora', async () => {
-    const outcome = await service.moderate({
-      contentType: TargetContentType.PUBLICATION,
-      contentId: CONTENT,
-      authorId: AUTHOR,
-      text: 'Es una estafa',
-    });
-    expect(outcome).toEqual({ status: 'hidden', moderationLogId: 'log-1', detectedWords: ['estafa'] });
-    expect(repository.hideAndSaveLog).toHaveBeenCalledWith(
-      expect.objectContaining({ table: 'publications' }),
-      'publication',
+    expect(repository.enqueueTask).toHaveBeenCalledWith(
+      TargetContentType.PUBLICATION,
       CONTENT,
-      AUTHOR,
-      ['estafa'],
+      1,
     );
-    expect(events.emit).toHaveBeenCalledWith(
-      NOTIFICATION_SEND_EVENT,
-      expect.objectContaining({ userId: AUTHOR, type: 'MODERATION' }),
-    );
-    expect(events.emit).not.toHaveBeenCalledWith(CHAT_MESSAGE_HIDDEN_EVENT, expect.anything());
+    expect(worker.processBatch).toHaveBeenCalledTimes(1);
   });
 
-  it('avisa al chat cuando el contenido oculto es un mensaje', async () => {
-    await service.moderate({
+  it('encola mensajes y activa el worker de forma asíncrona', async () => {
+    await service.enqueueAndProcess({
       contentType: TargetContentType.MESSAGE,
       contentId: CONTENT,
       authorId: AUTHOR,
-      text: 'Mucho spam en este canal',
+      text: 'Mensaje de chat',
     });
-    expect(events.emit).toHaveBeenCalledWith(CHAT_MESSAGE_HIDDEN_EVENT, {
-      groupId: GROUP,
-      messageId: CONTENT,
-    });
+
+    expect(repository.enqueueTask).toHaveBeenCalledWith(
+      TargetContentType.MESSAGE,
+      CONTENT,
+      1,
+    );
+    expect(worker.processBatch).toHaveBeenCalledTimes(1);
   });
 });
-
