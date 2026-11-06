@@ -51,3 +51,4 @@ export class ProfanityFilterService {
     this.logger.debug('Caché de banned_words invalidada manualmente.');
   }
 }
+

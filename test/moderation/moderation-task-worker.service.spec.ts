@@ -1,14 +1,14 @@
-import { ModerationTaskWorkerService } from './moderation-task-worker.service';
-import { ModerationRepository } from '../repositories/moderation.repository';
-import { ProfanityFilterService } from './profanity-filter.service';
-import { OpenAiModerationException, OpenAiModerationService } from './openai-moderation.service';
+import { ModerationTaskWorkerService } from '../../src/modules/moderation/services/moderation-task-worker.service';
+import { ModerationRepository } from '../../src/modules/moderation/repositories/moderation.repository';
+import { ProfanityFilterService } from '../../src/modules/moderation/services/profanity-filter.service';
+import { OpenAiModerationException, OpenAiModerationService } from '../../src/modules/moderation/services/openai-moderation.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   LexicalResult,
   ModerationDecision,
   SemanticStatus,
   TargetContentType,
-} from '../enums/moderation.enums';
+} from '../../src/modules/moderation/enums/moderation.enums';
 
 describe('ModerationTaskWorkerService', () => {
   let worker: ModerationTaskWorkerService;
@@ -68,7 +68,7 @@ describe('ModerationTaskWorkerService', () => {
 
     expect(processedCount).toBe(1);
     expect(mockProfanity.checkMessage).toHaveBeenCalledWith('Este contenido es una estafa total');
-    expect(mockOpenAi.moderateText).not.toHaveBeenCalled(); // No gasta llamada a OpenAI
+    expect(mockOpenAi.moderateText).not.toHaveBeenCalled();
     expect(mockRepo.completeTaskSuccess).toHaveBeenCalledWith(
       'task-1',
       'token-abc',
@@ -208,7 +208,7 @@ describe('ModerationTaskWorkerService', () => {
       'task-4',
       'token-err1',
       1,
-      2, // 2s de delay para intento 1
+      2,
       'Timeout',
     );
     expect(mockRepo.completeTaskSuccess).not.toHaveBeenCalled();
@@ -221,7 +221,7 @@ describe('ModerationTaskWorkerService', () => {
         contentType: TargetContentType.PUBLICATION,
         contentId: 'pub-5',
         contentVersion: 1,
-        attempts: 2, // Ya falló 2 veces
+        attempts: 2,
         maxAttempts: 3,
         lockToken: 'token-err3',
       },
@@ -237,7 +237,6 @@ describe('ModerationTaskWorkerService', () => {
 
     await worker.processBatch();
 
-    // Como attempts + 1 >= maxAttempts (3 >= 3), aplica fallback a local: APRUEBA bajo DEGRADED_FALLBACK
     expect(mockRepo.rescheduleTaskRetry).not.toHaveBeenCalled();
     expect(mockRepo.completeTaskSuccess).toHaveBeenCalledWith(
       'task-5',

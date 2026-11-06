@@ -1,4 +1,4 @@
-import { OpenAiModerationException, OpenAiModerationService } from './openai-moderation.service';
+import { OpenAiModerationException, OpenAiModerationService } from '../../src/modules/moderation/services/openai-moderation.service';
 import { ConfigService } from '@nestjs/config';
 
 describe('OpenAiModerationService', () => {
@@ -41,7 +41,7 @@ describe('OpenAiModerationService', () => {
               'harassment/threatening': false,
               hate: true,
               'hate/threatening': false,
-              sexual: true, // No está en BLOCKED_CATEGORIES
+              sexual: true,
             },
           },
         ],

@@ -1,5 +1,5 @@
-import { ProfanityFilterService } from './profanity-filter.service';
-import { ModerationRepository } from '../repositories/moderation.repository';
+import { ProfanityFilterService } from '../../src/modules/moderation/services/profanity-filter.service';
+import { ModerationRepository } from '../../src/modules/moderation/repositories/moderation.repository';
 
 describe('ProfanityFilterService', () => {
   let service: ProfanityFilterService;
