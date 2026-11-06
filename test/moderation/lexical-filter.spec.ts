@@ -40,3 +40,4 @@ describe('SPEC-06 motor léxico', () => {
     expect(findBannedWords('cuidado con la est@fa', catalog)).toEqual(['estafa']);
   });
 });
+

@@ -9,7 +9,7 @@ export class ProfanityFilterService {
   private lastCacheTime = 0;
   private readonly ttlMs = 5 * 60 * 1000; // 5 minutos de TTL
 
-  constructor(private readonly repository: ModerationRepository) {}
+  constructor(private readonly repository: ModerationRepository) { }
 
   async getBannedWords(): Promise<string[]> {
     const now = Date.now();

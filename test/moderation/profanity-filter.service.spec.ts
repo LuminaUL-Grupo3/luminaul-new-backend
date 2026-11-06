@@ -40,3 +40,4 @@ describe('ProfanityFilterService', () => {
     expect(mockRepository.listBannedWords).toHaveBeenCalledTimes(2);
   });
 });
+
