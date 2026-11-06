@@ -175,6 +175,7 @@ CREATE INDEX ix_publications_course ON publications (course_id);
 CREATE INDEX ix_publications_group ON publications (group_id) WHERE group_id IS NOT NULL;
 CREATE INDEX ix_publications_feed_active ON publications (created_at DESC) WHERE deleted_at IS NULL AND status = 'published';
 CREATE INDEX ix_publications_course_type ON publications (course_id, type, created_at DESC) WHERE deleted_at IS NULL AND status = 'published';
+CREATE INDEX ix_publications_unmoderated ON publications (created_at DESC) WHERE deleted_at IS NULL;
 CREATE INDEX idx_posts_feed ON publications (status, deleted_at, created_at);
 
 CREATE TABLE group_members (
@@ -236,6 +237,7 @@ CREATE TABLE group_messages (
 
 CREATE INDEX ix_group_messages_room ON group_messages (group_id, created_at);
 CREATE INDEX ix_group_messages_room_active ON group_messages (group_id, created_at DESC) WHERE deleted_at IS NULL AND status = 'published';
+CREATE INDEX ix_group_messages_unmoderated ON group_messages (created_at DESC) WHERE deleted_at IS NULL;
 CREATE INDEX ix_group_messages_sender ON group_messages (sender_id);
 
 -- ============================================================
@@ -257,6 +259,7 @@ CREATE TABLE reviews (
 CREATE INDEX ix_reviews_reviewed_user ON reviews (reviewed_user_id);
 CREATE INDEX ix_reviews_reviewer ON reviews (reviewer_id);
 CREATE INDEX ix_reviews_rating_calc ON reviews (reviewed_user_id, rating) WHERE deleted_at IS NULL AND status = 'published';
+CREATE INDEX ix_reviews_unmoderated ON reviews (created_at DESC) WHERE deleted_at IS NULL;
 CREATE UNIQUE INDEX uq_active_review ON reviews (reviewer_id, reviewed_user_id) WHERE deleted_at IS NULL;
 
 -- ============================================================
@@ -288,11 +291,17 @@ CREATE TABLE moderation_tasks (
 );
 
 CREATE INDEX ix_moderation_tasks_claim 
-  ON moderation_tasks (status, available_at) 
+  ON moderation_tasks (created_at ASC, available_at) 
   WHERE status IN ('pending', 'retry');
 
 CREATE UNIQUE INDEX uq_moderation_tasks_content 
   ON moderation_tasks (content_type, content_id, content_version);
+
+CREATE INDEX ix_moderation_tasks_content_id 
+  ON moderation_tasks (content_id);
+
+CREATE INDEX ix_moderation_tasks_status 
+  ON moderation_tasks (status);
 
 CREATE INDEX ix_moderation_tasks_stale 
   ON moderation_tasks (lease_expires_at) 
@@ -315,6 +324,7 @@ CREATE TABLE moderation_logs (
 CREATE UNIQUE INDEX uq_moderation_logs_task ON moderation_logs (moderation_task_id);
 CREATE INDEX ix_moderation_logs_author ON moderation_logs (author_id, moderated_at DESC);
 CREATE INDEX ix_moderation_logs_content ON moderation_logs (content_type, content_id);
+CREATE INDEX ix_moderation_logs_content_id ON moderation_logs (content_id);
 
 CREATE TABLE reports (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
