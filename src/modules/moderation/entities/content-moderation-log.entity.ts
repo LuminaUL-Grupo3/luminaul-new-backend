@@ -1,14 +1,21 @@
 import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
-import { ModerationResult, TargetContentType } from '../enums/moderation.enums';
+import {
+  LexicalResult,
+  ModerationDecision,
+  ModerationResult,
+  SemanticStatus,
+  TargetContentType,
+} from '../enums/moderation.enums';
 
-// Registro de cada contenido ocultado por el motor. Se enlaza con publicaciones, mensajes y
-// reseñas solo por UUID lógico (content_type + content_id), sin importar sus entidades
-// (AGENTS.md §3.2). La clase lleva otro nombre para no chocar con la entidad heredada de Soft I.
 @Entity('moderation_logs')
 @Index('ix_moderation_logs_author', ['authorId'])
+@Index('uq_moderation_logs_task', ['moderationTaskId'], { unique: true })
 export class ContentModerationLogEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
+
+  @Column({ type: 'uuid', nullable: true, name: 'moderation_task_id' })
+  moderationTaskId!: string | null;
 
   @Column({ type: 'varchar', length: 20, name: 'content_type' })
   contentType!: TargetContentType;
@@ -24,6 +31,15 @@ export class ContentModerationLogEntity {
 
   @Column({ type: 'varchar', length: 20, default: ModerationResult.BLOCKED })
   result!: ModerationResult;
+
+  @Column({ type: 'varchar', length: 20, default: LexicalResult.NOT_EVALUATED, name: 'lexical_result' })
+  lexicalResult!: LexicalResult;
+
+  @Column({ type: 'varchar', length: 30, default: SemanticStatus.NOT_EVALUATED, name: 'semantic_status' })
+  semanticStatus!: SemanticStatus;
+
+  @Column({ type: 'varchar', length: 20, default: ModerationDecision.PENDING_REVIEW, name: 'moderation_decision' })
+  moderationDecision!: ModerationDecision;
 
   @CreateDateColumn({ type: 'timestamptz', name: 'moderated_at' })
   moderatedAt!: Date;

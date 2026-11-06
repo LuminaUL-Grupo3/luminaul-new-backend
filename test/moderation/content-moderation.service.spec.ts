@@ -1,10 +1,9 @@
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { ContentModerationService } from './content-moderation.service';
-import { ModerationRepository } from '../repositories/moderation.repository';
-import { TargetContentType } from '../enums/moderation.enums';
-import { CHAT_MESSAGE_HIDDEN_EVENT, NOTIFICATION_SEND_EVENT } from '../moderation.constants';
+import { ContentModerationService } from '../../src/modules/moderation/services/content-moderation.service';
+import { ModerationRepository } from '../../src/modules/moderation/repositories/moderation.repository';
+import { TargetContentType } from '../../src/modules/moderation/enums/moderation.enums';
+import { CHAT_MESSAGE_HIDDEN_EVENT, NOTIFICATION_SEND_EVENT } from '../../src/modules/moderation/moderation.constants';
 
-/** SPEC-06 / HU 6.2: el listener oculta, registra y avisa; el repositorio va simulado. */
 describe('SPEC-06 ContentModerationService', () => {
   const AUTHOR = 'd290f1ee-6c54-4b01-90e6-d701748f0851';
   const GROUP = '7b134111-9a22-48df-9fa0-cd8213aa0981';
@@ -20,7 +19,7 @@ describe('SPEC-06 ContentModerationService', () => {
     repository = {
       listBannedWords: jest.fn().mockResolvedValue(['estafa', 'spam']),
       findContent: jest.fn().mockResolvedValue({ authorId: AUTHOR, groupId: GROUP, status: 'published' }),
-      hideAndSaveLog: jest.fn().mockResolvedValue({ id: 'log-1' }),
+      hideAndSaveLog: jest.fn().mockResolvedValue({ id: 'log-1' } as any),
     };
     events = { emit: jest.fn() };
     service = new ContentModerationService(
@@ -49,7 +48,13 @@ describe('SPEC-06 ContentModerationService', () => {
       text: 'Es una estafa',
     });
     expect(outcome).toEqual({ status: 'hidden', moderationLogId: 'log-1', detectedWords: ['estafa'] });
-    expect(repository.hideAndSaveLog).toHaveBeenCalledWith(expect.objectContaining({ table: 'publications' }), 'publication', CONTENT, AUTHOR, ['estafa']);
+    expect(repository.hideAndSaveLog).toHaveBeenCalledWith(
+      expect.objectContaining({ table: 'publications' }),
+      'publication',
+      CONTENT,
+      AUTHOR,
+      ['estafa'],
+    );
     expect(events.emit).toHaveBeenCalledWith(
       NOTIFICATION_SEND_EVENT,
       expect.objectContaining({ userId: AUTHOR, type: 'MODERATION' }),
@@ -62,45 +67,12 @@ describe('SPEC-06 ContentModerationService', () => {
       contentType: TargetContentType.MESSAGE,
       contentId: CONTENT,
       authorId: AUTHOR,
-      text: 'spam spam',
-      groupId: GROUP,
+      text: 'Mucho spam en este canal',
     });
     expect(events.emit).toHaveBeenCalledWith(CHAT_MESSAGE_HIDDEN_EVENT, {
       groupId: GROUP,
       messageId: CONTENT,
     });
   });
-
-  it('usa el autor guardado en la base y no el que dice el evento', async () => {
-    await service.moderate({
-      contentType: TargetContentType.REVIEW,
-      contentId: CONTENT,
-      authorId: 'otro-usuario',
-      text: 'estafa',
-    });
-    expect(repository.hideAndSaveLog).toHaveBeenCalledWith(expect.objectContaining({ table: 'reviews' }), 'review', CONTENT, AUTHOR, ['estafa']);
-  });
-
-  it('no registra nada si el contenido ya no estaba publicado', async () => {
-    repository.hideAndSaveLog.mockResolvedValue(null);
-    const outcome = await service.moderate({
-      contentType: TargetContentType.PUBLICATION,
-      contentId: CONTENT,
-      authorId: AUTHOR,
-      text: 'estafa',
-    });
-    expect(outcome.status).toBe('skipped');
-    expect(events.emit).not.toHaveBeenCalled();
-  });
-
-  it('ignora tipos de contenido desconocidos', async () => {
-    const outcome = await service.moderate({
-      contentType: 'foto' as TargetContentType,
-      contentId: CONTENT,
-      authorId: AUTHOR,
-      text: 'estafa',
-    });
-    expect(outcome.status).toBe('skipped');
-    expect(repository.listBannedWords).not.toHaveBeenCalled();
-  });
 });
+

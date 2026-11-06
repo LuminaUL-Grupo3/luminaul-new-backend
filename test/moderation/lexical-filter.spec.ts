@@ -1,4 +1,4 @@
-import { findBannedWords, normalizeText } from './lexical-filter';
+import { findBannedWords, normalizeText } from '../../src/modules/moderation/services/lexical-filter';
 
 /** SPEC-06 / HU 6.2: motor léxico de moderación, sin base de datos. */
 describe('SPEC-06 motor léxico', () => {
@@ -30,4 +30,14 @@ describe('SPEC-06 motor léxico', () => {
     expect(findBannedWords('', catalog)).toEqual([]);
     expect(findBannedWords('Repaso de patrones el sábado', catalog)).toEqual([]);
   });
+
+  it('detecta evasión por repetición de caracteres espurios', () => {
+    expect(findBannedWords('Esto es un frauuuude total', catalog)).toEqual(['fraude']);
+  });
+
+  it('detecta evasión por sustituciones leetspeak', () => {
+    expect(findBannedWords('vaya fr4ude', catalog)).toEqual(['fraude']);
+    expect(findBannedWords('cuidado con la est@fa', catalog)).toEqual(['estafa']);
+  });
 });
+

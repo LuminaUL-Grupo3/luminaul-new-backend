@@ -1,10 +1,10 @@
 import { NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
-import { ModerationService } from '../services/moderation.service';
-import { ModerationRepository } from '../repositories/moderation.repository';
-import { ContentReportEntity } from '../entities/content-report.entity';
-import { ContentModerationLogEntity } from '../entities/content-moderation-log.entity';
-import { ContentAppealEntity } from '../entities/content-appeal.entity';
-import { TargetContentType, ReportStatus, AppealStatus, ModerationResult } from '../enums/moderation.enums';
+import { ModerationService } from '../../src/modules/moderation/services/moderation.service';
+import { ModerationRepository } from '../../src/modules/moderation/repositories/moderation.repository';
+import { ContentReportEntity } from '../../src/modules/moderation/entities/content-report.entity';
+import { ContentModerationLogEntity } from '../../src/modules/moderation/entities/content-moderation-log.entity';
+import { ContentAppealEntity } from '../../src/modules/moderation/entities/content-appeal.entity';
+import { TargetContentType, ReportStatus, AppealStatus, ModerationResult } from '../../src/modules/moderation/enums/moderation.enums';
 
 describe('ModerationService (Unit)', () => {
   let service: ModerationService;

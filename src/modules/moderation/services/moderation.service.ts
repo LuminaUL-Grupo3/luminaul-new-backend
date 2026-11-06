@@ -117,12 +117,19 @@ export class ModerationService {
       throw new ConflictException(MODERATION_MESSAGES.APPEAL_DUPLICATED);
     }
 
-    const appeal = await this.repository.createAppeal(log.id, userId, dto.justification);
-    if (!appeal) throw new ConflictException(MODERATION_MESSAGES.APPEAL_DUPLICATED);
-    return {
-      message: MODERATION_MESSAGES.APPEAL_CREATED,
-      appealId: appeal.id,
-      status: AppealStatus.PENDING,
-    };
+    try {
+      const appeal = await this.repository.createAppeal(log.id, userId, dto.justification);
+      if (!appeal) throw new ConflictException(MODERATION_MESSAGES.APPEAL_DUPLICATED);
+      return {
+        message: MODERATION_MESSAGES.APPEAL_CREATED,
+        appealId: appeal.id,
+        status: AppealStatus.PENDING,
+      };
+    } catch (error: unknown) {
+      if (isUniqueViolation(error)) {
+        throw new ConflictException(MODERATION_MESSAGES.APPEAL_DUPLICATED);
+      }
+      throw error;
+    }
   }
 }
