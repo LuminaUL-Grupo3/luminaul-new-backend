@@ -19,6 +19,10 @@ export const AUTH_MESSAGES = {
   RESET_CODE_SENT:
     'Si el correo está registrado, recibirás un código para restablecer tu contraseña',
   PASSWORD_RESET: 'Contraseña restablecida correctamente. Inicia sesión con tu nueva contraseña.',
+  PASSWORD_CHANGED:
+    'Contraseña actualizada. Por seguridad se cerraron tus sesiones: inicia sesión con tu nueva contraseña.',
+  WRONG_CURRENT_PASSWORD: 'La contraseña actual es incorrecta',
+  SAME_PASSWORD: 'La nueva contraseña debe ser distinta de la actual',
   LOGGED_OUT: 'Sesión cerrada correctamente',
   ACCOUNT_DELETED: 'Cuenta eliminada exitosamente',
   MISSING_TOKEN: 'Falta el token de autenticación',

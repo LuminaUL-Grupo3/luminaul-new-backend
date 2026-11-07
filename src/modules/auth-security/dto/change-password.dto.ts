@@ -1,23 +1,27 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, MinLength } from 'class-validator';
+import {
+  CURRENT_PASSWORD_REQUIRED_MESSAGE,
+  IsNewPassword,
+  IsRequiredText,
+  NEW_PASSWORD_REQUIRED_MESSAGE,
+  PASSWORD_MAX_BYTES,
+  PASSWORD_MIN_LENGTH,
+} from './auth-validation.constants';
 
+// Cambio de contraseña con sesión iniciada. Los nombres de campo son los que ya envía
+// SettingsPage (features/profile). Un solo contrato: aceptar dos variantes de cada campo hacía
+// que se exigieran las cuatro y que toda petición fallara.
 export class ChangePasswordDto {
-  @ApiProperty({ description: 'Contraseña actual del usuario' })
-  @IsString()
-  @IsNotEmpty({ message: 'Debes ingresar tu contraseña actual' })
-  current_password?: string;
+  @ApiProperty({ description: 'Contraseña actual del usuario', example: 'ActualSegura123' })
+  @IsRequiredText(CURRENT_PASSWORD_REQUIRED_MESSAGE)
+  current_password!: string;
 
-  @IsString()
-  @IsNotEmpty()
-  currentPassword?: string;
-
-  @ApiProperty({ description: 'Nueva contraseña (mínimo 10 caracteres)' })
-  @IsString()
-  @MinLength(10, { message: 'La nueva contraseña debe tener por lo menos 10 caracteres' })
-  password?: string;
-
-  @IsString()
-  @MinLength(10)
-  newPassword?: string;
+  @ApiProperty({
+    description: 'Nueva contraseña',
+    example: 'NuevaSegura456!',
+    minLength: PASSWORD_MIN_LENGTH,
+    maxLength: PASSWORD_MAX_BYTES,
+  })
+  @IsNewPassword(NEW_PASSWORD_REQUIRED_MESSAGE)
+  password!: string;
 }
-

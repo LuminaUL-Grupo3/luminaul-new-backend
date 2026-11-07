@@ -1,17 +1,21 @@
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { IsEmail } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import { normalizeEmail } from './auth-validation.constants';
+import {
+  EMAIL_FORMAT_MESSAGE,
+  IsRequiredText,
+  PASSWORD_REQUIRED_MESSAGE,
+  normalizeEmail,
+} from './auth-validation.constants';
 
 export class LoginDto {
   @ApiProperty({ example: '20210001@aloe.ulima.edu.pe' })
   @Transform(normalizeEmail)
-  @IsEmail({}, { message: 'Formato de correo no válido' })
-  @IsNotEmpty()
+  @IsEmail({}, { message: EMAIL_FORMAT_MESSAGE })
   email!: string;
 
+  // Sin la política de contraseña nueva: el login debe aceptar cualquier contraseña ya guardada
   @ApiProperty({ example: 'PasswordSegura123!' })
-  @IsString()
-  @IsNotEmpty({ message: 'La contraseña no puede estar vacía' })
+  @IsRequiredText(PASSWORD_REQUIRED_MESSAGE)
   password!: string;
 }

@@ -137,16 +137,20 @@ export class AuthController {
   @HttpCode(200)
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Cambiar la contraseña del usuario autenticado (Settings)' })
+  @ApiOperation({
+    summary: 'Cambiar la contraseña del usuario autenticado (Settings)',
+    description: 'Verifica la contraseña actual, guarda la nueva y cierra todas las sesiones.',
+  })
   @ApiResponse({ status: 200, type: MessageResponseDto })
-  @ApiResponse({ status: 400, description: 'Contraseña actual incorrecta o formato inválido' })
+  @ApiResponse({
+    status: 400,
+    description: 'Contraseña actual incorrecta, nueva igual a la actual o formato inválido',
+  })
   changePassword(
     @CurrentUser() userId: string,
     @Body() dto: ChangePasswordDto,
   ): Promise<MessageResponseDto> {
-    const currentPass = dto.current_password || dto.currentPassword || '';
-    const newPass = dto.password || dto.newPassword || '';
-    return this.passwordRecoveryService.changePassword(userId, currentPass, newPass);
+    return this.passwordRecoveryService.changePassword(userId, dto);
   }
 
   @Post('logout')
