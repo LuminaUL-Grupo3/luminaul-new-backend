@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersRepository } from '../repositories/users.repository';
 import { PasswordHasher } from '../providers/password-hasher';
 import { OneTimeCodePurpose, OneTimeCodeService } from './one-time-code.service';
@@ -7,6 +7,7 @@ import { UserEntity } from '../entities/user.entity';
 import { UserAccountStatus } from '../enums/user-account-status.enum';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
+import { ChangePasswordDto } from '../dto/change-password.dto';
 import { MessageResponseDto } from '../dto/auth-response.dto';
 import { AUTH_MESSAGES } from '../auth.constants';
 
@@ -56,18 +57,24 @@ export class PasswordRecoveryService {
     return { message: AUTH_MESSAGES.PASSWORD_RESET };
   }
 
-  async changePassword(userId: string, currentPass: string, newPass: string): Promise<MessageResponseDto> {
+  // Cambio con sesión iniciada: el formato de la nueva contraseña ya lo validó ChangePasswordDto
+  async changePassword(userId: string, dto: ChangePasswordDto): Promise<MessageResponseDto> {
     const user = await this.users.findById(userId);
     if (!user) {
-      throw new BadRequestException('Usuario no encontrado');
+      throw new UnauthorizedException(AUTH_MESSAGES.SESSION_INVALIDATED);
     }
-    const matches = await this.passwordHasher.compare(currentPass, user.passwordHash);
-    if (!matches) {
-      throw new BadRequestException('La contraseña actual es incorrecta');
+    if (!(await this.passwordHasher.compare(dto.current_password, user.passwordHash))) {
+      throw new BadRequestException(AUTH_MESSAGES.WRONG_CURRENT_PASSWORD);
     }
-    user.passwordHash = await this.passwordHasher.hash(newPass);
+    // Ya se comprobó que current_password es la contraseña vigente, basta compararlas en claro
+    if (dto.password === dto.current_password) {
+      throw new BadRequestException(AUTH_MESSAGES.SAME_PASSWORD);
+    }
+
+    user.passwordHash = await this.passwordHasher.hash(dto.password);
+    // Igual que en el restablecimiento: se cierran todas las sesiones, incluida la actual
     user.tokensValidAfter = new Date();
     await this.users.save(user);
-    return { message: 'Contraseña actualizada con éxito' };
+    return { message: AUTH_MESSAGES.PASSWORD_CHANGED };
   }
 }

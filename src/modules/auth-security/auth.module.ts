@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserEntity } from './entities/user.entity';
 import { RevokedTokenEntity } from './entities/revoked-token.entity';
@@ -7,8 +8,9 @@ import { UsersRepository } from './repositories/users.repository';
 import { RevokedTokensRepository } from './repositories/revoked-tokens.repository';
 import { BcryptPasswordHasher, PasswordHasher } from './providers/password-hasher';
 import { OtpGenerator, RandomOtpGenerator } from './providers/otp-generator';
-import { ConsoleMailSender, MailSender } from './providers/mail-sender';
+import { MailSender } from './providers/mail-sender';
 import { NonBlockingMailSender } from './providers/non-blocking-mail-sender';
+import { createMailTransport, MAIL_TRANSPORT } from './providers/mail-transport.factory';
 import { HmacTokenService, TokenService } from './providers/token.service';
 import {
   ActiveAccountCheck,
@@ -33,12 +35,12 @@ import { RolesGuard } from './guards/roles.guard';
     // Inversión de dependencias: los servicios piden la abstracción, aquí se elige la implementación
     { provide: PasswordHasher, useClass: BcryptPasswordHasher },
     { provide: OtpGenerator, useClass: RandomOtpGenerator },
-    // Transporte real del correo (cambiar aquí por el adapter SMTP), envuelto para no bloquear
-    ConsoleMailSender,
+    // Transporte real del correo (consola o SMTP según MAIL_TRANSPORT), envuelto para no bloquear
+    { provide: MAIL_TRANSPORT, useFactory: createMailTransport, inject: [ConfigService] },
     {
       provide: MailSender,
-      useFactory: (transport: ConsoleMailSender) => new NonBlockingMailSender(transport),
-      inject: [ConsoleMailSender],
+      useFactory: (transport: MailSender) => new NonBlockingMailSender(transport),
+      inject: [MAIL_TRANSPORT],
     },
     { provide: TokenService, useClass: HmacTokenService },
     SignatureCheck,
