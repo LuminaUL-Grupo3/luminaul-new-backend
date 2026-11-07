@@ -12,6 +12,16 @@ export const envValidationSchema = z
     JWT_SECRET: z.string().min(16, 'JWT_SECRET debe tener al menos 16 caracteres').optional(),
     JWT_EXPIRES_IN: z.string().optional(),
     DATABASE_SSL_REJECT_UNAUTHORIZED: z.enum(['true', 'false']).optional(),
+    // Correo de SPEC-01. Deben declararse aquí: validateEnv descarta las variables desconocidas
+    // y ConfigModule solo expone las que devuelve. Las reglas finas viven en
+    // modules/auth-security/config/mail.config.ts.
+    MAIL_TRANSPORT: z.string().optional(),
+    SMTP_HOST: z.string().optional(),
+    SMTP_PORT: z.string().optional(),
+    SMTP_SECURE: z.string().optional(),
+    SMTP_USER: z.string().optional(),
+    SMTP_PASSWORD: z.string().optional(),
+    MAIL_FROM: z.string().optional(),
   })
   .refine(
     (data) => data.NODE_ENV !== 'production' || (!!data.JWT_SECRET && data.JWT_SECRET.length >= 32),
