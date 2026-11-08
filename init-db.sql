@@ -11,10 +11,13 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 DROP TABLE IF EXISTS audit_logs CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS appeals CASCADE;
+DROP TABLE IF EXISTS moderation_tasks CASCADE;
 DROP TABLE IF EXISTS moderation_logs CASCADE;
 DROP TABLE IF EXISTS reports CASCADE;
 DROP TABLE IF EXISTS banned_words CASCADE;
 DROP TABLE IF EXISTS reviews CASCADE;
+DROP TABLE IF EXISTS message_reactions CASCADE;
+DROP TABLE IF EXISTS group_read_markers CASCADE;
 DROP TABLE IF EXISTS group_messages CASCADE;
 DROP TABLE IF EXISTS join_requests CASCADE;
 DROP TABLE IF EXISTS group_members CASCADE;
@@ -230,6 +233,8 @@ CREATE TABLE group_messages (
   group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
   sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   content TEXT NOT NULL,
+  client_message_id UUID,
+  reply_to_id UUID REFERENCES group_messages(id) ON DELETE SET NULL,
   status VARCHAR(20) NOT NULL DEFAULT 'published',
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   deleted_at TIMESTAMPTZ
@@ -239,6 +244,25 @@ CREATE INDEX ix_group_messages_room ON group_messages (group_id, created_at);
 CREATE INDEX ix_group_messages_room_active ON group_messages (group_id, created_at DESC) WHERE deleted_at IS NULL AND status = 'published';
 CREATE INDEX ix_group_messages_unmoderated ON group_messages (created_at DESC) WHERE deleted_at IS NULL;
 CREATE INDEX ix_group_messages_sender ON group_messages (sender_id);
+CREATE UNIQUE INDEX ux_group_messages_retry ON group_messages (group_id, sender_id, client_message_id) WHERE client_message_id IS NOT NULL;
+CREATE INDEX ix_group_messages_page ON group_messages (group_id, created_at DESC, id DESC);
+
+CREATE TABLE message_reactions (
+  message_id UUID NOT NULL REFERENCES group_messages(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  emoji VARCHAR(16) NOT NULL CHECK(emoji IN ('❤️','😂','👍','🔥')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (message_id, user_id, emoji)
+);
+
+CREATE TABLE group_read_markers (
+  group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  last_message_id UUID NOT NULL REFERENCES group_messages(id) ON DELETE CASCADE,
+  last_created_at TIMESTAMPTZ NOT NULL,
+  read_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (group_id, user_id)
+);
 
 -- ============================================================
 -- 5. SPEC-05: Reseñas y Calificaciones
@@ -393,19 +417,16 @@ CREATE INDEX ix_audit_logs_target ON audit_logs (target_entity, target_id);
 -- 8. SEMILLAS (SEEDS) Y GOLDEN MOCKS OFICIALES
 -- ============================================================
 
--- A. Usuarios Golden según SPECS.md
--- Hash Bcrypt para 'Password123!' / 'PasswordSegura123!':
--- $2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2
+-- A. Usuarios Golden según SPECS.md (2 Alumnos y 2 Administradores)
+-- Hash Bcrypt para 'PasswordSegura2026!':
+-- $2b$10$FIYIvMY.n1KBFCOZPUX80OfDtX95lk6p0rVw/cIXvp7g.RYFf5u7e
 
 INSERT INTO users (id, email, password_hash, name, role, status, is_verified, created_at, updated_at)
 VALUES 
-  ('d290f1ee-6c54-4b01-90e6-d701748f0851', '20210001@aloe.ulima.edu.pe', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', 'Martín Vizcarra', 'student', 'active', true, NOW(), NOW()),
-  ('a1b2c3d4-e5f6-47a8-b9c0-123456789abc', '20210002@aloe.ulima.edu.pe', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', 'Carlos Mendoza', 'student', 'active', true, NOW(), NOW()),
-  ('99887766-5544-4322-8100-aabbccddeeff', 'admin@aloe.ulima.edu.pe', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', 'Administrador General', 'admin', 'active', true, NOW(), NOW()),
-  ('00000001-0000-4000-8000-000000000001', 'alumno1@aloe.ulima.edu.pe', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', 'Alumno 1', 'student', 'active', true, NOW(), NOW()),
-  ('00000002-0000-4000-8000-000000000002', 'alumno2@aloe.ulima.edu.pe', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', 'Alumno 2', 'student', 'active', true, NOW(), NOW()),
-  ('00000099-0000-4000-8000-000000000099', 'admin.backup@aloe.ulima.edu.pe', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', 'Admin Backup', 'admin', 'active', true, NOW(), NOW()),
-  ('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'demo.student@ulima.edu.pe', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', 'Demo Student', 'student', 'active', true, NOW(), NOW())
+  ('d290f1ee-6c54-4b01-90e6-d701748f0851', '20210001@aloe.ulima.edu.pe', '$2b$10$FIYIvMY.n1KBFCOZPUX80OfDtX95lk6p0rVw/cIXvp7g.RYFf5u7e', 'Martín Vizcarra', 'student', 'active', true, NOW(), NOW()),
+  ('a1b2c3d4-e5f6-47a8-b9c0-123456789abc', '20210002@aloe.ulima.edu.pe', '$2b$10$FIYIvMY.n1KBFCOZPUX80OfDtX95lk6p0rVw/cIXvp7g.RYFf5u7e', 'Carlos Mendoza', 'student', 'active', true, NOW(), NOW()),
+  ('99887766-5544-4322-8100-aabbccddeeff', 'admin@aloe.ulima.edu.pe', '$2b$10$FIYIvMY.n1KBFCOZPUX80OfDtX95lk6p0rVw/cIXvp7g.RYFf5u7e', 'Administrador General', 'admin', 'active', true, NOW(), NOW()),
+  ('00000099-0000-4000-8000-000000000099', 'admin2@aloe.ulima.edu.pe', '$2b$10$FIYIvMY.n1KBFCOZPUX80OfDtX95lk6p0rVw/cIXvp7g.RYFf5u7e', 'Administrador Secundario', 'admin', 'active', true, NOW(), NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- B. Perfiles Demo
@@ -414,10 +435,7 @@ VALUES
   ('d290f1ee-6c54-4b01-90e6-d701748f0851', 'Martín Vizcarra', 'Estudiante de 5to ciclo de Ing. de Sistemas', 'Ingeniería de Sistemas', '5', 'https://avatar.test/martin.png', NOW()),
   ('a1b2c3d4-e5f6-47a8-b9c0-123456789abc', 'Carlos Mendoza', 'Estudiante de 4to ciclo enfocado en algoritmos y estructuras de datos', 'Ingeniería de Sistemas', '4', 'https://avatar.test/carlos.png', NOW()),
   ('99887766-5544-4322-8100-aabbccddeeff', 'Administrador General', 'Gestión de Comunidad y Moderación LuminaUL', 'Administración', '10', 'https://avatar.test/admin.png', NOW()),
-  ('00000001-0000-4000-8000-000000000001', 'Alumno 1', 'Perfil de prueba automatizada', 'Ingeniería de Sistemas', '3', NULL, NOW()),
-  ('00000002-0000-4000-8000-000000000002', 'Alumno 2', 'Perfil de prueba de revisión', 'Ingeniería Industrial', '4', NULL, NOW()),
-  ('00000099-0000-4000-8000-000000000099', 'Admin Backup', 'Perfil de administración de soporte', 'Administración', '10', NULL, NOW()),
-  ('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'Demo Student', 'Estudiante de prueba inicial', 'Ingeniería de Sistemas', '5', 'https://avatar.test/demo.png', NOW())
+  ('00000099-0000-4000-8000-000000000099', 'Administrador Secundario', 'Gestión de Soporte y Operaciones LuminaUL', 'Administración', '10', 'https://avatar.test/admin2.png', NOW())
 ON CONFLICT (user_id) DO NOTHING;
 
 -- C. Habilidades e Intereses

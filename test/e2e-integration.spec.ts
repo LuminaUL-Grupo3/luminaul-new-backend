@@ -4,12 +4,12 @@ process.env.JWT_SECRET =
 process.env.WEB_ORIGIN = 'http://localhost:5173,http://127.0.0.1:5173';
 
 import { NestFactory } from '@nestjs/core';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { hash } from 'bcryptjs';
 import { io, Socket } from 'socket.io-client';
 import { AppModule } from '../src/app.module';
-import { AllExceptionsFilter } from '../src/common/filters/http-exception.filter';
+import { API_PREFIX, configureHttpApp } from '../src/config/http-app.config';
 import { ChatInteractions1762041600000 } from '../src/modules/group-messaging/migrations/1762041600000-ChatInteractions';
 
 describe('E2E Integration Flow: LuminaUL Monolito Modular (7 Módulos)', () => {
@@ -50,7 +50,7 @@ describe('E2E Integration Flow: LuminaUL Monolito Modular (7 Módulos)', () => {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (options.token) headers.Authorization = `Bearer ${options.token}`;
 
-    const res = await fetch(`${baseUrl}${path}`, {
+    const res = await fetch(`${baseUrl}/${API_PREFIX}${path}`, {
       method,
       headers,
       body: options.body ? JSON.stringify(options.body) : undefined,
@@ -78,15 +78,8 @@ describe('E2E Integration Flow: LuminaUL Monolito Modular (7 Módulos)', () => {
 
   beforeAll(async () => {
     app = await NestFactory.create(AppModule, { logger: false });
-    app.useGlobalFilters(new AllExceptionsFilter());
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-        transformOptions: { enableImplicitConversion: true },
-      }),
-    );
+    configureHttpApp(app);
+
 
     await app.listen(0, '127.0.0.1');
     const address = app.getHttpServer().address();

@@ -10,7 +10,7 @@ import { MessagesRepository } from "./repositories/messages.repository";
 import { GroupMessagingService } from "./group-messaging.service";
 import {
   GroupMessagingController,
-  LegacyRequestsController,
+  JoinRequestsController,
 } from "./group-messaging.controller";
 import { GroupSession, GroupSessionGuard } from "./security/group-session";
 import { ChatGateway } from "./gateways/chat.gateway";
@@ -27,7 +27,7 @@ import { RoomPresence } from "./gateways/room-presence";
       JoinRequestEntity,
     ]),
   ],
-  controllers: [GroupMessagingController, LegacyRequestsController],
+  controllers: [GroupMessagingController, JoinRequestsController],
   providers: [
     GroupsRepository,
     MessagesRepository,

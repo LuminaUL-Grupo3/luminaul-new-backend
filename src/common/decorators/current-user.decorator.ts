@@ -1,11 +1,6 @@
 import { createParamDecorator, ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { Request } from 'express';
 
-/**
- * @deprecated ID de usuario demo utilizado exclusivamente en pruebas y seeds; nunca como identidad por defecto.
- */
-export const DEMO_USER_ID = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
-
 export interface AuthenticatedUser {
   id: string;
   email?: string;

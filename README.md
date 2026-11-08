@@ -63,7 +63,7 @@ El build compila directamente con NestJS y genera la documentación OpenAPI para
 
 ### Puntos de acceso:
 * **API REST:** `http://localhost:8000`
-* **Swagger UI Interactivo:** `http://localhost:8000/docs`
+* **Swagger UI Interactivo:** `http://localhost:8000/api/docs`
 * **Health Check:** `http://localhost:8000/health`
 
 ---
