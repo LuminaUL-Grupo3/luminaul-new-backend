@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PostEntity } from './entities/post.entity';
 import { PostsRepository } from './posts.repository';
 import { PostsService } from './posts.service';
@@ -8,6 +7,21 @@ import { PostsController } from './posts.controller';
 import { CoursesModule } from '../courses/courses.module';
 import { GroupMessagingModule } from '../group-messaging/group-messaging.module';
 import { AuthModule } from '../auth-security/auth.module';
+
+// Adapters (Puertos e implementaciones)
+import { CoursesClient } from './client/CoursesClient';
+import { CoursesClientImpl } from './client/impl/CoursesClientImpl';
+import { GroupMessagingClient } from './client/GroupMessagingClient';
+import { GroupMessagingClientImpl } from './client/impl/GroupMessagingClientImpl';
+import { ModerationClient } from './client/ModerationClient';
+import { ModerationClientImpl } from './client/impl/ModerationClientImpl';
+
+// Factory Method (Creadores y Factory Dispatcher)
+import { PostCreator } from './factory/PostCreator';
+import { StudyGroupPostCreator } from './factory/impl/StudyGroupPostCreator';
+import { TutoringPostCreator } from './factory/impl/TutoringPostCreator';
+import { PostCreatorFactory } from './factory/PostCreatorFactory';
+import { POST_CREATORS } from './posts.constants';
 
 @Module({
   imports: [
@@ -20,8 +34,29 @@ import { AuthModule } from '../auth-security/auth.module';
   providers: [
     PostsRepository,
     PostsService,
-    { provide: 'EventEmitter', useExisting: EventEmitter2 },
+    // Providers de Adaptadores
+    { provide: CoursesClient, useClass: CoursesClientImpl },
+    { provide: GroupMessagingClient, useClass: GroupMessagingClientImpl },
+    { provide: ModerationClient, useClass: ModerationClientImpl },
+    // Providers de Factory Method
+    StudyGroupPostCreator,
+    TutoringPostCreator,
+    {
+      provide: POST_CREATORS,
+      useFactory: (...creators: PostCreator[]) => creators,
+      inject: [StudyGroupPostCreator, TutoringPostCreator],
+    },
+    PostCreatorFactory,
   ],
-  exports: [PostsRepository, PostsService, TypeOrmModule],
+  exports: [
+    PostsRepository,
+    PostsService,
+    TypeOrmModule,
+    CoursesClient,
+    GroupMessagingClient,
+    ModerationClient,
+    POST_CREATORS,
+    PostCreatorFactory,
+  ],
 })
-export class PostsModule {}
+export class PostsModule { }

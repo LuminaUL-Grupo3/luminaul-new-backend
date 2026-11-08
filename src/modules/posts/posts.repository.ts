@@ -3,8 +3,6 @@ import { DataSource, Repository, IsNull } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'node:crypto';
 import { PostEntity } from './entities/post.entity';
-import { GroupEntity } from '../group-messaging/entities/group.entity';
-import { GroupsRepository } from '../group-messaging/repositories/groups.repository';
 import { PostCreateDto } from './dto/post-create.dto';
 import { PostUpdateDto } from './dto/post-update.dto';
 
@@ -18,65 +16,62 @@ export class PostsRepository {
   constructor(
     @InjectRepository(PostEntity)
     private readonly postRepo: Repository<PostEntity>,
-    private readonly groupsRepository: GroupsRepository,
     private readonly dataSource: DataSource,
-  ) {}
+  ) { }
 
-  async findGroupById(groupId: string): Promise<GroupEntity | null> {
-    return this.groupsRepository.findActiveById(groupId);
+  /**
+   * Consulta directa desacoplada por SQL parametrizado.
+   */
+  async findGroupById(groupId: string): Promise<{ id: string } | null> {
+    const rows = await this.dataSource.query(
+      'SELECT id FROM groups WHERE id = $1 AND deleted_at IS NULL',
+      [groupId],
+    );
+    return rows.length > 0 ? { id: rows[0].id } : null;
   }
 
+  /**
+   * Persiste una entidad PostEntity construida por el Factory Method.
+   */
+  async save(post: PostEntity): Promise<PostEntity> {
+    const saved = await this.postRepo.save(post);
+    return (await this.getPostById(saved.id)) ?? saved;
+  }
+
+  /**
+   * Guarda la publicación. Soporta tanto la entidad directa (Factory Method)
+   * como sobrecarga legacy para pruebas unitarias.
+   */
   async create(
-    postDto: PostCreateDto,
-    userId: string,
-    courseName: string,
+    postOrDto: PostEntity | PostCreateDto,
+    userId?: string,
+    _courseName?: string,
   ): Promise<PostEntity> {
-    return this.dataSource.transaction(async (manager) => {
-      let finalGroupId: string | null = null;
-      const targetGroupId = PostCreateDto.getGroupId(postDto);
-      const targetCourseId = PostCreateDto.getCourseId(postDto);
-      const targetMaxCapacity = PostCreateDto.getMaxCapacity(postDto);
+    if ('status' in postOrDto && 'type' in postOrDto && !userId) {
+      return this.save(postOrDto as PostEntity);
+    }
 
-      if (targetGroupId) {
-        // Caso A: Vincular a grupo existente especificado
-        finalGroupId = targetGroupId;
-      } else if (
-        postDto.type === 'study_group' ||
-        postDto.benefits ||
-        postDto.requirements
-      ) {
-        // Caso B: Auto-creación de grupo garantizando el admin en group_members (Regla DDL)
-        const savedGroup = await this.groupsRepository.createWithAdmin(
-          {
-            name: `Grupo de ${courseName}`,
-            description: `Grupo de estudio creado automáticamente para coordinar ${courseName}.`,
-            benefits: postDto.benefits ?? null,
-            requirements: postDto.requirements ?? null,
-          },
-          userId,
-          manager,
-        );
-        finalGroupId = savedGroup.id;
-      }
-      // Caso C: Tutoría individual o post simple sin grupo -> finalGroupId queda en null
+    const dto = postOrDto as PostCreateDto;
+    const targetCourseId = PostCreateDto.getCourseId(dto);
+    const targetGroupId = PostCreateDto.getGroupId(dto);
+    const targetMaxCapacity = PostCreateDto.getMaxCapacity(dto);
 
-      // Crear la publicación
-      const post = manager.create(PostEntity, {
-        id: randomUUID(),
-        userId,
-        courseId: targetCourseId,
-        type: postDto.type,
-        description: postDto.description,
-        benefits: postDto.benefits ?? null,
-        requirements: postDto.requirements ?? null,
-        maxCapacity: targetMaxCapacity,
-        groupId: finalGroupId,
-        status: 'published',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-      return manager.save(PostEntity, post);
+    const post = this.postRepo.create({
+      id: randomUUID(),
+      userId: userId!,
+      courseId: targetCourseId,
+      type: dto.type,
+      description: dto.description,
+      benefits: dto.benefits ?? null,
+      requirements: dto.requirements ?? null,
+      maxCapacity: targetMaxCapacity,
+      groupId: targetGroupId ?? null,
+      status: 'published',
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
+
+    return this.save(post);
   }
 
   async getPosts(
