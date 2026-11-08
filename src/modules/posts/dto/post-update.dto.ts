@@ -15,15 +15,7 @@ import { ALLOWED_POST_TYPES, IsNotBlankConstraint } from './post-create.dto';
 
 export class PostUpdateDto {
   @ApiPropertyOptional({
-    description: 'UUID del curso asociado (snake_case)',
-    example: '8c537243-ea7d-411a-8bb7-fce5230bfdf2',
-  })
-  @IsOptional()
-  @IsUUID(undefined, { message: 'course_id must be a valid UUID' })
-  course_id?: string;
-
-  @ApiPropertyOptional({
-    description: 'UUID del curso asociado (camelCase)',
+    description: 'UUID del curso asociado',
     example: '8c537243-ea7d-411a-8bb7-fce5230bfdf2',
   })
   @IsOptional()
@@ -67,19 +59,4 @@ export class PostUpdateDto {
   @Min(1)
   @Max(50)
   maxCapacity?: number;
-
-  @ApiPropertyOptional({ description: 'Capacidad máxima de miembros (snake_case)' })
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  @Max(50)
-  max_capacity?: number;
-
-  static getCourseId(dto: PostUpdateDto): string | undefined {
-    return dto.courseId || dto.course_id;
-  }
-
-  static getMaxCapacity(dto: PostUpdateDto): number | undefined {
-    return dto.maxCapacity ?? dto.max_capacity;
-  }
 }

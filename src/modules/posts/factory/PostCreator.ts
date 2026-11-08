@@ -34,7 +34,7 @@ export abstract class PostCreator {
     post.description = dto.description;
     post.benefits = dto.benefits ?? null;
     post.requirements = dto.requirements ?? null;
-    post.maxCapacity = maxCapacity ?? PostCreateDto.getMaxCapacity(dto);
+    post.maxCapacity = maxCapacity ?? dto.maxCapacity ?? 5;
     post.groupId = groupId;
     post.status = 'published';
     post.createdAt = new Date();

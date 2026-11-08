@@ -5,7 +5,6 @@ import {
   IsIn,
   IsOptional,
   Validate,
-  ValidateIf,
   IsInt,
   Min,
   Max,
@@ -33,21 +32,12 @@ export class IsNotBlankConstraint implements ValidatorConstraintInterface {
 }
 
 export class PostCreateDto {
-  @ApiPropertyOptional({
-    description: 'UUID del curso asociado (snake_case)',
+  @ApiProperty({
+    description: 'UUID del curso asociado',
     example: '8c537243-ea7d-411a-8bb7-fce5230bfdf2',
   })
-  @ValidateIf((o) => !o.courseId)
-  @IsUUID(undefined, { message: 'course_id must be a valid UUID' })
-  course_id?: string;
-
-  @ApiPropertyOptional({
-    description: 'UUID del curso asociado (camelCase)',
-    example: '8c537243-ea7d-411a-8bb7-fce5230bfdf2',
-  })
-  @ValidateIf((o) => !o.course_id)
   @IsUUID(undefined, { message: 'courseId must be a valid UUID' })
-  courseId?: string;
+  courseId!: string;
 
   @ApiProperty({
     description: 'Tipo de publicación: study_group o tutoring',
@@ -89,15 +79,7 @@ export class PostCreateDto {
   requirements?: string;
 
   @ApiPropertyOptional({
-    description: 'ID de un grupo ya existente para vincular (snake_case)',
-    example: '7b134111-9a22-48df-9fa0-cd8213aa0981',
-  })
-  @IsOptional()
-  @IsUUID(undefined, { message: 'group_id must be a valid UUID' })
-  group_id?: string;
-
-  @ApiPropertyOptional({
-    description: 'ID de un grupo ya existente para vincular (camelCase)',
+    description: 'ID de un grupo ya existente para vincular',
     example: '7b134111-9a22-48df-9fa0-cd8213aa0981',
   })
   @IsOptional()
@@ -114,27 +96,4 @@ export class PostCreateDto {
   @Min(1)
   @Max(50)
   maxCapacity?: number;
-
-  @ApiPropertyOptional({
-    description: 'Capacidad máxima de miembros (snake_case)',
-    example: 5,
-    default: 5,
-  })
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  @Max(50)
-  max_capacity?: number;
-
-  static getCourseId(dto: PostCreateDto): string {
-    return dto.courseId || dto.course_id || '';
-  }
-
-  static getGroupId(dto: PostCreateDto): string | undefined {
-    return dto.groupId || dto.group_id;
-  }
-
-  static getMaxCapacity(dto: PostCreateDto): number {
-    return dto.maxCapacity ?? dto.max_capacity ?? 5;
-  }
 }
