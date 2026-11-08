@@ -23,3 +23,8 @@ export const POST_MESSAGES = {
 
 export const CONTENT_CREATED_EVENT = 'content.created';
 
+/**
+ * Token de Inyección de Dependencias para los creadores de publicaciones (Factory Method / Multi-provider).
+ */
+export const POST_CREATORS = Symbol('POST_CREATORS');
+

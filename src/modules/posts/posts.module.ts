@@ -17,9 +17,11 @@ import { ModerationClient } from './client/ModerationClient';
 import { ModerationClientImpl } from './client/impl/ModerationClientImpl';
 
 // Factory Method (Creadores y Factory Dispatcher)
+import { PostCreator } from './factory/PostCreator';
 import { StudyGroupPostCreator } from './factory/impl/StudyGroupPostCreator';
 import { TutoringPostCreator } from './factory/impl/TutoringPostCreator';
 import { PostCreatorFactory } from './factory/PostCreatorFactory';
+import { POST_CREATORS } from './posts.constants';
 
 @Module({
   imports: [
@@ -39,6 +41,11 @@ import { PostCreatorFactory } from './factory/PostCreatorFactory';
     // Providers de Factory Method
     StudyGroupPostCreator,
     TutoringPostCreator,
+    {
+      provide: POST_CREATORS,
+      useFactory: (...creators: PostCreator[]) => creators,
+      inject: [StudyGroupPostCreator, TutoringPostCreator],
+    },
     PostCreatorFactory,
   ],
   exports: [
@@ -48,6 +55,7 @@ import { PostCreatorFactory } from './factory/PostCreatorFactory';
     CoursesClient,
     GroupMessagingClient,
     ModerationClient,
+    POST_CREATORS,
     PostCreatorFactory,
   ],
 })

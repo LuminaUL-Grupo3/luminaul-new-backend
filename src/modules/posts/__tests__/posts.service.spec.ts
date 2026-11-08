@@ -51,7 +51,7 @@ describe('PostsModule Patterns (Unit Tests)', () => {
 
     studyGroupCreator = new StudyGroupPostCreator(mockGroupMessagingClient);
     tutoringCreator = new TutoringPostCreator(mockGroupMessagingClient);
-    postCreatorFactory = new PostCreatorFactory(studyGroupCreator, tutoringCreator);
+    postCreatorFactory = new PostCreatorFactory([studyGroupCreator, tutoringCreator]);
 
     service = new PostsService(
       mockPostsRepo,
@@ -149,6 +149,23 @@ describe('PostsModule Patterns (Unit Tests)', () => {
       expect(() => postCreatorFactory.getCreator('invalid_type')).toThrow(
         UnprocessableEntityException,
       );
+    });
+
+    it('debe permitir extender nuevos tipos de publicación dinámicamente sin modificar código (Open/Closed Principle)', () => {
+      const mockCustomCreator = {
+        type: 'workshop',
+        create: jest.fn(),
+      } as unknown as StudyGroupPostCreator;
+
+      const dynamicFactory = new PostCreatorFactory([
+        studyGroupCreator,
+        tutoringCreator,
+        mockCustomCreator,
+      ]);
+
+      expect(dynamicFactory.getCreator('workshop')).toBe(mockCustomCreator);
+      expect(dynamicFactory.getCreator('study_group')).toBe(studyGroupCreator);
+      expect(dynamicFactory.getCreator('tutoring')).toBe(tutoringCreator);
     });
   });
 

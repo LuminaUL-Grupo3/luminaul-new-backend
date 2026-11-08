@@ -4,7 +4,7 @@ import { PostCreateDto } from '../../dto/post-create.dto';
 import { PostEntity } from '../../entities/post.entity';
 import { CourseData } from '../../client/CoursesClient';
 import { GroupMessagingClient } from '../../client/GroupMessagingClient';
-import { POST_MESSAGES } from '../../posts.constants';
+import { POST_MESSAGES, POST_TYPES } from '../../posts.constants';
 
 /**
  * Creador Concreto para publicaciones de tutoría ('tutoring').
@@ -12,6 +12,8 @@ import { POST_MESSAGES } from '../../posts.constants';
  */
 @Injectable()
 export class TutoringPostCreator extends PostCreator {
+  readonly type = POST_TYPES.TUTORING;
+
   constructor(private readonly groupMessagingClient: GroupMessagingClient) {
     super();
   }

@@ -8,6 +8,11 @@ import { CourseData } from '../client/CoursesClient';
  * Define la operación de creación y centraliza la inicialización de atributos base.
  */
 export abstract class PostCreator {
+  /**
+   * Tipo de publicación que este creador sabe construir (e.g. 'study_group', 'tutoring').
+   */
+  abstract readonly type: string;
+
   abstract create(
     dto: PostCreateDto,
     userId: string,
