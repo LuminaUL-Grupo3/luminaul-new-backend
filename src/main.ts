@@ -10,6 +10,9 @@ async function bootstrap(): Promise<void> {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
 
+  // Confía en el proxy inverso (Caddy / Nginx / ALB) para obtener la IP real del cliente (X-Forwarded-For)
+  app.getHttpAdapter().getInstance().set('trust proxy', true);
+
   // Cabeceras HTTP de seguridad (desactivando CSP restrictivo para compatibilidad con Swagger UI)
   app.use(
     helmet({

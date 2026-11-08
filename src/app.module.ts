@@ -29,11 +29,11 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
       inject: [ConfigService],
       useFactory: getTypeOrmConfig,
     }),
-    // Límite de tasa para prevenir ataques de fuerza bruta y saturación DoS (100 req/min por IP)
+    // Límite de tasa para prevenir saturación DoS (300 req/min por IP, compatible con SPA y WebSockets)
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
-        limit: 100,
+        limit: 300,
       },
     ]),
     // Bus de eventos en memoria: content.created (moderación) y notification.send (SPEC-07)
