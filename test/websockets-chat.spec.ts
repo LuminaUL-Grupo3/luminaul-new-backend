@@ -102,8 +102,8 @@ describe('Real-Time WebSockets: ChatGateway (SPEC-04)', () => {
 
     // Crear grupo de prueba directamente en BD
     const [group] = await dataSource.query(
-      `INSERT INTO groups(name, description, course_code, leader_id, admin_id, meeting_mode, meeting_shift, max_capacity)
-       VALUES($1, $2, $3, $4, $4, 'virtual', 'manana', 6)
+      `INSERT INTO groups(name, description, course_code, leader_id, meeting_mode, meeting_shift, max_capacity)
+       VALUES($1, $2, $3, $4, 'virtual', 'manana', 6)
        RETURNING id`,
       [`WS Grupo ${ts}`, 'Grupo para pruebas de WebSocket', 'CS001', leaderId],
     );

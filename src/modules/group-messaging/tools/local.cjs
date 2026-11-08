@@ -102,8 +102,8 @@ async function prepare(test = false) {
     }
     const groupId = "4b040000-0000-4000-8000-000000000001";
     await db.query(
-      `INSERT INTO groups(id,name,description,course_code,leader_id,admin_id,meeting_mode,meeting_shift,max_capacity)
-      VALUES($1,'Taller de Software II','Coordinamos prácticas y compartimos lo que aprendemos.','ISW2',$2,$2,'virtual','tarde',6)
+      `INSERT INTO groups(id,name,description,course_code,leader_id,meeting_mode,meeting_shift,max_capacity)
+      VALUES($1,'Taller de Software II','Coordinamos prácticas y compartimos lo que aprendemos.','ISW2',$2,'virtual','tarde',6)
       ON CONFLICT(id) DO NOTHING`,
       [groupId, users[0][0]],
     );

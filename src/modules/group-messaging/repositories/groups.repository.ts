@@ -39,14 +39,14 @@ export class GroupsRepository {
   /** Proyecta el contrato canónico y el estado mínimo que necesita el feed ya existente. */
   private selectGroups(): string {
     return `SELECT g.id,g.name,g.description,g.benefits,g.requirements,g.course_code AS "courseCode",
-      COALESCE(g.leader_id,g.admin_id) AS "leaderId", COALESCE(g.meeting_mode,'virtual') AS "meetingMode",
+      g.leader_id AS "leaderId", COALESCE(g.meeting_mode,'virtual') AS "meetingMode",
       COALESCE(g.meeting_shift,'manana') AS "meetingShift",COALESCE(g.max_capacity,6) AS "maxCapacity",
       (SELECT COUNT(*)::int FROM group_members cm WHERE cm.group_id=g.id AND cm.status='active') AS "currentMembers",
       json_build_object('id',u.id,'name',COALESCE(p.name,u.name),'profilePhotoUrl',p.profile_photo_url) AS leader,
-      CASE WHEN mine.status='active' THEN CASE WHEN mine.user_id=COALESCE(g.leader_id,g.admin_id) THEN 'leader' ELSE 'member' END ELSE NULL END AS "myRole",
+      CASE WHEN mine.status='active' THEN CASE WHEN mine.user_id=g.leader_id THEN 'leader' ELSE 'member' END ELSE NULL END AS "myRole",
       COALESCE(mine.status,'none') AS "myStatus",g.created_at AS "createdAt",
       EXISTS(SELECT 1 FROM join_requests j WHERE j.group_id=g.id AND j.user_id=$1 AND j.status='pending') AS "pendingRequest",
-      CASE WHEN mine.status='active' THEN CASE WHEN mine.user_id=COALESCE(g.leader_id,g.admin_id) THEN 'leader' ELSE 'member' END
+      CASE WHEN mine.status='active' THEN CASE WHEN mine.user_id=g.leader_id THEN 'leader' ELSE 'member' END
         WHEN EXISTS(SELECT 1 FROM join_requests j WHERE j.group_id=g.id AND j.user_id=$1 AND j.status='pending') THEN 'pending' ELSE 'none' END AS my_status,
       CASE WHEN mine.status='active' THEN (SELECT CASE WHEN msg.status='hidden' THEN 'Mensaje oculto por moderación' ELSE msg.content END FROM group_messages msg
         WHERE msg.group_id=g.id AND msg.status<>'deleted' AND msg.deleted_at IS NULL ORDER BY msg.created_at DESC,msg.id DESC LIMIT 1) ELSE NULL END AS "lastMessage",
@@ -54,7 +54,7 @@ export class GroupsRepository {
       CASE WHEN mine.status='active' THEN (SELECT COUNT(*)::int FROM group_messages msg LEFT JOIN group_read_markers rm ON rm.group_id=msg.group_id AND rm.user_id=$1
         WHERE msg.group_id=g.id AND msg.sender_id<>$1 AND msg.status='published' AND msg.deleted_at IS NULL
         AND (rm.last_message_id IS NULL OR (msg.created_at,msg.id)>(rm.last_created_at,rm.last_message_id))) ELSE 0 END AS "unreadCount"
-      FROM groups g JOIN users u ON u.id=COALESCE(g.leader_id,g.admin_id)
+      FROM groups g JOIN users u ON u.id=g.leader_id
       LEFT JOIN profiles p ON p.user_id=u.id LEFT JOIN group_members mine ON mine.group_id=g.id AND mine.user_id=$1`;
   }
 
@@ -108,7 +108,7 @@ export class GroupsRepository {
   /** Bloquea el grupo antes de aprobar, enviar o retirar miembros para serializar sus invariantes. */
   async lock(manager: EntityManager, groupId: string): Promise<LockedGroup> {
     const rows: LockedGroup[] = await manager.query(
-      `SELECT id,COALESCE(leader_id,admin_id) AS "leaderId",COALESCE(max_capacity,6) AS "maxCapacity"
+      `SELECT id,leader_id AS "leaderId",COALESCE(max_capacity,6) AS "maxCapacity"
       FROM groups WHERE id=$1 AND deleted_at IS NULL FOR UPDATE`,
       [groupId],
     );
@@ -140,10 +140,10 @@ export class GroupsRepository {
     await this.requireMember(groupId, actorId);
     const rows: MemberRow[] = await this.db.query(
       `SELECT gm.user_id AS "userId",COALESCE(p.name,u.name) AS name,
-      CASE WHEN gm.user_id=COALESCE(g.leader_id,g.admin_id) THEN 'leader' ELSE 'member' END AS role,gm.status,
+      CASE WHEN gm.user_id=g.leader_id THEN 'leader' ELSE 'member' END AS role,gm.status,
       p.profile_photo_url AS "profilePhotoUrl",gm.joined_at AS "joinedAt"
       FROM group_members gm JOIN groups g ON g.id=gm.group_id JOIN users u ON u.id=gm.user_id LEFT JOIN profiles p ON p.user_id=u.id
-      WHERE gm.group_id=$1 AND gm.status='active' ORDER BY (gm.user_id=COALESCE(g.leader_id,g.admin_id)) DESC,name,gm.user_id`,
+      WHERE gm.group_id=$1 AND gm.status='active' ORDER BY (gm.user_id=g.leader_id) DESC,name,gm.user_id`,
       [groupId],
     );
     return rows.map((row) => ({
@@ -156,8 +156,8 @@ export class GroupsRepository {
   async create(actorId: string, dto: CreateGroupDto): Promise<string> {
     return this.db.transaction(async (manager) => {
       const rows: { id: string }[] = await manager.query(
-        `INSERT INTO groups(name,description,course_code,leader_id,admin_id,meeting_mode,meeting_shift,max_capacity)
-        VALUES($1,$2,$3,$4,$4,$5,$6,$7) RETURNING id`,
+        `INSERT INTO groups(name,description,course_code,leader_id,meeting_mode,meeting_shift,max_capacity)
+        VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
         [
           dto.name,
           dto.description || null,
@@ -201,7 +201,7 @@ export class GroupsRepository {
         );
       await this.requireCapacity(manager, group);
       const inserted: { id: string }[] = await manager.query(
-        "INSERT INTO join_requests(group_id,user_id,requester_id,message,status) VALUES($1,$2,$2,$3,'pending') RETURNING id",
+        "INSERT INTO join_requests(group_id,user_id,message,status) VALUES($1,$2,$3,'pending') RETURNING id",
         [groupId, actorId, message || null],
       );
       return inserted[0].id;
@@ -248,8 +248,8 @@ export class GroupsRepository {
   ): Promise<GroupEntity> {
     const execute = async (manager: EntityManager) => {
       const inserted: { id: string }[] = await manager.query(
-        `INSERT INTO groups(name, description, benefits, requirements, course_code, leader_id, admin_id, meeting_mode, meeting_shift, max_capacity)
-         VALUES($1, $2, $3, $4, $5, $6, $6, $7, $8, $9)
+        `INSERT INTO groups(name, description, benefits, requirements, course_code, leader_id, meeting_mode, meeting_shift, max_capacity)
+         VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)
          RETURNING id`,
         [
           input.name,
@@ -296,7 +296,7 @@ export class GroupsRepository {
         );
     }
     const rows: RequestRow[] = await this.db.query(
-      `${this.requestQuery()} WHERE COALESCE(g.leader_id,g.admin_id)=$1 AND g.deleted_at IS NULL AND j.status='pending'
+      `${this.requestQuery()} WHERE g.leader_id=$1 AND g.deleted_at IS NULL AND j.status='pending'
       ${groupId ? "AND g.id=$2" : ""} ORDER BY j.created_at,j.id`,
       groupId ? [actorId, groupId] : [actorId],
     );
@@ -411,17 +411,17 @@ export class GroupsRepository {
         [groupId, targetId],
       );
       await manager.query(
-        "UPDATE groups SET leader_id=$2,admin_id=$2 WHERE id=$1",
+        "UPDATE groups SET leader_id=$2 WHERE id=$1",
         [groupId, targetId],
       );
     });
   }
 
-  /** Resuelve el identificador heredado sin conceder acceso a solicitudes de otros líderes. */
+  /** Resuelve el identificador sin conceder acceso a solicitudes de otros líderes. */
   async requestGroup(requestId: string, actorId: string): Promise<string> {
     const rows: { groupId: string }[] = await this.db.query(
       `SELECT j.group_id AS "groupId" FROM join_requests j JOIN groups g ON g.id=j.group_id
-      WHERE j.id=$1 AND COALESCE(g.leader_id,g.admin_id)=$2 AND g.deleted_at IS NULL`,
+      WHERE j.id=$1 AND g.leader_id=$2 AND g.deleted_at IS NULL`,
       [requestId, actorId],
     );
     if (!rows[0])

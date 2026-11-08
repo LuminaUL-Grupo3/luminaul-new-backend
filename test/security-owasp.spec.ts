@@ -132,8 +132,8 @@ describe('Security & Access Control (OWASP Top 10 Suite)', () => {
 
     // Sembrar Grupo del Usuario A
     const [group] = await dataSource.query(
-      `INSERT INTO groups (id, name, course_code, leader_id, admin_id)
-       VALUES (gen_random_uuid(), 'Grupo de A', 'CS001', $1, $1)
+      `INSERT INTO groups (id, name, course_code, leader_id)
+       VALUES (gen_random_uuid(), 'Grupo de A', 'CS001', $1)
        RETURNING id`,
       [userAId],
     );

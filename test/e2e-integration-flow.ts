@@ -318,7 +318,6 @@ async function runE2EIntegrationFlow(): Promise<void> {
         requirements TEXT,
         course_code VARCHAR(20) DEFAULT 'CS001',
         leader_id UUID REFERENCES users(id) ON DELETE RESTRICT,
-        admin_id UUID REFERENCES users(id) ON DELETE RESTRICT,
         meeting_mode VARCHAR(20) DEFAULT 'virtual',
         meeting_shift VARCHAR(20) DEFAULT 'manana',
         max_capacity INTEGER DEFAULT 6,
@@ -327,27 +326,11 @@ async function runE2EIntegrationFlow(): Promise<void> {
       );
       ALTER TABLE groups ADD COLUMN IF NOT EXISTS course_code VARCHAR(20) DEFAULT 'CS001';
       ALTER TABLE groups ADD COLUMN IF NOT EXISTS leader_id UUID REFERENCES users(id) ON DELETE RESTRICT;
-      ALTER TABLE groups ADD COLUMN IF NOT EXISTS admin_id UUID REFERENCES users(id) ON DELETE RESTRICT;
       ALTER TABLE groups ADD COLUMN IF NOT EXISTS meeting_mode VARCHAR(20) DEFAULT 'virtual';
       ALTER TABLE groups ADD COLUMN IF NOT EXISTS meeting_shift VARCHAR(20) DEFAULT 'manana';
       ALTER TABLE groups ADD COLUMN IF NOT EXISTS max_capacity INTEGER DEFAULT 6;
-
-      CREATE OR REPLACE FUNCTION fn_sync_group_leader()
-      RETURNS TRIGGER AS $$
-      BEGIN
-        IF NEW.leader_id IS NULL AND NEW.admin_id IS NOT NULL THEN
-          NEW.leader_id := NEW.admin_id;
-        ELSIF NEW.admin_id IS NULL AND NEW.leader_id IS NOT NULL THEN
-          NEW.admin_id := NEW.leader_id;
-        END IF;
-        RETURN NEW;
-      END;
-      $$ LANGUAGE plpgsql;
-
       DROP TRIGGER IF EXISTS trg_sync_group_leader ON groups;
-      CREATE TRIGGER trg_sync_group_leader
-      BEFORE INSERT OR UPDATE ON groups
-      FOR EACH ROW EXECUTE FUNCTION fn_sync_group_leader();
+      DROP FUNCTION IF EXISTS fn_sync_group_leader();
 
       CREATE TABLE IF NOT EXISTS publications (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -388,7 +371,6 @@ async function runE2EIntegrationFlow(): Promise<void> {
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        requester_id UUID REFERENCES users(id) ON DELETE CASCADE,
         message VARCHAR(255),
         status VARCHAR(20) NOT NULL DEFAULT 'pending',
         reviewed_by UUID REFERENCES users(id),
@@ -397,29 +379,13 @@ async function runE2EIntegrationFlow(): Promise<void> {
         created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
       ALTER TABLE join_requests ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE CASCADE;
-      ALTER TABLE join_requests ADD COLUMN IF NOT EXISTS requester_id UUID REFERENCES users(id) ON DELETE CASCADE;
       ALTER TABLE join_requests ADD COLUMN IF NOT EXISTS message VARCHAR(255);
       ALTER TABLE join_requests ADD COLUMN IF NOT EXISTS reviewed_by UUID REFERENCES users(id);
       ALTER TABLE join_requests ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ;
       ALTER TABLE join_requests ADD COLUMN IF NOT EXISTS responded_at TIMESTAMPTZ;
       CREATE UNIQUE INDEX IF NOT EXISTS ux_join_requests_pending ON join_requests (group_id, user_id) WHERE status = 'pending';
-
-      CREATE OR REPLACE FUNCTION fn_sync_join_request_user()
-      RETURNS TRIGGER AS $$
-      BEGIN
-        IF NEW.user_id IS NULL AND NEW.requester_id IS NOT NULL THEN
-          NEW.user_id := NEW.requester_id;
-        ELSIF NEW.requester_id IS NULL AND NEW.user_id IS NOT NULL THEN
-          NEW.requester_id := NEW.user_id;
-        END IF;
-        RETURN NEW;
-      END;
-      $$ LANGUAGE plpgsql;
-
       DROP TRIGGER IF EXISTS trg_sync_join_request_user ON join_requests;
-      CREATE TRIGGER trg_sync_join_request_user
-      BEFORE INSERT OR UPDATE ON join_requests
-      FOR EACH ROW EXECUTE FUNCTION fn_sync_join_request_user();
+      DROP FUNCTION IF EXISTS fn_sync_join_request_user();
 
       DO $$
       BEGIN
