@@ -129,7 +129,6 @@ CREATE TABLE groups (
   requirements TEXT,
   course_code VARCHAR(20) DEFAULT 'CS001',
   leader_id UUID REFERENCES users(id) ON DELETE RESTRICT,
-  admin_id UUID REFERENCES users(id) ON DELETE RESTRICT,
   meeting_mode VARCHAR(20) DEFAULT 'virtual',
   meeting_shift VARCHAR(20) DEFAULT 'manana',
   max_capacity INTEGER DEFAULT 6,
@@ -140,22 +139,6 @@ CREATE TABLE groups (
 CREATE INDEX ix_groups_leader ON groups (leader_id) WHERE deleted_at IS NULL;
 CREATE INDEX ix_groups_course ON groups (course_code) WHERE deleted_at IS NULL;
 CREATE INDEX ix_groups_active ON groups (created_at DESC) WHERE deleted_at IS NULL;
-
-CREATE OR REPLACE FUNCTION fn_sync_group_leader()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF NEW.leader_id IS NULL AND NEW.admin_id IS NOT NULL THEN
-    NEW.leader_id := NEW.admin_id;
-  ELSIF NEW.admin_id IS NULL AND NEW.leader_id IS NOT NULL THEN
-    NEW.admin_id := NEW.leader_id;
-  END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_sync_group_leader
-BEFORE INSERT OR UPDATE ON groups
-FOR EACH ROW EXECUTE FUNCTION fn_sync_group_leader();
 
 CREATE TABLE publications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -199,7 +182,6 @@ CREATE TABLE join_requests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  requester_id UUID REFERENCES users(id) ON DELETE CASCADE,
   message VARCHAR(255),
   status VARCHAR(20) NOT NULL DEFAULT 'pending',
   reviewed_by UUID REFERENCES users(id),
@@ -207,22 +189,6 @@ CREATE TABLE join_requests (
   responded_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-
-CREATE OR REPLACE FUNCTION fn_sync_join_request_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF NEW.user_id IS NULL AND NEW.requester_id IS NOT NULL THEN
-    NEW.user_id := NEW.requester_id;
-  ELSIF NEW.requester_id IS NULL AND NEW.user_id IS NOT NULL THEN
-    NEW.requester_id := NEW.user_id;
-  END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_sync_join_request_user
-BEFORE INSERT OR UPDATE ON join_requests
-FOR EACH ROW EXECUTE FUNCTION fn_sync_join_request_user();
 
 CREATE UNIQUE INDEX ux_join_requests_pending ON join_requests (group_id, user_id) WHERE status = 'pending';
 CREATE INDEX idx_join_requests_group_status ON join_requests (group_id, status);
@@ -580,7 +546,7 @@ VALUES
 ON CONFLICT (name) DO NOTHING;
 
 -- F. Grupo de Estudio Demo
-INSERT INTO groups (id, name, description, benefits, requirements, course_code, leader_id, admin_id, meeting_mode, meeting_shift, max_capacity, created_at)
+INSERT INTO groups (id, name, description, benefits, requirements, course_code, leader_id, meeting_mode, meeting_shift, max_capacity, created_at)
 VALUES (
   '7b134111-9a22-48df-9fa0-cd8213aa0981',
   'Grupo de Cálculo Integral Avanzado',
@@ -588,7 +554,6 @@ VALUES (
   'Exámenes resueltos y asesorías',
   'Haber aprobado Cálculo I',
   'CS101',
-  'd290f1ee-6c54-4b01-90e6-d701748f0851',
   'd290f1ee-6c54-4b01-90e6-d701748f0851',
   'virtual',
   'tarde',

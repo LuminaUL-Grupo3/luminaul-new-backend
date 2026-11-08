@@ -23,7 +23,7 @@ Los ajustes de integración registran `GroupMessagingModule` en `src/app.module.
 
 Se conserva el stack y las versiones de las dependencias existentes. La ejecución usa Node y una conexión PostgreSQL directa, sin infraestructura de contenedores. Main usa NestJS 12/TypeScript 6 en backend y React 19/TypeScript 5.9 en frontend. El ajuste de integración corrige entradas duplicadas/incompletas del lock y añade al comando de build la normalización de rutas locales generadas por Swagger; no modifica `.env` ni reglas de otras SPEC.
 
-El contrato específico y el código actual usan `student`/`admin` para plataforma y `leader`/`member` para grupos, en minúsculas. El rol `admin` no se utiliza como rol canónico de grupo. Se mantiene `admin_id` únicamente como columna heredada que main sincroniza con `leader_id`.
+El contrato específico y el código actual usan `student`/`admin` para plataforma y `leader`/`member` para grupos, en minúsculas. El rol `admin` no se utiliza como rol canónico de grupo. Se estandarizó la columna `leader_id` en `groups` y `user_id` en `join_requests`, eliminando las columnas redundantes heredadas (`admin_id` y `requester_id`) y sus triggers de sincronización.
 
 Se reutiliza `SessionService` de autenticación a través de `GroupSession`. Las referencias a otros dominios son UUID escalares y consultas SQL parametrizadas; no se importan entidades ajenas. El catálogo actual no tiene código de curso: `courseCode` se conserva como texto validado del grupo, sin inventar una FK hacia una columna inexistente.
 
