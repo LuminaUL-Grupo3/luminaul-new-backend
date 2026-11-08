@@ -121,8 +121,7 @@ export class PostsService {
     postDto: PostCreateDto,
     userId: string,
   ): Promise<PostResponseDto> {
-    const targetCourseId = PostCreateDto.getCourseId(postDto);
-    const course = await this.coursesClient.findById(targetCourseId);
+    const course = await this.coursesClient.findById(postDto.courseId);
     if (!course) {
       throw new UnprocessableEntityException(POST_MESSAGES.COURSE_NOT_FOUND);
     }
@@ -132,7 +131,7 @@ export class PostsService {
     const postEntity = await creator.create(postDto, userId, course);
 
     // 2. Persistir en la base de datos (repositorio puro)
-    const createdPost = await this.postsRepository.save(postEntity);
+    const createdPost = await this.postsRepository.create(postEntity);
 
     // 3. Notificar al motor de moderación asíncrona (Adapter)
     this.moderationClient.publicationCreated(createdPost);

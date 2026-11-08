@@ -23,7 +23,7 @@ export class TutoringPostCreator extends PostCreator {
     userId: string,
     _course: CourseData,
   ): Promise<PostEntity> {
-    const targetGroupId = PostCreateDto.getGroupId(dto);
+    const targetGroupId = dto.groupId;
     let finalGroupId: string | null = null;
 
     if (targetGroupId) {
@@ -34,7 +34,7 @@ export class TutoringPostCreator extends PostCreator {
       finalGroupId = targetGroupId;
     }
 
-    const targetCourseId = PostCreateDto.getCourseId(dto);
+    const targetCourseId = dto.courseId;
     return this.buildBaseEntity(dto, userId, targetCourseId, finalGroupId);
   }
 }

@@ -25,7 +25,6 @@ describe('PostsModule Patterns (Unit Tests)', () => {
 
   beforeEach(() => {
     mockPostsRepo = {
-      save: jest.fn(),
       create: jest.fn(),
       getPosts: jest.fn(),
       getPostById: jest.fn(),
@@ -199,7 +198,7 @@ describe('PostsModule Patterns (Unit Tests)', () => {
         course: course as any,
       };
 
-      mockPostsRepo.save.mockResolvedValue(fakeSavedPost as PostEntity);
+      mockPostsRepo.create.mockResolvedValue(fakeSavedPost as PostEntity);
 
       const result = await service.createPost(
         {
@@ -215,7 +214,7 @@ describe('PostsModule Patterns (Unit Tests)', () => {
 
       expect(result.id).toBe('post-123');
       expect(result.author?.name).toBe('Autor Juan');
-      expect(mockPostsRepo.save).toHaveBeenCalled();
+      expect(mockPostsRepo.create).toHaveBeenCalled();
       expect(mockModerationClient.publicationCreated).toHaveBeenCalledWith(fakeSavedPost);
     });
 

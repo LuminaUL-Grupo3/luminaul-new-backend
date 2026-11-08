@@ -1,9 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource, Repository, IsNull } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { randomUUID } from 'node:crypto';
 import { PostEntity } from './entities/post.entity';
-import { PostCreateDto } from './dto/post-create.dto';
 import { PostUpdateDto } from './dto/post-update.dto';
 
 export interface PaginatedResult<T> {
@@ -33,45 +31,9 @@ export class PostsRepository {
   /**
    * Persiste una entidad PostEntity construida por el Factory Method.
    */
-  async save(post: PostEntity): Promise<PostEntity> {
+  async create(post: PostEntity): Promise<PostEntity> {
     const saved = await this.postRepo.save(post);
     return (await this.getPostById(saved.id)) ?? saved;
-  }
-
-  /**
-   * Guarda la publicación. Soporta tanto la entidad directa (Factory Method)
-   * como sobrecarga legacy para pruebas unitarias.
-   */
-  async create(
-    postOrDto: PostEntity | PostCreateDto,
-    userId?: string,
-    _courseName?: string,
-  ): Promise<PostEntity> {
-    if ('status' in postOrDto && 'type' in postOrDto && !userId) {
-      return this.save(postOrDto as PostEntity);
-    }
-
-    const dto = postOrDto as PostCreateDto;
-    const targetCourseId = PostCreateDto.getCourseId(dto);
-    const targetGroupId = PostCreateDto.getGroupId(dto);
-    const targetMaxCapacity = PostCreateDto.getMaxCapacity(dto);
-
-    const post = this.postRepo.create({
-      id: randomUUID(),
-      userId: userId!,
-      courseId: targetCourseId,
-      type: dto.type,
-      description: dto.description,
-      benefits: dto.benefits ?? null,
-      requirements: dto.requirements ?? null,
-      maxCapacity: targetMaxCapacity,
-      groupId: targetGroupId ?? null,
-      status: 'published',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
-    return this.save(post);
   }
 
   async getPosts(
@@ -184,9 +146,8 @@ export class PostsRepository {
       return null;
     }
 
-    const courseId = PostUpdateDto.getCourseId(postData);
-    if (courseId !== undefined) {
-      post.courseId = courseId;
+    if (postData.courseId !== undefined) {
+      post.courseId = postData.courseId;
     }
     if (postData.type !== undefined) {
       post.type = postData.type;
@@ -200,9 +161,8 @@ export class PostsRepository {
     if (postData.requirements !== undefined) {
       post.requirements = postData.requirements;
     }
-    const maxCapacity = PostUpdateDto.getMaxCapacity(postData);
-    if (maxCapacity !== undefined) {
-      post.maxCapacity = maxCapacity;
+    if (postData.maxCapacity !== undefined) {
+      post.maxCapacity = postData.maxCapacity;
     }
     post.updatedAt = new Date();
 
