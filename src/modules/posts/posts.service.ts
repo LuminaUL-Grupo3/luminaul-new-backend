@@ -3,11 +3,11 @@ import {
   NotFoundException,
   ForbiddenException,
   UnprocessableEntityException,
-  Optional,
-  Inject,
 } from '@nestjs/common';
 import { PostsRepository } from './posts.repository';
-import { CoursesRepository } from '../courses/courses.repository';
+import { CoursesClient } from './client/CoursesClient';
+import { ModerationClient } from './client/ModerationClient';
+import { PostCreatorFactory } from './factory/PostCreatorFactory';
 import { PostCreateDto } from './dto/post-create.dto';
 import { PostUpdateDto } from './dto/post-update.dto';
 import { PostResponseDto } from './dto/post-response.dto';
@@ -15,19 +15,15 @@ import { PostFeedResponseDto } from './dto/post-feed-response.dto';
 import { MyPostHistoryResponseDto } from './dto/my-post-history-response.dto';
 import { DeletePostResponseDto } from './dto/delete-post-response.dto';
 import { PostEntity } from './entities/post.entity';
-
-export interface EventEmitterLike {
-  emit(event: string, ...args: unknown[]): boolean;
-}
+import { POST_MESSAGES } from './posts.constants';
 
 @Injectable()
 export class PostsService {
   constructor(
     private readonly postsRepository: PostsRepository,
-    private readonly coursesRepository: CoursesRepository,
-    @Optional()
-    @Inject('EventEmitter')
-    private readonly eventEmitter?: EventEmitterLike,
+    private readonly coursesClient: CoursesClient,
+    private readonly moderationClient: ModerationClient,
+    private readonly postCreatorFactory: PostCreatorFactory,
   ) {}
 
   private mapToPostResponseDto(post: PostEntity): PostResponseDto {
@@ -120,40 +116,26 @@ export class PostsService {
     };
   }
 
-  // H.U 1.1 (Crear publicación)
+  // H.U 1.1 (Crear publicación usando Factory Method y Adapter)
   async createPost(
     postDto: PostCreateDto,
     userId: string,
   ): Promise<PostResponseDto> {
     const targetCourseId = PostCreateDto.getCourseId(postDto);
-    const course = await this.coursesRepository.findById(targetCourseId);
+    const course = await this.coursesClient.findById(targetCourseId);
     if (!course) {
-      throw new UnprocessableEntityException('Course not found');
+      throw new UnprocessableEntityException(POST_MESSAGES.COURSE_NOT_FOUND);
     }
 
-    const targetGroupId = PostCreateDto.getGroupId(postDto);
-    if (targetGroupId) {
-      const existingGroup = await this.postsRepository.findGroupById(targetGroupId);
-      if (!existingGroup) {
-        throw new NotFoundException('Specified group not found');
-      }
-    }
+    // 1. Resolver el creador correspondiente según el tipo (Factory Method)
+    const creator = this.postCreatorFactory.getCreator(postDto.type);
+    const postEntity = await creator.create(postDto, userId, course);
 
-    const createdPost = await this.postsRepository.create(
-      postDto,
-      userId,
-      course.name,
-    );
+    // 2. Persistir en la base de datos (repositorio puro)
+    const createdPost = await this.postsRepository.save(postEntity);
 
-    // Emisión Asíncrona de Moderación (SPEC-06 y AGENTS.md Regla 3.4)
-    if (this.eventEmitter) {
-      this.eventEmitter.emit('content.created', {
-        contentType: 'publication',
-        contentId: createdPost.id,
-        authorId: createdPost.userId,
-        text: `${createdPost.description} ${createdPost.benefits ?? ''} ${createdPost.requirements ?? ''}`.trim(),
-      });
-    }
+    // 3. Notificar al motor de moderación asíncrona (Adapter)
+    this.moderationClient.publicationCreated(createdPost);
 
     return this.mapToPostResponseDto(createdPost);
   }
@@ -228,34 +210,26 @@ export class PostsService {
   ): Promise<PostResponseDto> {
     const existingPost = await this.postsRepository.getPostById(postId);
     if (!existingPost) {
-      throw new NotFoundException('Post not found');
+      throw new NotFoundException(POST_MESSAGES.POST_NOT_FOUND);
     }
 
     // Validar propiedad
     if (existingPost.userId !== userId) {
-      throw new ForbiddenException(
-        'You do not have permission to edit this post',
-      );
+      throw new ForbiddenException(POST_MESSAGES.FORBIDDEN_EDIT);
     }
 
     const updatedPost = await this.postsRepository.edit(postId, payload);
     if (!updatedPost) {
-      throw new NotFoundException('Post not found');
+      throw new NotFoundException(POST_MESSAGES.POST_NOT_FOUND);
     }
 
-    // Reemisión de evento si se modificó texto
+    // Reemisión de evento si se modificó texto (Adapter)
     if (
-      this.eventEmitter &&
-      (payload.description !== undefined ||
-        payload.benefits !== undefined ||
-        payload.requirements !== undefined)
+      payload.description !== undefined ||
+      payload.benefits !== undefined ||
+      payload.requirements !== undefined
     ) {
-      this.eventEmitter.emit('content.created', {
-        contentType: 'publication',
-        contentId: updatedPost.id,
-        authorId: updatedPost.userId,
-        text: `${updatedPost.description} ${updatedPost.benefits ?? ''} ${updatedPost.requirements ?? ''}`.trim(),
-      });
+      this.moderationClient.publicationCreated(updatedPost);
     }
 
     return this.mapToPostResponseDto(updatedPost);
@@ -268,24 +242,22 @@ export class PostsService {
   ): Promise<DeletePostResponseDto> {
     const existingPost = await this.postsRepository.getPostById(postId);
     if (!existingPost) {
-      throw new NotFoundException('Post not found');
+      throw new NotFoundException(POST_MESSAGES.POST_NOT_FOUND);
     }
 
     // Validar propiedad
     if (existingPost.userId !== userId) {
-      throw new ForbiddenException(
-        'You do not have permission to delete this post',
-      );
+      throw new ForbiddenException(POST_MESSAGES.FORBIDDEN_DELETE);
     }
 
     const success = await this.postsRepository.delete(postId);
     if (!success) {
-      throw new NotFoundException('Post not found');
+      throw new NotFoundException(POST_MESSAGES.POST_NOT_FOUND);
     }
 
     return {
       success: true,
-      message: 'Post deleted successfully',
+      message: POST_MESSAGES.DELETED_SUCCESS,
       deletedId: postId,
       publication_id: postId,
       deleted_at: new Date(),
