@@ -1,10 +1,10 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
-import { AllExceptionsFilter } from './common/filters/http-exception.filter';
+import { API_PREFIX, configureHttpApp } from './config/http-app.config';
 
 async function bootstrap(): Promise<void> {
   const logger = new Logger('Bootstrap');
@@ -25,18 +25,10 @@ async function bootstrap(): Promise<void> {
     allowedHeaders: '*',
   });
 
-  // Filtro de excepciones y validación estricta global
-  app.useGlobalFilters(new AllExceptionsFilter());
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-      transformOptions: { enableImplicitConversion: true },
-    }),
-  );
+  // Prefijo /api, filtro de excepciones y validación estricta global (compartido con las pruebas e2e)
+  configureHttpApp(app);
 
-  // Configuración interactiva de OpenAPI / Swagger en /docs
+  // Configuración interactiva de OpenAPI / Swagger en /api/docs
   const swaggerConfig = new DocumentBuilder()
     .setTitle('LuminaUL API')
     .setDescription('API del backend LuminaUL (Refactorizado de Python a NestJS)')
@@ -53,7 +45,8 @@ async function bootstrap(): Promise<void> {
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('docs', app, document, {
+  // setup() no aplica el prefijo global por sí solo: queda en /api/docs y /api/docs-json
+  SwaggerModule.setup(`${API_PREFIX}/docs`, app, document, {
     swaggerOptions: {
       persistAuthorization: true,
       displayRequestDuration: true,
@@ -65,7 +58,7 @@ async function bootstrap(): Promise<void> {
 
   await app.listen(port);
   logger.log(`Server running on http://localhost:${port}`);
-  logger.log(`Swagger UI documentation available at: http://localhost:${port}/docs`);
+  logger.log(`Swagger UI documentation available at: http://localhost:${port}/${API_PREFIX}/docs`);
 }
 
 bootstrap();

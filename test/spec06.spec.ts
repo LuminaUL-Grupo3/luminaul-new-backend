@@ -3,11 +3,11 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'luminaul-spec06-secret-key-2
 process.env.WEB_ORIGIN = 'http://localhost:5173,http://127.0.0.1:5173';
 
 import { NestFactory } from '@nestjs/core';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { hash } from 'bcryptjs';
 import { AppModule } from '../src/app.module';
-import { AllExceptionsFilter } from '../src/common/filters/http-exception.filter';
+import { API_PREFIX, configureHttpApp } from '../src/config/http-app.config';
 import { ModerationTaskWorkerService } from '../src/modules/moderation/services/moderation-task-worker.service';
 import { ModerationRepository } from '../src/modules/moderation/repositories/moderation.repository';
 import { TargetContentType } from '../src/modules/moderation/enums/moderation.enums';
@@ -40,7 +40,7 @@ describe('SPEC-06: Moderación y Denuncias (End-to-End Suite Oficial)', () => {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (options.token) headers.Authorization = `Bearer ${options.token}`;
 
-    const res = await fetch(`${baseUrl}${path}`, {
+    const res = await fetch(`${baseUrl}/${API_PREFIX}${path}`, {
       method,
       headers,
       body: options.body ? JSON.stringify(options.body) : undefined,
@@ -60,14 +60,8 @@ describe('SPEC-06: Moderación y Denuncias (End-to-End Suite Oficial)', () => {
 
   beforeAll(async () => {
     app = await NestFactory.create(AppModule, { logger: false });
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
-    app.useGlobalFilters(new AllExceptionsFilter());
+    configureHttpApp(app);
+
 
     await app.listen(0);
     const server = app.getHttpServer();

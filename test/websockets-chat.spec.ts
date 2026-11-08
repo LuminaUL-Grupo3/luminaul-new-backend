@@ -4,11 +4,11 @@ process.env.JWT_SECRET =
 process.env.WEB_ORIGIN = 'http://localhost:5173,http://127.0.0.1:5173';
 
 import { NestFactory } from '@nestjs/core';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { io, Socket } from 'socket.io-client';
 import { AppModule } from '../src/app.module';
-import { AllExceptionsFilter } from '../src/common/filters/http-exception.filter';
+import { configureHttpApp } from '../src/config/http-app.config';
 import { SessionService } from '../src/modules/auth-security/services/session.service';
 import { UsersRepository } from '../src/modules/auth-security/repositories/users.repository';
 import { UserRole } from '../src/modules/auth-security/enums/user-role.enum';
@@ -46,8 +46,8 @@ describe('Real-Time WebSockets: ChatGateway (SPEC-04)', () => {
 
   beforeAll(async () => {
     app = await NestFactory.create(AppModule, { logger: false });
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
-    app.useGlobalFilters(new AllExceptionsFilter());
+    configureHttpApp(app);
+
 
     await app.listen(0, '127.0.0.1');
     const address = app.getHttpServer().address();
