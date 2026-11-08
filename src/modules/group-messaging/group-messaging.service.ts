@@ -66,8 +66,8 @@ export class GroupMessagingService {
           : "Solicitud rechazada correctamente.",
     };
   }
-  /** Conserva la ruta de decisión anterior sin duplicar la lógica de aprobación. */
-  async decideLegacy(
+  /** Resuelve la solicitud por su ID directo delegando en la lógica de aprobación. */
+  async decideJoinRequest(
     requestId: string,
     userId: string,
     status: "approved" | "rejected",

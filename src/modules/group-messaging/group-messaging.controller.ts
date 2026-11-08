@@ -162,20 +162,20 @@ export class GroupMessagingController {
   }
 }
 
-/** Contrato de compatibilidad de las pantallas de solicitudes que ya estaban publicadas. */
-class LegacyDecisionDto {
+/** DTO de decisión para resolver solicitudes por ID directo. */
+class JoinRequestDecisionDto {
   @IsIn(["accepted", "rejected"]) action!: "accepted" | "rejected";
 }
 
-/** Mantiene las dos rutas anteriores mientras el resto del equipo adopta el contrato nuevo. */
-@ApiTags("SPEC-04 Compatibilidad")
+/** Controlador de solicitudes de unión a grupos (H.U 2.1 y 2.2). */
+@ApiTags("Join Requests")
 @ApiBearerAuth()
 @UseGuards(GroupSessionGuard)
 @Controller("join-requests")
-export class LegacyRequestsController {
+export class JoinRequestsController {
   constructor(private readonly service: GroupMessagingService) {}
 
-  /** Convierte solo la forma de respuesta; las reglas y la autorización siguen en el servicio. */
+  /** Retorna las solicitudes pendientes del usuario líder. */
   @Get("me")
   async mine(@GroupActor() user: ChatIdentity) {
     const requests = await this.service.requests(user.id);
@@ -197,14 +197,14 @@ export class LegacyRequestsController {
     };
   }
 
-  /** Traduce accepted a approved sin volver a implementar decisiones ni comprobaciones de cupo. */
+  /** Resuelve una solicitud de unión por su ID directo. */
   @Patch(":requestId")
   decide(
     @Param("requestId", new ParseUUIDPipe({ version: "4" })) requestId: string,
     @GroupActor() user: ChatIdentity,
-    @Body() dto: LegacyDecisionDto,
+    @Body() dto: JoinRequestDecisionDto,
   ) {
-    return this.service.decideLegacy(
+    return this.service.decideJoinRequest(
       requestId,
       user.id,
       dto.action === "accepted" ? "approved" : "rejected",
