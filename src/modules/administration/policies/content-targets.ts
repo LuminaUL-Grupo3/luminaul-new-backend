@@ -1,9 +1,9 @@
 import { ContentType } from '../enums/administration.enums';
 
-// Tabla de configuración (no es un patrón del curso): qué tabla, columnas, estado y mensajes
-// corresponden a cada tipo de contenido denunciable. Las tablas son de SPEC-03, SPEC-04 y SPEC-05: se tocan solo con SQL por
+// Strategy (tabla de estrategias): cómo se lee, elimina y restaura cada tipo de contenido
+// denunciable. Las tablas son de SPEC-03, SPEC-04 y SPEC-05: se tocan solo con SQL por
 // nombre de tabla, sin importar sus entidades (AGENTS.md §3.2). Un tipo nuevo de contenido
-// se agrega como una entrada más, sin modificar el service ni el DAO (OCP).
+// se agrega como una entrada más, sin modificar AdminService ni AdminRepository (OCP).
 export interface ContentTarget {
   readonly table: string;
   readonly textColumn: string;

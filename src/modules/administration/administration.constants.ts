@@ -3,12 +3,6 @@
 // Evento que otros módulos (SPEC-04, SPEC-06...) emiten para avisar a un alumno
 export const NOTIFICATION_SEND_EVENT = 'notification.send';
 
-// Evento que escucha el chat (SPEC-04) para ocultar o restaurar un mensaje en vivo
-export const CONTENT_VISIBILITY_CHANGED_EVENT = 'content.visibility_changed';
-
-// Token de inyección del mapa de estrategias de cambio de estado de cuenta (HU 7.1)
-export const USER_STATUS_STRATEGIES = 'USER_STATUS_STRATEGIES';
-
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 100;
 export const MAX_NOTIFICATIONS = 50;

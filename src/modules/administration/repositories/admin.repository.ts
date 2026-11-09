@@ -1,24 +1,135 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource, EntityManager } from 'typeorm';
-import { AuditLogEntity } from '../../entities/audit-log.entity';
-import { CONTENT_TARGETS, ContentTarget } from '../../policies/content-targets';
-import {
-  AdminRepository,
-  AppealRecord,
-  AppealRow,
-  AuditEntry,
-  ChangeUserStatusCommand,
-  ContentRecord,
-  ContentRef,
-  Page,
-  ReportRecord,
-  ReportRow,
-  ResolveAppealCommand,
-  ResolveReportCommand,
-  StatsRow,
-  UserRecord,
-  UserRow,
-} from '../AdminRepository';
+import { AuditLogEntity } from '../entities/audit-log.entity';
+import { CONTENT_TARGETS, ContentTarget } from '../policies/content-targets';
+import { AuditAction } from '../administration.constants';
+
+// ---------- Filas que devuelve el repositorio (solo datos, sin reglas) ----------
+
+export interface ReportRecord {
+  id: string;
+  status: string;
+  targetType: string;
+  targetId: string;
+}
+
+export interface ContentRecord {
+  id: string;
+  authorId: string;
+  status: string;
+}
+
+export interface AppealRecord {
+  id: string;
+  status: string;
+  userId: string;
+  contentType: string;
+  contentId: string;
+}
+
+export interface UserRecord {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  status: string;
+}
+
+export interface ReportRow {
+  id: string;
+  reason: string;
+  status: string;
+  created_at: Date;
+  resolved_at: Date | null;
+  resolution_notes: string | null;
+  target_type: string;
+  target_id: string;
+  reporter_id: string;
+  reporter_email: string;
+  reporter_name: string;
+  content: string | null;
+  current_status: string | null;
+  author_id: string | null;
+  author_name: string | null;
+  author_status: string | null;
+}
+
+export interface AppealRow {
+  id: string;
+  moderation_log_id: string;
+  justification: string;
+  status: string;
+  created_at: Date;
+  resolved_at: Date | null;
+  user_id: string;
+  user_name: string;
+  user_email: string;
+  content_type: string;
+  content_id: string;
+  detected_words: string[];
+  moderated_at: Date;
+  content: string | null;
+  current_status: string | null;
+}
+
+export interface UserRow {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  status: string;
+  is_verified: boolean;
+  suspension_reason: string | null;
+  created_at: Date;
+}
+
+export interface StatsRow {
+  total_users: string;
+  total_active_groups: string;
+  total_posts: string;
+  pending_reports: string;
+  pending_appeals: string;
+}
+
+export interface Page<T> {
+  total: number;
+  rows: T[];
+}
+
+export interface ContentRef {
+  target: ContentTarget;
+  id: string;
+}
+
+export interface AuditEntry {
+  action: AuditAction;
+  details: Record<string, unknown>;
+}
+
+export interface ResolveReportCommand {
+  reportId: string;
+  adminId: string;
+  status: string;
+  notes: string | null;
+  contentToDelete: ContentRef | null;
+  audit: AuditEntry;
+}
+
+export interface ResolveAppealCommand {
+  appealId: string;
+  adminId: string;
+  status: string;
+  contentToRestore: ContentRef | null;
+  audit: AuditEntry;
+}
+
+export interface ChangeUserStatusCommand {
+  userId: string;
+  adminId: string;
+  status: string;
+  reason: string;
+  audit: AuditEntry;
+}
 
 // Las columnas de contenido salen de la tabla de estrategias, nunca de la petición:
 // los nombres interpolados en el SQL son constantes del código.
@@ -33,20 +144,12 @@ const contentJoins = (sourceType: string, sourceId: string): string =>
 const coalesceColumn = (column: (target: ContentTarget) => string): string =>
   `COALESCE(${TARGET_ENTRIES.map(([, target], index) => `c${index}.${column(target)}`).join(', ')})`;
 
-/**
- * Patrón DAO: implementación con SQL de AdminRepository (como ProductoDAOImpl).
- *
- * Las tablas consultadas pertenecen a otros SPECs (users, reports, appeals, publications,
- * group_messages, reviews), por eso se usa SQL directo sobre su nombre en lugar de importar
- * sus entidades (AGENTS.md §3.2). El DAO no decide reglas de negocio: solo informa lo que
- * encontró o si la escritura afectó filas. Las escrituras que tocan varias tablas van dentro
- * de una transacción: o se guardan todas o ninguna.
- */
+// Acceso a datos del panel de administración. Las tablas consultadas pertenecen a otros
+// SPECs, por eso se usa SQL directo (AGENTS.md §3.2). El repositorio no decide reglas:
+// solo informa lo que encontró o si la escritura afectó filas.
 @Injectable()
-export class AdminRepositoryImpl extends AdminRepository {
-  constructor(private readonly dataSource: DataSource) {
-    super();
-  }
+export class AdminRepository {
+  constructor(private readonly dataSource: DataSource) {}
 
   // ---------- Reportes ----------
 
@@ -94,7 +197,7 @@ export class AdminRepositoryImpl extends AdminRepository {
     return rows[0] ?? null;
   }
 
-  // Transacción: borrar el contenido, cerrar la denuncia y auditar ocurren juntos o nada.
+  // Unit of Work: borrar el contenido, cerrar la denuncia y auditar ocurren juntos o nada.
   // Devuelve false si otro administrador resolvió la denuncia en paralelo.
   async resolveReport(command: ResolveReportCommand): Promise<boolean> {
     return this.dataSource.transaction(async (manager) => {
@@ -154,7 +257,7 @@ export class AdminRepositoryImpl extends AdminRepository {
     return { total: Number(count[0].total), rows };
   }
 
-  // Transacción: restaurar el contenido, cerrar la apelación y auditar
+  // Unit of Work: restaurar el contenido, cerrar la apelación y auditar
   async resolveAppeal(command: ResolveAppealCommand): Promise<boolean> {
     return this.dataSource.transaction(async (manager) => {
       const [, affected] = await manager.query(
