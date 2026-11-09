@@ -90,7 +90,7 @@ describe('E2E Integration Flow: LuminaUL Monolito Modular (7 Módulos)', () => {
     // Asegurar palabras prohibidas
     await dataSource.query(`
       INSERT INTO banned_words (id, word, severity)
-      VALUES (gen_random_uuid(), 'estafa', 'high'), (gen_random_uuid(), 'spam', 'medium')
+      VALUES (gen_random_uuid(), 'estafa', 'high'), (gen_random_uuid(), 'spam', 'high')
       ON CONFLICT (word) DO NOTHING;
     `);
 

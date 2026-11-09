@@ -1,7 +1,7 @@
 {
   "name": "luminaul-backend",
-  "version": "0.1.0",
-  "description": "LuminaUL Backend refactored to NestJS",
+  "version": "1.0.0",
+  "description": "LuminaUL Backend in NestJS",
   "author": "",
   "private": true,
   "license": "UNLICENSED",
