@@ -1,12 +1,5 @@
 import 'reflect-metadata';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  NotFoundException,
-  UnprocessableEntityException,
-} from '@nestjs/common';
 import { GUARDS_METADATA } from '@nestjs/common/constants';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { plainToInstance } from 'class-transformer';
@@ -16,17 +9,22 @@ import { JwtAuthGuard } from '../../auth-security/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth-security/guards/roles.guard';
 import { ROLES_KEY } from '../../auth-security/decorators/roles.decorator';
 import { UserRole } from '../../auth-security/enums/user-role.enum';
-import { AdminController } from '../controllers/admin.controller';
-import { NotificationsController } from '../controllers/notifications.controller';
+import { AdminController } from '../controller/AdminController';
+import { NotificationsController } from '../controller/NotificationsController';
 import {
   ChangeUserStatusDto,
   ResolveAppealDto,
   ResolveReportDto,
 } from '../dto/admin-request.dto';
-import { AdminRepository } from '../repositories/admin.repository';
-import { NotificationsRepository } from '../repositories/notifications.repository';
-import { AdminService } from '../services/admin.service';
-import { NotificationsService } from '../services/notifications.service';
+import { AdminRepository } from '../repository/AdminRepository';
+import { NotificationsRepository } from '../repository/NotificationsRepository';
+import { AdminServiceImpl } from '../service/impl/AdminServiceImpl';
+import { NotificationClientImpl } from '../client/impl/NotificationClientImpl';
+import { ChatClientImpl } from '../client/impl/ChatClientImpl';
+import { SuspendUserStrategy } from '../strategy/impl/SuspendUserStrategy';
+import { ReactivateUserStrategy } from '../strategy/impl/ReactivateUserStrategy';
+import { AdminException } from '../exception/AdminException';
+import { NotificationsServiceImpl } from '../service/impl/NotificationsServiceImpl';
 import { NotificationsListener } from '../listeners/notifications.listener';
 import { CONTENT_TARGETS } from '../policies/content-targets';
 import {
@@ -86,21 +84,35 @@ function buildRepository() {
   };
 }
 
+// Los errores de negocio son AdminException con su código HTTP (y, si se indica, su mensaje)
+const expectAdminError = async (promise: Promise<unknown>, status: number, message?: string) => {
+  const error = await promise.then(
+    () => null,
+    (reason: unknown) => reason,
+  );
+  expect(error).toBeInstanceOf(AdminException);
+  expect((error as AdminException).getStatus()).toBe(status);
+  if (message) expect((error as AdminException).message).toBe(message);
+};
+
 const errorsOf = async <T extends object>(type: new () => T, body: object) =>
   (await validate(plainToInstance(type, body))).map((error) => error.property);
 
 describe('SPEC-07: Panel de Administración y Notificaciones', () => {
   let repository: ReturnType<typeof buildRepository>;
   let events: { emit: jest.Mock };
-  let service: AdminService;
+  let service: AdminServiceImpl;
 
   beforeEach(() => {
     repository = buildRepository();
     events = { emit: jest.fn() };
-    service = new AdminService(
-      repository as unknown as AdminRepository,
-      events as unknown as EventEmitter2,
-    );
+    const emitter = events as unknown as EventEmitter2;
+    const dao = repository as unknown as AdminRepository;
+    const notificationClient = new NotificationClientImpl(emitter);
+    service = new AdminServiceImpl(dao, notificationClient, new ChatClientImpl(emitter), {
+      [ManagedUserStatus.SUSPENDED]: new SuspendUserStrategy(dao),
+      [ManagedUserStatus.ACTIVE]: new ReactivateUserStrategy(dao, notificationClient),
+    });
   });
 
   describe('Seguridad (RBAC)', () => {
@@ -147,33 +159,33 @@ describe('SPEC-07: Panel de Administración y Notificaciones', () => {
 
     it('404 si el reporte no existe', async () => {
       repository.findReportById.mockResolvedValue(null);
-      await expect(service.resolveReport(ADMIN, REPORT, deletePost)).rejects.toThrow(NotFoundException);
+      await expectAdminError(service.resolveReport(ADMIN, REPORT, deletePost), 404);
     });
 
     it('409 si el reporte ya fue resuelto', async () => {
       repository.findReportById.mockResolvedValue({ id: REPORT, status: 'resolved', targetType: 'publication', targetId: POST });
-      await expect(service.resolveReport(ADMIN, REPORT, deletePost)).rejects.toThrow(ConflictException);
+      await expectAdminError(service.resolveReport(ADMIN, REPORT, deletePost), 409);
     });
 
     it('400 si se pide eliminar el contenido al desestimar', async () => {
       const dto = { status: ReportStatus.DISMISSED, action: ReportAction.DELETE_CONTENT } as ResolveReportDto;
-      await expect(service.resolveReport(ADMIN, REPORT, dto)).rejects.toThrow(BadRequestException);
+      await expectAdminError(service.resolveReport(ADMIN, REPORT, dto), 400);
     });
 
     it('422 si el tipo de contenido no está soportado', async () => {
       repository.findReportById.mockResolvedValue({ id: REPORT, status: 'pending', targetType: 'group', targetId: POST });
-      await expect(service.resolveReport(ADMIN, REPORT, deletePost)).rejects.toThrow(UnprocessableEntityException);
+      await expectAdminError(service.resolveReport(ADMIN, REPORT, deletePost), 422);
     });
 
     it('404 si el contenido a eliminar ya no existe', async () => {
       repository.findContent.mockResolvedValue(null);
-      await expect(service.resolveReport(ADMIN, REPORT, deletePost)).rejects.toThrow(NotFoundException);
+      await expectAdminError(service.resolveReport(ADMIN, REPORT, deletePost), 404);
       expect(repository.resolveReport).not.toHaveBeenCalled();
     });
 
     it('409 si otro administrador lo resolvió en paralelo', async () => {
       repository.resolveReport.mockResolvedValue(false);
-      await expect(service.resolveReport(ADMIN, REPORT, deletePost)).rejects.toThrow(ConflictException);
+      await expectAdminError(service.resolveReport(ADMIN, REPORT, deletePost), 409);
       expect(events.emit).not.toHaveBeenCalled();
     });
 
@@ -206,16 +218,12 @@ describe('SPEC-07: Panel de Administración y Notificaciones', () => {
   describe('resolveAppeal (HU 7.3)', () => {
     it('404 si la apelación no existe', async () => {
       repository.findAppealById.mockResolvedValue(null);
-      await expect(
-        service.resolveAppeal(ADMIN, APPEAL, { status: AppealStatus.APPROVED } as ResolveAppealDto),
-      ).rejects.toThrow(NotFoundException);
+      await expectAdminError(service.resolveAppeal(ADMIN, APPEAL, { status: AppealStatus.APPROVED } as ResolveAppealDto), 404);
     });
 
     it('409 si la apelación ya fue resuelta', async () => {
       repository.findAppealById.mockResolvedValue({ id: APPEAL, status: 'rejected', userId: STUDENT, contentType: 'publication', contentId: POST });
-      await expect(
-        service.resolveAppeal(ADMIN, APPEAL, { status: AppealStatus.APPROVED } as ResolveAppealDto),
-      ).rejects.toThrow(ConflictException);
+      await expectAdminError(service.resolveAppeal(ADMIN, APPEAL, { status: AppealStatus.APPROVED } as ResolveAppealDto), 409);
     });
 
     it('aprobar restaura el contenido y notifica: "Apelación aprobada con éxito"', async () => {
@@ -241,7 +249,7 @@ describe('SPEC-07: Panel de Administración y Notificaciones', () => {
     const activate = { status: ManagedUserStatus.ACTIVE, reason: 'Apelación aceptada' } as ChangeUserStatusDto;
 
     it('400 si el administrador intenta cambiar su propia cuenta', async () => {
-      await expect(service.changeUserStatus(ADMIN, ADMIN, suspend)).rejects.toThrow(BadRequestException);
+      await expectAdminError(service.changeUserStatus(ADMIN, ADMIN, suspend), 400);
     });
 
     it.each([
@@ -249,22 +257,22 @@ describe('SPEC-07: Panel de Administración y Notificaciones', () => {
       ['está eliminado', { id: STUDENT, email: 'x', name: 'x', role: 'student', status: 'deleted' }],
     ])('404 si el usuario %s', async (_name, user) => {
       repository.findUserById.mockResolvedValue(user);
-      await expect(service.changeUserStatus(ADMIN, STUDENT, suspend)).rejects.toThrow(NotFoundException);
+      await expectAdminError(service.changeUserStatus(ADMIN, STUDENT, suspend), 404);
     });
 
     it('403 si el objetivo es otro administrador', async () => {
       repository.findUserById.mockResolvedValue({ id: STUDENT, email: 'x', name: 'x', role: 'admin', status: 'active' });
-      await expect(service.changeUserStatus(ADMIN, STUDENT, suspend)).rejects.toThrow(ForbiddenException);
+      await expectAdminError(service.changeUserStatus(ADMIN, STUDENT, suspend), 403);
     });
 
     it('409 si la cuenta no está verificada', async () => {
       repository.findUserById.mockResolvedValue({ id: STUDENT, email: 'x', name: 'x', role: 'student', status: 'pending_verification' });
-      await expect(service.changeUserStatus(ADMIN, STUDENT, activate)).rejects.toThrow(ConflictException);
+      await expectAdminError(service.changeUserStatus(ADMIN, STUDENT, activate), 409);
     });
 
     it('409 si ya está suspendida', async () => {
       repository.findUserById.mockResolvedValue({ id: STUDENT, email: 'x', name: 'x', role: 'student', status: 'suspended' });
-      await expect(service.changeUserStatus(ADMIN, STUDENT, suspend)).rejects.toThrow('El usuario ya se encuentra suspendido');
+      await expectAdminError(service.changeUserStatus(ADMIN, STUDENT, suspend), 409, 'El usuario ya se encuentra suspendido');
     });
 
     it('suspende, audita y no notifica (el suspendido no puede entrar)', async () => {
@@ -354,7 +362,7 @@ describe('SPEC-07: Panel de Administración y Notificaciones', () => {
       createdAt: new Date('2026-11-01T10:00:00.000Z'),
     };
     let notificationsRepo: Record<string, ReturnType<typeof asyncMock>>;
-    let notifications: NotificationsService;
+    let notifications: NotificationsServiceImpl;
 
     beforeEach(() => {
       notificationsRepo = {
@@ -363,7 +371,7 @@ describe('SPEC-07: Panel de Administración y Notificaciones', () => {
         findOwn: asyncMock().mockResolvedValue(notification),
         markRead: asyncMock().mockResolvedValue(undefined),
       };
-      notifications = new NotificationsService(notificationsRepo as unknown as NotificationsRepository);
+      notifications = new NotificationsServiceImpl(notificationsRepo as unknown as NotificationsRepository);
     });
 
     it('lista las notificaciones propias en formato del contrato', async () => {
@@ -373,7 +381,7 @@ describe('SPEC-07: Panel de Administración y Notificaciones', () => {
 
     it('404 al marcar una notificación ajena o inexistente', async () => {
       notificationsRepo.findOwn.mockResolvedValue(null);
-      await expect(notifications.markRead(STUDENT, 'n1')).rejects.toThrow(NotFoundException);
+      await expectAdminError(notifications.markRead(STUDENT, 'n1'), 404);
     });
 
     it('marca como leída solo si no lo estaba', async () => {

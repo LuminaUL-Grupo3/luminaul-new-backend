@@ -1,11 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { NotificationsService } from '../services/notifications.service';
+import { NotificationsService } from '../service/NotificationsService';
 import { NotificationSendEvent } from '../events/notification-send.event';
 import { NOTIFICATION_SEND_EVENT } from '../administration.constants';
 
-// Observer: suscriptor del evento 'notification.send'. Un fallo al guardar la notificación
-// queda en el log y no rompe la operación que la originó (moderar, expulsar, resolver...).
+// Suscriptor del evento 'notification.send' (mecanismo de eventos de NestJS). Un fallo al guardar
+// la notificación queda en el log y no rompe la operación que la originó (moderar, expulsar...).
 @Injectable()
 export class NotificationsListener {
   private readonly logger = new Logger('NotificationsListener');

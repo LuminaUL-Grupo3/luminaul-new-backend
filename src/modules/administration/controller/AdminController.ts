@@ -5,7 +5,7 @@ import { RolesGuard } from '../../auth-security/guards/roles.guard';
 import { Roles } from '../../auth-security/decorators/roles.decorator';
 import { UserRole } from '../../auth-security/enums/user-role.enum';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
-import { AdminService } from '../services/admin.service';
+import { AdminService } from '../service/AdminService';
 import {
   AppealsQueryDto,
   ChangeUserStatusDto,
@@ -24,6 +24,8 @@ import {
   ResolveReportResponseDto,
 } from '../dto/admin-response.dto';
 
+// Controller del panel de administración: solo recibe la petición, valida su formato (DTO)
+// y delega en AdminService (SRP). No tiene reglas de negocio.
 // RBAC: JwtAuthGuard autentica (401) y RolesGuard exige el rol de plataforma 'admin' (403)
 @ApiTags('Administration')
 @ApiBearerAuth()
