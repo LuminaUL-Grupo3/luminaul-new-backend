@@ -1,11 +1,14 @@
-import { BadRequestException, ForbiddenException, NotFoundException, ConflictException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { AdminService } from '../services/admin.service';
-import { AdminRepository, UserRow, AppealRecord } from '../repositories/admin.repository';
+import { AdminServiceImpl } from '../service/impl/AdminServiceImpl';
+import { NotificationClientImpl } from '../client/impl/NotificationClientImpl';
+import { ChatClientImpl } from '../client/impl/ChatClientImpl';
+import { SuspendUserStrategy } from '../strategy/impl/SuspendUserStrategy';
+import { ReactivateUserStrategy } from '../strategy/impl/ReactivateUserStrategy';
+import { AdminRepository, UserRow, AppealRecord } from '../repository/AdminRepository';
 import { ManagedUserStatus, AppealStatus, ContentType } from '../enums/administration.enums';
 
-describe('AdminService (Unit)', () => {
-  let service: AdminService;
+describe('AdminServiceImpl (Unit)', () => {
+  let service: AdminServiceImpl;
   let mockRepo: jest.Mocked<AdminRepository>;
   let mockEventEmitter: jest.Mocked<EventEmitter2>;
 
@@ -32,7 +35,11 @@ describe('AdminService (Unit)', () => {
       emit: jest.fn(),
     } as unknown as jest.Mocked<EventEmitter2>;
 
-    service = new AdminService(mockRepo, mockEventEmitter);
+    const notificationClient = new NotificationClientImpl(mockEventEmitter);
+    service = new AdminServiceImpl(mockRepo, notificationClient, new ChatClientImpl(mockEventEmitter), {
+      [ManagedUserStatus.SUSPENDED]: new SuspendUserStrategy(mockRepo),
+      [ManagedUserStatus.ACTIVE]: new ReactivateUserStrategy(mockRepo, notificationClient),
+    });
   });
 
   describe('changeUserStatus', () => {
@@ -64,7 +71,7 @@ describe('AdminService (Unit)', () => {
           status: ManagedUserStatus.SUSPENDED,
           reason: 'Auto suspensión',
         }),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toMatchObject({ status: 400 });
     });
 
     it('debe lanzar ForbiddenException si se intenta suspender a otro administrador', async () => {
@@ -80,7 +87,7 @@ describe('AdminService (Unit)', () => {
           status: ManagedUserStatus.SUSPENDED,
           reason: 'Intento',
         }),
-      ).rejects.toThrow(ForbiddenException);
+      ).rejects.toMatchObject({ status: 403 });
     });
 
     it('debe lanzar ConflictException si el usuario ya tiene el estado solicitado', async () => {
@@ -96,7 +103,7 @@ describe('AdminService (Unit)', () => {
           status: ManagedUserStatus.SUSPENDED,
           reason: 'Ya suspendido',
         }),
-      ).rejects.toThrow(ConflictException);
+      ).rejects.toMatchObject({ status: 409 });
     });
   });
 
@@ -129,7 +136,7 @@ describe('AdminService (Unit)', () => {
 
       await expect(
         service.resolveAppeal(adminId, 'invalida', { status: AppealStatus.APPROVED }),
-      ).rejects.toThrow(NotFoundException);
+      ).rejects.toMatchObject({ status: 404 });
     });
 
     it('debe lanzar ConflictException si la apelación ya fue resuelta anteriormente', async () => {
@@ -144,7 +151,7 @@ describe('AdminService (Unit)', () => {
 
       await expect(
         service.resolveAppeal(adminId, appealId, { status: AppealStatus.APPROVED }),
-      ).rejects.toThrow(ConflictException);
+      ).rejects.toMatchObject({ status: 409 });
     });
   });
 
