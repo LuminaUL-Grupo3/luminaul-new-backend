@@ -8,6 +8,7 @@ import { PostCreatorFactory } from '../factory/PostCreatorFactory';
 import { StudyGroupPostCreator } from '../factory/impl/StudyGroupPostCreator';
 import { TutoringPostCreator } from '../factory/impl/TutoringPostCreator';
 import { PostEntity } from '../entities/post.entity';
+import { POST_TYPES } from '../posts.constants';
 
 describe('PostsModule Patterns (Unit Tests)', () => {
   const userId = 'user-uuid-author-1';
@@ -231,6 +232,34 @@ describe('PostsModule Patterns (Unit Tests)', () => {
           userId,
         ),
       ).rejects.toThrow(UnprocessableEntityException);
+    });
+  });
+
+  describe('PostsService.getPostById', () => {
+    it('debe retornar el post mapeado si existe', async () => {
+      const mockPost: Partial<PostEntity> = {
+        id: 'post-1',
+        userId,
+        courseId: 'course-1',
+        type: POST_TYPES.STUDY_GROUP,
+        description: 'Post de prueba',
+        status: 'published',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      mockPostsRepo.getPostById.mockResolvedValue(mockPost as PostEntity);
+
+      const result = await service.getPostById('post-1');
+      expect(result.id).toBe('post-1');
+      expect(result.description).toBe('Post de prueba');
+    });
+
+    it('debe lanzar NotFoundException si el post no existe', async () => {
+      mockPostsRepo.getPostById.mockResolvedValue(null);
+
+      await expect(service.getPostById('inexistente')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

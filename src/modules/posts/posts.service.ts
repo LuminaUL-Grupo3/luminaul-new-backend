@@ -201,6 +201,15 @@ export class PostsService {
     });
   }
 
+  // H.U 1.2 (Obtener publicación por ID para edición o consulta)
+  async getPostById(postId: string): Promise<PostResponseDto> {
+    const post = await this.postsRepository.getPostById(postId);
+    if (!post) {
+      throw new NotFoundException(POST_MESSAGES.POST_NOT_FOUND);
+    }
+    return this.mapToPostResponseDto(post);
+  }
+
   // H.U 1.2 (Editar publicación)
   async editPost(
     postId: string,
