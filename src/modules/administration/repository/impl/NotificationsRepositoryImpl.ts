@@ -1,15 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { NotificationEntity } from '../entities/notification.entity';
-import { NotificationSendEvent } from '../events/notification-send.event';
+import { NotificationEntity } from '../../entities/notification.entity';
+import { NotificationSendEvent } from '../../events/notification-send.event';
+import { NotificationsRepository } from '../NotificationsRepository';
 
+/**
+ * Patrón DAO: implementación de NotificationsRepository con el repositorio de TypeORM
+ * de la entidad propia NotificationEntity.
+ */
 @Injectable()
-export class NotificationsRepository {
+export class NotificationsRepositoryImpl extends NotificationsRepository {
   constructor(
     @InjectRepository(NotificationEntity)
     private readonly notifications: Repository<NotificationEntity>,
-  ) {}
+  ) {
+    super();
+  }
 
   create(values: NotificationSendEvent): Promise<NotificationEntity> {
     return this.notifications.save(this.notifications.create(values));
@@ -23,7 +30,6 @@ export class NotificationsRepository {
     });
   }
 
-  // Filtra por dueño: una notificación ajena se comporta igual que una inexistente
   findOwn(id: string, userId: string): Promise<NotificationEntity | null> {
     return this.notifications.findOne({ where: { id, userId } });
   }

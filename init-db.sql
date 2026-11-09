@@ -49,6 +49,8 @@ CREATE TABLE users (
   reset_token_expires_at TIMESTAMPTZ,
   tokens_valid_after TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   suspension_reason TEXT,
+  -- SPEC-07 (HU 7.1): fin de una suspensión temporal. NULL = suspensión definitiva
+  suspended_until TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   deleted_at TIMESTAMPTZ
