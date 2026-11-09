@@ -2,7 +2,7 @@ import { Controller, Get, Param, ParseUUIDPipe, Patch, UseGuards } from '@nestjs
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth-security/guard/JwtAuthGuard';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
-import { NotificationsService } from '../services/notifications.service';
+import { NotificationsService } from '../service/NotificationsService';
 import { MarkNotificationReadResponseDto, NotificationDto } from '../dto/admin-response.dto';
 
 // Disponible para cualquier alumno autenticado (no requiere rol admin)
