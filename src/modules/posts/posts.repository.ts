@@ -164,6 +164,9 @@ export class PostsRepository {
     if (postData.maxCapacity !== undefined) {
       post.maxCapacity = postData.maxCapacity;
     }
+    if (postData.groupId !== undefined) {
+      post.groupId = postData.groupId;
+    }
     post.updatedAt = new Date();
 
     return this.postRepo.save(post);

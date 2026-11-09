@@ -123,6 +123,32 @@ export class PostsController {
     return this.postsService.listPostsByUser(userId, limit, offset);
   }
 
+  // H.U 1.2: GET /posts/:post_id (Obtener publicación por ID para edición o consulta)
+  @Get(':post_id')
+  @ApiOperation({
+    summary: 'Obtener el detalle de una publicación por ID (H.U 1.2 / SPEC-03)',
+  })
+  @ApiParam({
+    name: 'post_id',
+    type: 'string',
+    format: 'uuid',
+    description: 'ID de la publicación',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Detalle de la publicación',
+    type: PostResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Publicación no encontrada',
+  })
+  async getPostById(
+    @Param('post_id', ParseUUIDPipe) postId: string,
+  ): Promise<PostResponseDto> {
+    return this.postsService.getPostById(postId);
+  }
+
   // H.U 1.2: PUT /posts/:post_id (Editar publicación)
   @Put(':post_id')
   @UseGuards(JwtAuthGuard)
