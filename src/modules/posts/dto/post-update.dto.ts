@@ -59,4 +59,9 @@ export class PostUpdateDto {
   @Min(1)
   @Max(50)
   maxCapacity?: number;
+
+  @ApiPropertyOptional({ description: 'ID del grupo de estudio asociado' })
+  @IsOptional()
+  @IsUUID(undefined, { message: 'groupId must be a valid UUID' })
+  groupId?: string;
 }
