@@ -12,7 +12,7 @@ export interface UserAccount {
 }
 
 export interface ProfileChanges {
-  fields: Partial<Pick<ProfileEntity, 'name' | 'bio' | 'major' | 'academicCycle' | 'profilePhotoUrl'>>;
+  fields: Partial<Pick<ProfileEntity, 'bio' | 'major' | 'academicCycle' | 'profilePhotoUrl'>>;
   skills?: string[];
   interests?: string[];
 }
@@ -81,17 +81,11 @@ export class UserProfileRepository {
     await this.availabilities.delete({ id });
   }
 
-  // Unit of Work: perfil, nombre de la cuenta, habilidades e intereses cambian juntos
+  // Unit of Work: perfil, habilidades e intereses cambian juntos
   async updateProfile(userId: string, changes: ProfileChanges): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
       await manager.update(ProfileEntity, { userId }, { ...changes.fields, updatedAt: new Date() });
 
-      if (changes.fields.name !== undefined) {
-        await manager.query('UPDATE users SET name = $1, updated_at = NOW() WHERE id = $2', [
-          changes.fields.name,
-          userId,
-        ]);
-      }
       if (changes.skills) {
         await manager.delete(ProfileSkillEntity, { userId });
         await manager.insert(
