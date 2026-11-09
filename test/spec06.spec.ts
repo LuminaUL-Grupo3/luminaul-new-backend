@@ -133,6 +133,7 @@ describe('SPEC-06: Moderación y Denuncias (End-to-End Suite Oficial)', () => {
       }
       if (testPostId) {
         await dataSource.query(`DELETE FROM reports WHERE target_id = $1`, [testPostId]);
+        await dataSource.query(`DELETE FROM moderation_logs WHERE content_id = $1`, [testPostId]);
         await dataSource.query(`DELETE FROM moderation_tasks WHERE content_id = $1`, [testPostId]);
         await dataSource.query(`DELETE FROM publications WHERE id = $1`, [testPostId]);
       }
@@ -211,6 +212,14 @@ describe('SPEC-06: Moderación y Denuncias (End-to-End Suite Oficial)', () => {
       expect(log.detected_words).toContain('estafa');
       moderationLogId = log.id;
     });
+
+    it('debe incrementar automáticamente la versión de la tarea si se re-evalúa un contenido editado', async () => {
+      // Re-encolar el mismo contenido ya procesado sin pasar versión fija
+      const newTask = await moderationRepo.enqueueTask(TargetContentType.PUBLICATION, flaggedPostId);
+      expect(newTask).toBeDefined();
+      expect(newTask?.contentVersion).toBe(2);
+      expect(newTask?.status).toBe('pending');
+    });
   });
 
   describe('HU 6.3: Historial de contenido moderado propio', () => {
@@ -226,9 +235,40 @@ describe('SPEC-06: Moderación y Denuncias (End-to-End Suite Oficial)', () => {
       expect(myLog.canAppeal).toBe(true);
       expect(myLog.appealStatus).toBeNull();
     });
+
+    it('no debe incluir publicaciones aprobadas en el historial de sanciones del alumno', async () => {
+      // Encolar y procesar la publicación limpia (testPostId)
+      await moderationRepo.enqueueTask(TargetContentType.PUBLICATION, testPostId, 1);
+      await worker.processBatch(10);
+
+      const res = await apiRequest('GET', '/moderation/my-logs', {
+        token: token1,
+      });
+
+      expect(res.status).toBe(200);
+      const approvedLog = res.body.find((l: any) => l.contentId === testPostId);
+      expect(approvedLog).toBeUndefined();
+    });
   });
 
   describe('HU 6.4: Apelar moderación automática', () => {
+    it('debe rechazar apelaciones sobre contenidos aprobados con HTTP 400', async () => {
+      const [approvedDbLog] = await dataSource.query(
+        `SELECT id FROM moderation_logs WHERE content_id = $1 AND moderation_decision = 'APPROVED'`,
+        [testPostId],
+      );
+      if (approvedDbLog) {
+        const res = await apiRequest('POST', '/moderation/appeals', {
+          token: token1,
+          body: {
+            moderationLogId: approvedDbLog.id,
+            justification: 'Quiero apelar una publicación que ya fue aprobada.',
+          },
+        });
+        expect(res.status).toBe(400);
+      }
+    });
+
     it('debe registrar la apelación exitosamente y retornar HTTP 201', async () => {
       const res = await apiRequest('POST', '/moderation/appeals', {
         token: token1,

@@ -1,10 +1,21 @@
-import { NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  ConflictException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { ModerationService } from '../../src/modules/moderation/services/moderation.service';
 import { ModerationRepository } from '../../src/modules/moderation/repositories/moderation.repository';
 import { ContentReportEntity } from '../../src/modules/moderation/entities/content-report.entity';
 import { ContentModerationLogEntity } from '../../src/modules/moderation/entities/content-moderation-log.entity';
 import { ContentAppealEntity } from '../../src/modules/moderation/entities/content-appeal.entity';
-import { TargetContentType, ReportStatus, AppealStatus, ModerationResult } from '../../src/modules/moderation/enums/moderation.enums';
+import {
+  TargetContentType,
+  ReportStatus,
+  AppealStatus,
+  ModerationResult,
+  ModerationDecision,
+} from '../../src/modules/moderation/enums/moderation.enums';
 
 describe('ModerationService (Unit)', () => {
   let service: ModerationService;
@@ -101,6 +112,7 @@ describe('ModerationService (Unit)', () => {
         contentType: TargetContentType.PUBLICATION,
         contentId: publicationId,
         result: ModerationResult.BLOCKED,
+        moderationDecision: ModerationDecision.HIDDEN,
       };
       mockRepo.findLog.mockResolvedValue(fakeLog as ContentModerationLogEntity);
       mockRepo.findLatestAppeal.mockResolvedValue(null);
@@ -123,6 +135,25 @@ describe('ModerationService (Unit)', () => {
       expect(result.status).toBe(AppealStatus.PENDING);
     });
 
+    it('debe lanzar BadRequestException si el contenido fue aprobado y no sancionado', async () => {
+      const approvedLog: Partial<ContentModerationLogEntity> = {
+        id: logId,
+        authorId,
+        contentType: TargetContentType.PUBLICATION,
+        contentId: publicationId,
+        result: ModerationResult.APPROVED,
+        moderationDecision: ModerationDecision.APPROVED,
+      };
+      mockRepo.findLog.mockResolvedValue(approvedLog as ContentModerationLogEntity);
+
+      await expect(
+        service.createAppeal(authorId, {
+          moderationLogId: logId,
+          justification: 'Apelar algo aprobado',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
     it('debe lanzar NotFoundException si el log de moderación no existe', async () => {
       mockRepo.findLog.mockResolvedValue(null);
 
@@ -138,6 +169,8 @@ describe('ModerationService (Unit)', () => {
       const fakeLog: Partial<ContentModerationLogEntity> = {
         id: logId,
         authorId,
+        result: ModerationResult.BLOCKED,
+        moderationDecision: ModerationDecision.HIDDEN,
       };
       mockRepo.findLog.mockResolvedValue(fakeLog as ContentModerationLogEntity);
 
@@ -153,6 +186,8 @@ describe('ModerationService (Unit)', () => {
       const fakeLog: Partial<ContentModerationLogEntity> = {
         id: logId,
         authorId,
+        result: ModerationResult.BLOCKED,
+        moderationDecision: ModerationDecision.HIDDEN,
       };
       mockRepo.findLog.mockResolvedValue(fakeLog as ContentModerationLogEntity);
       mockRepo.findLatestAppeal.mockResolvedValue({
