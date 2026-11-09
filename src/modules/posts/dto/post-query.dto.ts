@@ -35,12 +35,12 @@ export class PostFilterQueryDto extends PaginationQueryDto {
   @IsString()
   type?: string;
 
-  @ApiPropertyOptional({ description: 'Filtrar por ciclo académico (1 a 10)' })
+  @ApiPropertyOptional({ description: 'Filtrar por ciclo académico (1 a 11, donde 11 corresponde a cursos electivos)' })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(10)
+  @Max(11)
   cycle?: number;
 
   @ApiPropertyOptional({ description: 'Búsqueda parcial en descripción, beneficios y requisitos (insensible a mayúsculas)' })

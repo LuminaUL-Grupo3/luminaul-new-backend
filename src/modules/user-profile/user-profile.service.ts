@@ -67,18 +67,12 @@ export class UserProfileService {
 
   async updateProfile(userId: string, dto: UpdateProfileDto): Promise<StudentProfileDto> {
     const changes: ProfileChanges = { fields: {} };
-    // name es NOT NULL: @IsOptional deja pasar null y aquí se trata como campo no enviado
-    if (dto.name != null) changes.fields.name = dto.name.trim();
     if (dto.bio !== undefined) changes.fields.bio = dto.bio;
     if (dto.major !== undefined) changes.fields.major = dto.major;
     if (dto.academicCycle !== undefined) changes.fields.academicCycle = dto.academicCycle;
     if (dto.profilePhotoUrl !== undefined) changes.fields.profilePhotoUrl = dto.profilePhotoUrl;
     if (dto.skills) changes.skills = normalizeList(dto.skills);
     if (dto.interests) changes.interests = normalizeList(dto.interests);
-
-    if (changes.fields.name === '') {
-      throw new BadRequestException('El nombre no puede estar vacío');
-    }
 
     await this.repository.updateProfile(userId, changes);
     return this.getProfile(userId);

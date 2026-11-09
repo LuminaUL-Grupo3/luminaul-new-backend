@@ -98,8 +98,11 @@ export class PostsServiceImpl extends PostsService {
   }
 
   private mapToMyPostHistoryDto(post: PostEntity): MyPostHistoryResponseDto {
+    const profile = post.profile;
     return {
       id: post.id,
+      userId: post.userId,
+      user_id: post.userId,
       type: post.type,
       description: post.description,
       benefits: post.benefits ?? null,
@@ -111,6 +114,13 @@ export class PostsServiceImpl extends PostsService {
       status: post.status,
       createdAt: post.createdAt,
       created_at: post.createdAt,
+      author: {
+        id: post.userId,
+        user_id: post.userId,
+        name: profile?.name ?? '',
+        profilePhotoUrl: profile?.profilePhotoUrl ?? null,
+        profile_photo_url: profile?.profilePhotoUrl ?? null,
+      },
       course: {
         id: post.course?.id ?? post.courseId,
         name: post.course?.name ?? '',

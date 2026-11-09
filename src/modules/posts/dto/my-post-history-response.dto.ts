@@ -1,9 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { CourseSummaryDto } from './post-response.dto';
+import { CourseSummaryDto, PostAuthorDto } from './post-response.dto';
 
 export class MyPostHistoryResponseDto {
   @ApiProperty()
   id!: string;
+
+  @ApiPropertyOptional()
+  userId?: string;
+
+  @ApiPropertyOptional()
+  user_id?: string;
 
   @ApiProperty()
   type!: string;
@@ -37,6 +43,9 @@ export class MyPostHistoryResponseDto {
 
   @ApiPropertyOptional()
   created_at?: Date;
+
+  @ApiPropertyOptional({ type: PostAuthorDto })
+  author?: PostAuthorDto;
 
   @ApiProperty({ type: CourseSummaryDto })
   course!: CourseSummaryDto;

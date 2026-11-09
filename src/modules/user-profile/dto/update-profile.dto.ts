@@ -1,15 +1,9 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsNotEmpty, IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
+import { IsArray, IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
 
 // bio, major, academicCycle y profilePhotoUrl aceptan null para vaciar el campo
+// name es inmutable y no forma parte del DTO de actualización
 export class UpdateProfileDto {
-  @ApiPropertyOptional({ maxLength: 150 })
-  @IsOptional()
-  @IsString()
-  @IsNotEmpty({ message: 'El nombre no puede estar vacío' })
-  @MaxLength(150)
-  name?: string;
-
   @ApiPropertyOptional({ type: String, maxLength: 1000, nullable: true })
   @IsOptional()
   @IsString()

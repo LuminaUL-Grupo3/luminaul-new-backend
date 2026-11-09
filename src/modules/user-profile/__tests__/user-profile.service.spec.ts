@@ -1,8 +1,9 @@
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { NotFoundException, BadRequestException, ValidationPipe } from '@nestjs/common';
 import { UserProfileService } from '../user-profile.service';
 import { UserProfileRepository, UserAccount } from '../user-profile.repository';
 import { ProfileEntity } from '../entities/profile.entity';
 import { AvailabilityEntity } from '../entities/availability.entity';
+import { UpdateProfileDto } from '../dto/update-profile.dto';
 
 describe('UserProfileService (Unit)', () => {
   let service: UserProfileService;
@@ -74,10 +75,47 @@ describe('UserProfileService (Unit)', () => {
   });
 
   describe('updateProfile', () => {
-    it('debe rechazar con BadRequestException si el nombre enviado es vacío', async () => {
+    it('debe rechazar cualquier intento de enviar el campo name en UpdateProfileDto vía ValidationPipe', async () => {
+      const pipe = new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true });
       await expect(
-        service.updateProfile(userId, { name: '   ' }),
+        pipe.transform({ name: 'Hacker Name' }, { type: 'body', metatype: UpdateProfileDto }),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('debe permitir actualizar otros campos sin aceptar o modificar el nombre institucional', async () => {
+      const fakeAccount: UserAccount = {
+        email: 'alumno@aloe.ulima.edu.pe',
+        status: 'active',
+      };
+      const fakeProfile: Partial<ProfileEntity> = {
+        userId,
+        name: 'Martín Vizcarra',
+        bio: 'Bio actualizada',
+        major: 'Ingeniería de Sistemas',
+        academicCycle: '6',
+        profilePhotoUrl: null,
+        updatedAt: new Date(),
+      };
+      mockRepo.findAccount.mockResolvedValue(fakeAccount);
+      mockRepo.findProfile.mockResolvedValue(fakeProfile as ProfileEntity);
+      mockRepo.findSkills.mockResolvedValue([]);
+      mockRepo.findInterests.mockResolvedValue([]);
+      mockRepo.findAvailabilities.mockResolvedValue([]);
+      mockRepo.updateProfile.mockResolvedValue(undefined);
+
+      const result = await service.updateProfile(userId, {
+        bio: 'Bio actualizada',
+        academicCycle: '6',
+      });
+
+      expect(result.bio).toBe('Bio actualizada');
+      expect(result.name).toBe('Martín Vizcarra');
+      expect(mockRepo.updateProfile).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({
+          fields: expect.not.objectContaining({ name: expect.anything() }),
+        }),
+      );
     });
   });
 
