@@ -1,4 +1,7 @@
 import { NotFoundException, ForbiddenException, UnprocessableEntityException } from '@nestjs/common';
+import { validate } from 'class-validator';
+import { plainToInstance } from 'class-transformer';
+import { PostFilterQueryDto } from '../dto/post-query.dto';
 import { PostsService } from '../service/PostsService';
 import { PostsServiceImpl } from '../service/impl/PostsServiceImpl';
 import { PostsRepository } from '../repository/PostsRepository';
@@ -297,6 +300,60 @@ describe('PostsModule Patterns (Unit Tests)', () => {
       await expect(
         service.deletePost('post-of-other', userId),
       ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('PostsService.listPostsByUser', () => {
+    it('debe retornar publicaciones con la información del autor para el historial propio', async () => {
+      const mockPost: Partial<PostEntity> = {
+        id: 'post-1',
+        userId,
+        courseId,
+        type: POST_TYPES.STUDY_GROUP,
+        description: 'Mi publicación de prueba',
+        status: 'published',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        profile: {
+          name: 'Martín Vizcarra',
+          profilePhotoUrl: 'https://avatar.test/martin.png',
+        } as any,
+        course: {
+          id: courseId,
+          name: 'Ingeniería de Software I',
+          cycle: 7,
+        } as any,
+      };
+
+      mockPostsRepo.getPostsByUser.mockResolvedValue({
+        items: [mockPost as PostEntity],
+        total: 1,
+      });
+
+      const result = await service.listPostsByUser(userId, 10, 0);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('post-1');
+      expect(result[0].userId).toBe(userId);
+      expect(result[0].author).toBeDefined();
+      expect(result[0].author?.name).toBe('Martín Vizcarra');
+      expect(result[0].author?.profilePhotoUrl).toBe('https://avatar.test/martin.png');
+    });
+  });
+
+  describe('PostFilterQueryDto (Validation Tests)', () => {
+    it('debe aceptar ciclo 11 para filtrar cursos electivos sin error de validación', async () => {
+      const dto = plainToInstance(PostFilterQueryDto, { cycle: '11' });
+      const errors = await validate(dto);
+      expect(errors).toHaveLength(0);
+      expect(dto.cycle).toBe(11);
+    });
+
+    it('debe rechazar ciclos mayores a 11', async () => {
+      const dto = plainToInstance(PostFilterQueryDto, { cycle: '12' });
+      const errors = await validate(dto);
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors[0].constraints?.max).toBeDefined();
     });
   });
 });
