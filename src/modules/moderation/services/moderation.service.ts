@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -14,7 +15,12 @@ import {
   ReportDto,
 } from '../dto/moderation-response.dto';
 import { ContentReportEntity } from '../entities/content-report.entity';
-import { AppealStatus, ReportStatus } from '../enums/moderation.enums';
+import {
+  AppealStatus,
+  ModerationDecision,
+  ModerationResult,
+  ReportStatus,
+} from '../enums/moderation.enums';
 import { MODERATION_MESSAGES } from '../moderation.constants';
 
 // Código de PostgreSQL para violación de índice único (uq_reporter_target)
@@ -110,6 +116,9 @@ export class ModerationService {
     if (!log) throw new NotFoundException(MODERATION_MESSAGES.LOG_NOT_FOUND);
     if (log.authorId !== userId) {
       throw new ForbiddenException('Solo el autor del contenido puede apelar esta moderación');
+    }
+    if (log.moderationDecision === ModerationDecision.APPROVED || log.result === ModerationResult.APPROVED) {
+      throw new BadRequestException('Solo se pueden apelar contenidos que hayan sido sancionados u ocultados');
     }
 
     const latest = await this.repository.findLatestAppeal(log.id);

@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PostEntity } from './entities/post.entity';
-import { PostsRepository } from './posts.repository';
-import { PostsService } from './posts.service';
-import { PostsController } from './posts.controller';
+import { PostsRepository } from './repository/PostsRepository';
+import { PostsRepositoryImpl } from './repository/impl/PostsRepositoryImpl';
+import { PostsService } from './service/PostsService';
+import { PostsServiceImpl } from './service/impl/PostsServiceImpl';
+import { PostsController } from './controller/PostsController';
 import { CoursesModule } from '../courses/courses.module';
 import { GroupMessagingModule } from '../group-messaging/group-messaging.module';
 import { AuthModule } from '../auth-security/auth.module';
@@ -32,8 +34,9 @@ import { POST_CREATORS } from './posts.constants';
   ],
   controllers: [PostsController],
   providers: [
-    PostsRepository,
-    PostsService,
+    // Inversión de dependencias para capas Service y Repository
+    { provide: PostsService, useClass: PostsServiceImpl },
+    { provide: PostsRepository, useClass: PostsRepositoryImpl },
     // Providers de Adaptadores
     { provide: CoursesClient, useClass: CoursesClientImpl },
     { provide: GroupMessagingClient, useClass: GroupMessagingClientImpl },

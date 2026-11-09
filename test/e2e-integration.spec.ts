@@ -10,7 +10,6 @@ import { hash } from 'bcryptjs';
 import { io, Socket } from 'socket.io-client';
 import { AppModule } from '../src/app.module';
 import { API_PREFIX, configureHttpApp } from '../src/config/http-app.config';
-import { ChatInteractions1762041600000 } from '../src/modules/group-messaging/migrations/1762041600000-ChatInteractions';
 
 describe('E2E Integration Flow: LuminaUL Monolito Modular (7 Módulos)', () => {
   let app: INestApplication;
@@ -88,19 +87,10 @@ describe('E2E Integration Flow: LuminaUL Monolito Modular (7 Módulos)', () => {
 
     dataSource = app.get(DataSource);
 
-    // Asegurar migración de interacciones si no está ejecutada
-    const runner = dataSource.createQueryRunner();
-    await runner.connect();
-    try {
-      await new ChatInteractions1762041600000().up(runner);
-    } finally {
-      await runner.release();
-    }
-
     // Asegurar palabras prohibidas
     await dataSource.query(`
       INSERT INTO banned_words (id, word, severity)
-      VALUES (gen_random_uuid(), 'estafa', 'high'), (gen_random_uuid(), 'spam', 'medium')
+      VALUES (gen_random_uuid(), 'estafa', 'high'), (gen_random_uuid(), 'spam', 'high')
       ON CONFLICT (word) DO NOTHING;
     `);
 

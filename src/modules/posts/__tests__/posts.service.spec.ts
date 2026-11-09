@@ -1,6 +1,7 @@
 import { NotFoundException, ForbiddenException, UnprocessableEntityException } from '@nestjs/common';
-import { PostsService } from '../posts.service';
-import { PostsRepository } from '../posts.repository';
+import { PostsService } from '../service/PostsService';
+import { PostsServiceImpl } from '../service/impl/PostsServiceImpl';
+import { PostsRepository } from '../repository/PostsRepository';
 import { CoursesClient, CourseData } from '../client/CoursesClient';
 import { ModerationClient } from '../client/ModerationClient';
 import { GroupMessagingClient } from '../client/GroupMessagingClient';
@@ -53,7 +54,7 @@ describe('PostsModule Patterns (Unit Tests)', () => {
     tutoringCreator = new TutoringPostCreator(mockGroupMessagingClient);
     postCreatorFactory = new PostCreatorFactory([studyGroupCreator, tutoringCreator]);
 
-    service = new PostsService(
+    service = new PostsServiceImpl(
       mockPostsRepo,
       mockCoursesClient,
       mockModerationClient,

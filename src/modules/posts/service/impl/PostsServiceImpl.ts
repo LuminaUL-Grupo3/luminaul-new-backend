@@ -4,27 +4,30 @@ import {
   ForbiddenException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { PostsRepository } from './posts.repository';
-import { CoursesClient } from './client/CoursesClient';
-import { ModerationClient } from './client/ModerationClient';
-import { PostCreatorFactory } from './factory/PostCreatorFactory';
-import { PostCreateDto } from './dto/post-create.dto';
-import { PostUpdateDto } from './dto/post-update.dto';
-import { PostResponseDto } from './dto/post-response.dto';
-import { PostFeedResponseDto } from './dto/post-feed-response.dto';
-import { MyPostHistoryResponseDto } from './dto/my-post-history-response.dto';
-import { DeletePostResponseDto } from './dto/delete-post-response.dto';
-import { PostEntity } from './entities/post.entity';
-import { POST_MESSAGES } from './posts.constants';
+import { PostsService } from '../PostsService';
+import { PostsRepository } from '../../repository/PostsRepository';
+import { CoursesClient } from '../../client/CoursesClient';
+import { ModerationClient } from '../../client/ModerationClient';
+import { PostCreatorFactory } from '../../factory/PostCreatorFactory';
+import { PostCreateDto } from '../../dto/post-create.dto';
+import { PostUpdateDto } from '../../dto/post-update.dto';
+import { PostResponseDto } from '../../dto/post-response.dto';
+import { PostFeedResponseDto } from '../../dto/post-feed-response.dto';
+import { MyPostHistoryResponseDto } from '../../dto/my-post-history-response.dto';
+import { DeletePostResponseDto } from '../../dto/delete-post-response.dto';
+import { PostEntity } from '../../entities/post.entity';
+import { POST_MESSAGES } from '../../posts.constants';
 
 @Injectable()
-export class PostsService {
+export class PostsServiceImpl extends PostsService {
   constructor(
     private readonly postsRepository: PostsRepository,
     private readonly coursesClient: CoursesClient,
     private readonly moderationClient: ModerationClient,
     private readonly postCreatorFactory: PostCreatorFactory,
-  ) {}
+  ) {
+    super();
+  }
 
   private mapToPostResponseDto(post: PostEntity): PostResponseDto {
     const profile = post.profile;
@@ -272,3 +275,4 @@ export class PostsService {
     };
   }
 }
+

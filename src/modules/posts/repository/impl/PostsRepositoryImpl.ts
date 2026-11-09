@@ -1,21 +1,45 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource, Repository, IsNull } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { PostEntity } from './entities/post.entity';
-import { PostUpdateDto } from './dto/post-update.dto';
+import { PostsRepository, PaginatedResult } from '../PostsRepository';
+import { PostEntity } from '../../entities/post.entity';
+import { PostUpdateDto } from '../../dto/post-update.dto';
 
-export interface PaginatedResult<T> {
-  items: T[];
-  total: number;
-}
-
+// Implementación del repositorio de publicaciones con TypeORM sobre PostgreSQL.
 @Injectable()
-export class PostsRepository {
+export class PostsRepositoryImpl extends PostsRepository {
   constructor(
     @InjectRepository(PostEntity)
     private readonly postRepo: Repository<PostEntity>,
     private readonly dataSource: DataSource,
-  ) { }
+  ) {
+    super();
+  }
+
+  // --- Implementación de CrudRepository ---
+
+  findById(id: string): Promise<PostEntity | null> {
+    return this.getPostById(id);
+  }
+
+  findAll(): Promise<PostEntity[]> {
+    return this.postRepo.find({
+      where: { deletedAt: IsNull(), status: 'published' },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async insert(entity: Partial<PostEntity>): Promise<PostEntity> {
+    const post = this.postRepo.create(entity);
+    return this.create(post);
+  }
+
+  async update(entity: PostEntity): Promise<PostEntity> {
+    entity.updatedAt = new Date();
+    return this.postRepo.save(entity);
+  }
+
+  // --- Métodos específicos del dominio de Posts ---
 
   /**
    * Consulta directa desacoplada por SQL parametrizado.
@@ -184,3 +208,4 @@ export class PostsRepository {
     return true;
   }
 }
+

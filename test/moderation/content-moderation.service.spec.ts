@@ -35,7 +35,6 @@ describe('SPEC-06 ContentModerationService', () => {
     expect(repository.enqueueTask).toHaveBeenCalledWith(
       TargetContentType.PUBLICATION,
       CONTENT,
-      1,
     );
     expect(worker.processBatch).toHaveBeenCalledTimes(1);
   });
@@ -51,7 +50,6 @@ describe('SPEC-06 ContentModerationService', () => {
     expect(repository.enqueueTask).toHaveBeenCalledWith(
       TargetContentType.MESSAGE,
       CONTENT,
-      1,
     );
     expect(worker.processBatch).toHaveBeenCalledTimes(1);
   });

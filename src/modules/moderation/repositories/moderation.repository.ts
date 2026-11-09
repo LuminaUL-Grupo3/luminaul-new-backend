@@ -95,14 +95,38 @@ export class ModerationRepository {
   async enqueueTask(
     contentType: TargetContentType,
     contentId: string,
-    contentVersion = 1,
+    contentVersion?: number,
   ): Promise<ContentModerationTaskEntity | null> {
+    const returningClause = `
+      RETURNING id, content_type AS "contentType", content_id AS "contentId", 
+                content_version AS "contentVersion", status, attempts, 
+                max_attempts AS "maxAttempts", available_at AS "availableAt"`;
+
+    if (contentVersion !== undefined) {
+      const rows: ContentModerationTaskEntity[] = await this.dataSource.query(
+        `INSERT INTO moderation_tasks (content_type, content_id, content_version, status, available_at)
+         VALUES ($1, $2, $3, 'pending', CURRENT_TIMESTAMP)
+         ON CONFLICT (content_type, content_id, content_version) DO NOTHING
+         ${returningClause}`,
+        [contentType, contentId, contentVersion],
+      );
+      return rows[0] ?? null;
+    }
+
     const rows: ContentModerationTaskEntity[] = await this.dataSource.query(
-      `INSERT INTO moderation_tasks (content_type, content_id, content_version, status, available_at)
-       VALUES ($1, $2, $3, 'pending', CURRENT_TIMESTAMP)
+      `WITH existing AS (
+         SELECT MAX(content_version) AS max_v,
+                BOOL_OR(status IN ('pending', 'processing', 'retry')) AS is_active
+         FROM moderation_tasks
+         WHERE content_type = $1 AND content_id = $2
+       )
+       INSERT INTO moderation_tasks (content_type, content_id, content_version, status, available_at)
+       SELECT $1, $2, COALESCE(max_v, 0) + 1, 'pending', CURRENT_TIMESTAMP
+       FROM existing
+       WHERE is_active IS NOT TRUE
        ON CONFLICT (content_type, content_id, content_version) DO NOTHING
-       RETURNING *`,
-      [contentType, contentId, contentVersion],
+       ${returningClause}`,
+      [contentType, contentId],
     );
     return rows[0] ?? null;
   }
@@ -344,7 +368,14 @@ export class ModerationRepository {
   }
 
   async findLogsByAuthor(authorId: string): Promise<ModerationLogWithAppeal[]> {
-    const logs = await this.logs.find({ where: { authorId }, order: { moderatedAt: 'DESC' } });
+    // HU 6.3: Solo listar contenidos sancionados u ocultados por el bot
+    const logs = await this.logs.find({
+      where: [
+        { authorId, moderationDecision: ModerationDecision.HIDDEN },
+        { authorId, result: ModerationResult.BLOCKED },
+      ],
+      order: { moderatedAt: 'DESC' },
+    });
     if (logs.length === 0) return [];
 
     const rows: { moderation_log_id: string; status: AppealStatus }[] = await this.dataSource.query(
@@ -363,7 +394,7 @@ export class ModerationRepository {
       const found: { id: string; text: string }[] = await this.dataSource.query(
         `SELECT id::text AS id, ${source.textColumn} AS text
          FROM ${source.table}
-         WHERE id = ANY($1::uuid[]) AND deleted_at IS NULL`,
+         WHERE id = ANY($1::uuid[])`,
         [ids],
       );
       found.forEach((row) => texts.set(`${type}:${row.id}`, row.text));

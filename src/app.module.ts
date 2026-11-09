@@ -6,6 +6,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { validateEnv } from './config/env.validation';
 import { getTypeOrmConfig } from './config/database.config';
+import { DatabaseConnection } from './config/database-connection.singleton';
 import { AuthModule } from './modules/auth-security/auth.module';
 import { HealthModule } from './health/health.module';
 import { CoursesModule } from './modules/courses/courses.module';
@@ -28,6 +29,13 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: getTypeOrmConfig,
+      // Patrón Singleton (GoF): delegación formal en la instancia única de DatabaseConnection
+      dataSourceFactory: async (options) => {
+        if (!options) {
+          throw new Error('Se requieren opciones válidas para el Singleton de base de datos.');
+        }
+        return DatabaseConnection.getInstance(options).initialize();
+      },
     }),
     // Límite de tasa para prevenir saturación DoS (300 req/min por IP, compatible con SPA y WebSockets)
     ThrottlerModule.forRoot([

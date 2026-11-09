@@ -18,7 +18,7 @@ export class ContentModerationService {
   // Encola la tarea en moderation_tasks para garantizar persistencia y despierta al worker
   async enqueueAndProcess(event: ContentCreatedEvent): Promise<void> {
     const targetType = event.contentType as TargetContentType;
-    await this.repository.enqueueTask(targetType, event.contentId, 1);
+    await this.repository.enqueueTask(targetType, event.contentId);
     await this.worker.processBatch();
   }
 }

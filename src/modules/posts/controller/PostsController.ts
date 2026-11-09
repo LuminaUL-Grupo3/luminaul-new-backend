@@ -19,16 +19,16 @@ import {
   ApiParam,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { PostsService } from './posts.service';
-import { PostCreateDto } from './dto/post-create.dto';
-import { PostUpdateDto } from './dto/post-update.dto';
-import { PostFilterQueryDto, PaginationQueryDto } from './dto/post-query.dto';
-import { PostResponseDto } from './dto/post-response.dto';
-import { PostFeedResponseDto } from './dto/post-feed-response.dto';
-import { MyPostHistoryResponseDto } from './dto/my-post-history-response.dto';
-import { DeletePostResponseDto } from './dto/delete-post-response.dto';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PostsService } from '../service/PostsService';
+import { PostCreateDto } from '../dto/post-create.dto';
+import { PostUpdateDto } from '../dto/post-update.dto';
+import { PostFilterQueryDto, PaginationQueryDto } from '../dto/post-query.dto';
+import { PostResponseDto } from '../dto/post-response.dto';
+import { PostFeedResponseDto } from '../dto/post-feed-response.dto';
+import { MyPostHistoryResponseDto } from '../dto/my-post-history-response.dto';
+import { DeletePostResponseDto } from '../dto/delete-post-response.dto';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 
 @ApiTags('Posts')
 @Controller('posts')
@@ -222,3 +222,4 @@ export class PostsController {
     return this.postsService.deletePost(postId, userId);
   }
 }
+
