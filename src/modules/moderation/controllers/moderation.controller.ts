@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../auth-security/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../auth-security/guard/JwtAuthGuard';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { ModerationService } from '../services/moderation.service';
 import { CreateAppealDto, CreateReportDto } from '../dto/moderation-request.dto';

@@ -9,10 +9,10 @@ import { DataSource } from 'typeorm';
 import { io, Socket } from 'socket.io-client';
 import { AppModule } from '../src/app.module';
 import { configureHttpApp } from '../src/config/http-app.config';
-import { SessionService } from '../src/modules/auth-security/services/session.service';
-import { UsersRepository } from '../src/modules/auth-security/repositories/users.repository';
-import { UserRole } from '../src/modules/auth-security/enums/user-role.enum';
-import { UserAccountStatus } from '../src/modules/auth-security/enums/user-account-status.enum';
+import { SessionService } from '../src/modules/auth-security/service/SessionService';
+import { UsersRepository } from '../src/modules/auth-security/repository/UsersRepository';
+import { UserRole } from '../src/modules/auth-security/enums/UserRole';
+import { UserAccountStatus } from '../src/modules/auth-security/enums/UserAccountStatus';
 
 describe('Real-Time WebSockets: ChatGateway (SPEC-04)', () => {
   let app: INestApplication;

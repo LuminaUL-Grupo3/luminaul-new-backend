@@ -6,8 +6,8 @@ import {
   UpdateDateColumn,
   Index,
 } from 'typeorm';
-import { UserRole } from '../enums/user-role.enum';
-import { UserAccountStatus } from '../enums/user-account-status.enum';
+import { UserRole } from '../enums/UserRole';
+import { UserAccountStatus } from '../enums/UserAccountStatus';
 
 // Sin relaciones hacia entidades de otros módulos (AGENTS.md §3.2):
 // perfiles, posts, grupos, etc. referencian a users solo por su UUID lógico.

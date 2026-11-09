@@ -6,11 +6,12 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { createTransport } from 'nodemailer';
 import { validateEnv } from '../../../config/env.validation';
-import { loadMailConfig } from '../config/mail.config';
-import { renderPasswordResetMail, renderVerificationCodeMail } from '../providers/mail-templates';
-import { SmtpMailSender } from '../providers/smtp-mail-sender';
-import { createMailTransport } from '../providers/mail-transport.factory';
-import { ConsoleMailSender, CodeMail } from '../providers/mail-sender';
+import { loadMailConfig } from '../config/MailConfig';
+import { renderPasswordResetMail, renderVerificationCodeMail } from '../mail/MailTemplates';
+import { SmtpMailSender } from '../mail/impl/SmtpMailSender';
+import { createMailTransport } from '../factory/MailTransportFactory';
+import { ConsoleMailSender } from '../mail/impl/ConsoleMailSender';
+import { CodeMail } from '../mail/MailSender';
 
 const SMTP_ENV = {
   MAIL_TRANSPORT: 'smtp',

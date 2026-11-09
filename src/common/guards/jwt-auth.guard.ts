@@ -1,2 +1,2 @@
-export * from '../../modules/auth-security/jwt-auth.guard';
+export * from '../../modules/auth-security/guard/JwtAuthGuard';
 
