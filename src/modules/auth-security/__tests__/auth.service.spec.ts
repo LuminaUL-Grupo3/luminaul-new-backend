@@ -1,16 +1,18 @@
-import { ConflictException, UnauthorizedException, ForbiddenException } from '@nestjs/common';
-import { AuthService } from '../services/auth.service';
-import { UsersRepository } from '../repositories/users.repository';
-import { PasswordHasher } from '../providers/password-hasher';
-import { OneTimeCodeService, OneTimeCodePurpose } from '../services/one-time-code.service';
-import { SessionService } from '../services/session.service';
-import { MailSender } from '../providers/mail-sender';
-import { UserRole } from '../enums/user-role.enum';
-import { UserAccountStatus } from '../enums/user-account-status.enum';
+import { HttpStatus } from '@nestjs/common';
+import { AuthServiceImpl } from '../service/impl/AuthServiceImpl';
+import { UsersRepository } from '../repository/UsersRepository';
+import { PasswordHasher } from '../strategy/PasswordHasher';
+import { OneTimeCodeService } from '../service/OneTimeCodeService';
+import { SessionService } from '../service/SessionService';
+import { MailSender } from '../mail/MailSender';
+import { OneTimeCodePurpose } from '../enums/OneTimeCodePurpose';
+import { UserRole } from '../enums/UserRole';
+import { UserAccountStatus } from '../enums/UserAccountStatus';
 import { UserEntity } from '../entities/user.entity';
+import { AuthException } from '../exception/AuthException';
 
 describe('AuthService (Unit)', () => {
-  let service: AuthService;
+  let service: AuthServiceImpl;
   let mockUsersRepo: jest.Mocked<UsersRepository>;
   let mockPasswordHasher: jest.Mocked<PasswordHasher>;
   let mockOneTimeCodes: jest.Mocked<OneTimeCodeService>;
@@ -47,7 +49,7 @@ describe('AuthService (Unit)', () => {
       sendPasswordResetCode: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<MailSender>;
 
-    service = new AuthService(
+    service = new AuthServiceImpl(
       mockUsersRepo,
       mockPasswordHasher,
       mockOneTimeCodes,
@@ -84,16 +86,16 @@ describe('AuthService (Unit)', () => {
       expect(result.status).toBe(UserAccountStatus.PENDING_VERIFICATION);
     });
 
-    it('debe lanzar ConflictException si el correo institucional ya existe', async () => {
+    it('debe lanzar AuthException 409 si el correo institucional ya existe', async () => {
       mockUsersRepo.existsByEmail.mockResolvedValue(true);
 
-      await expect(
-        service.register({
-          email: 'existente@aloe.ulima.edu.pe',
-          name: 'Usuario Existente',
-          password: 'Password123!',
-        }),
-      ).rejects.toThrow(ConflictException);
+      const result = service.register({
+        email: 'existente@aloe.ulima.edu.pe',
+        name: 'Usuario Existente',
+        password: 'Password123!',
+      });
+      await expect(result).rejects.toThrow(AuthException);
+      await expect(result).rejects.toMatchObject({ status: HttpStatus.CONFLICT });
 
       expect(mockUsersRepo.createWithProfile).not.toHaveBeenCalled();
     });
@@ -123,7 +125,7 @@ describe('AuthService (Unit)', () => {
       expect(mockSessions.issueAccessToken).toHaveBeenCalledWith(activeUser);
     });
 
-    it('debe lanzar UnauthorizedException si la contraseña es incorrecta', async () => {
+    it('debe lanzar AuthException 401 si la contraseña es incorrecta', async () => {
       const activeUser: Partial<UserEntity> = {
         id: 'user-uuid-active',
         email: 'activo@aloe.ulima.edu.pe',
@@ -133,27 +135,27 @@ describe('AuthService (Unit)', () => {
       mockUsersRepo.findByEmail.mockResolvedValue(activeUser as UserEntity);
       mockPasswordHasher.compare.mockResolvedValue(false);
 
-      await expect(
-        service.login({
-          email: 'activo@aloe.ulima.edu.pe',
-          password: 'WrongPassword',
-        }),
-      ).rejects.toThrow(UnauthorizedException);
+      const result = service.login({
+        email: 'activo@aloe.ulima.edu.pe',
+        password: 'WrongPassword',
+      });
+      await expect(result).rejects.toThrow(AuthException);
+      await expect(result).rejects.toMatchObject({ status: HttpStatus.UNAUTHORIZED });
     });
 
-    it('debe lanzar UnauthorizedException con tiempo constante si el correo no existe', async () => {
+    it('debe lanzar AuthException 401 con tiempo constante si el correo no existe', async () => {
       mockUsersRepo.findByEmail.mockResolvedValue(null);
       mockPasswordHasher.compare.mockResolvedValue(false);
 
-      await expect(
-        service.login({
-          email: 'inexistente@aloe.ulima.edu.pe',
-          password: 'Password123!',
-        }),
-      ).rejects.toThrow(UnauthorizedException);
+      const result = service.login({
+        email: 'inexistente@aloe.ulima.edu.pe',
+        password: 'Password123!',
+      });
+      await expect(result).rejects.toThrow(AuthException);
+      await expect(result).rejects.toMatchObject({ status: HttpStatus.UNAUTHORIZED });
     });
 
-    it('debe lanzar ForbiddenException si el usuario está suspendido', async () => {
+    it('debe lanzar AuthException 403 si el usuario está suspendido', async () => {
       const suspendedUser: Partial<UserEntity> = {
         id: 'user-uuid-suspended',
         email: 'suspendido@aloe.ulima.edu.pe',
@@ -165,12 +167,12 @@ describe('AuthService (Unit)', () => {
       mockUsersRepo.findByEmail.mockResolvedValue(suspendedUser as UserEntity);
       mockPasswordHasher.compare.mockResolvedValue(true);
 
-      await expect(
-        service.login({
-          email: 'suspendido@aloe.ulima.edu.pe',
-          password: 'Password123!',
-        }),
-      ).rejects.toThrow(ForbiddenException);
+      const result = service.login({
+        email: 'suspendido@aloe.ulima.edu.pe',
+        password: 'Password123!',
+      });
+      await expect(result).rejects.toThrow(AuthException);
+      await expect(result).rejects.toMatchObject({ status: HttpStatus.FORBIDDEN });
     });
   });
 });

@@ -1,15 +1,16 @@
-import { BadRequestException, UnauthorizedException, ValidationPipe } from '@nestjs/common';
-import { ChangePasswordDto } from '../dto/change-password.dto';
-import { LoginDto } from '../dto/login.dto';
-import { RegisterDto } from '../dto/register.dto';
-import { ResetPasswordDto } from '../dto/reset-password.dto';
-import { VerifyEmailDto } from '../dto/verify-email.dto';
-import { PasswordRecoveryService } from '../services/password-recovery.service';
-import { UsersRepository } from '../repositories/users.repository';
-import { PasswordHasher } from '../providers/password-hasher';
-import { OneTimeCodeService } from '../services/one-time-code.service';
-import { MailSender } from '../providers/mail-sender';
+import { BadRequestException, HttpStatus, ValidationPipe } from '@nestjs/common';
+import { ChangePasswordDto } from '../dto/ChangePasswordDto';
+import { LoginDto } from '../dto/LoginDto';
+import { RegisterDto } from '../dto/RegisterDto';
+import { ResetPasswordDto } from '../dto/ResetPasswordDto';
+import { VerifyEmailDto } from '../dto/VerifyEmailDto';
+import { PasswordServiceImpl } from '../service/impl/PasswordServiceImpl';
+import { UsersRepository } from '../repository/UsersRepository';
+import { PasswordHasher } from '../strategy/PasswordHasher';
+import { OneTimeCodeService } from '../service/OneTimeCodeService';
+import { MailSender } from '../mail/MailSender';
 import { UserEntity } from '../entities/user.entity';
+import { AuthException } from '../exception/AuthException';
 import { AUTH_MESSAGES } from '../auth.constants';
 
 // Misma configuración que el ValidationPipe global de main.ts
@@ -85,8 +86,8 @@ describe('mensajes en español en los demás DTOs de auth', () => {
   });
 });
 
-describe('PasswordRecoveryService.changePassword', () => {
-  let service: PasswordRecoveryService;
+describe('PasswordService.changePassword', () => {
+  let service: PasswordServiceImpl;
   let users: jest.Mocked<UsersRepository>;
   let hasher: jest.Mocked<PasswordHasher>;
   let user: UserEntity;
@@ -105,7 +106,7 @@ describe('PasswordRecoveryService.changePassword', () => {
       compare: jest.fn().mockImplementation(async (plain: string) => plain === 'ActualSegura123'),
       hash: jest.fn().mockResolvedValue('hash-nuevo'),
     } as unknown as jest.Mocked<PasswordHasher>;
-    service = new PasswordRecoveryService(
+    service = new PasswordServiceImpl(
       users,
       hasher,
       {} as OneTimeCodeService,
@@ -125,21 +126,21 @@ describe('PasswordRecoveryService.changePassword', () => {
   it('rechaza una contraseña actual incorrecta sin guardar nada', async () => {
     await expect(
       service.changePassword('user-1', { ...VALID_CHANGE, current_password: 'Equivocada123' }),
-    ).rejects.toThrow(new BadRequestException(AUTH_MESSAGES.WRONG_CURRENT_PASSWORD));
+    ).rejects.toThrow(new AuthException(AUTH_MESSAGES.WRONG_CURRENT_PASSWORD));
     expect(users.save).not.toHaveBeenCalled();
   });
 
   it('rechaza que la nueva contraseña sea igual a la actual', async () => {
     await expect(
       service.changePassword('user-1', { current_password: 'ActualSegura123', password: 'ActualSegura123' }),
-    ).rejects.toThrow(new BadRequestException(AUTH_MESSAGES.SAME_PASSWORD));
+    ).rejects.toThrow(new AuthException(AUTH_MESSAGES.SAME_PASSWORD));
     expect(users.save).not.toHaveBeenCalled();
   });
 
   it('responde 401 si el usuario de la sesión ya no existe', async () => {
     users.findById.mockResolvedValueOnce(null);
-    await expect(service.changePassword('user-1', VALID_CHANGE)).rejects.toBeInstanceOf(
-      UnauthorizedException,
-    );
+    const result = service.changePassword('user-1', VALID_CHANGE);
+    await expect(result).rejects.toBeInstanceOf(AuthException);
+    await expect(result).rejects.toMatchObject({ status: HttpStatus.UNAUTHORIZED });
   });
 });

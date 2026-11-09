@@ -1,9 +1,9 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../auth-security/guards/jwt-auth.guard';
-import { RolesGuard } from '../../auth-security/guards/roles.guard';
-import { Roles } from '../../auth-security/decorators/roles.decorator';
-import { UserRole } from '../../auth-security/enums/user-role.enum';
+import { JwtAuthGuard } from '../../auth-security/guard/JwtAuthGuard';
+import { RolesGuard } from '../../auth-security/guard/RolesGuard';
+import { Roles } from '../../auth-security/decorator/Roles';
+import { UserRole } from '../../auth-security/enums/UserRole';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { AdminService } from '../services/admin.service';
 import {

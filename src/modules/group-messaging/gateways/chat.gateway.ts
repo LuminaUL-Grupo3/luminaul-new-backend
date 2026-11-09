@@ -18,7 +18,7 @@ import { OnEvent } from "@nestjs/event-emitter";
 import { plainToInstance, ClassConstructor } from "class-transformer";
 import { validate } from "class-validator";
 import { Server, Socket } from "socket.io";
-import { extractToken } from "../../auth-security/token.util";
+import { extractToken } from "../../auth-security/token/TokenExtractor";
 import { GroupSession } from "../security/group-session";
 import { GroupMessagingService } from "../group-messaging.service";
 import {

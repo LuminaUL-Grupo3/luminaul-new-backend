@@ -12,7 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth-security/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth-security/guard/JwtAuthGuard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UserProfileService } from './user-profile.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
