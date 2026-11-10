@@ -1,6 +1,6 @@
 -- ============================================================
 -- SCRIPT DE INICIALIZACIÓN DE BASE DE DATOS PARA LUMINAUL
--- Conforme a SPECS.md v3.0.0 y AGENTS.md (Protocolo de Desarrollo)
+-- Conforme a SPECS.md v4.0.0 y AGENTS.md (Protocolo de Desarrollo)
 -- ============================================================
 
 -- 0. Extensiones Requeridas
@@ -793,7 +793,7 @@ VALUES (
   'SEED_INITIALIZATION',
   'system',
   '00000000-0000-4000-8000-000000000000',
-  '{"version": "3.0.0", "environment": "development"}'::jsonb,
+  '{"version": "4.0.0", "environment": "development"}'::jsonb,
   NOW()
 )
 ON CONFLICT DO NOTHING;

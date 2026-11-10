@@ -7,4 +7,6 @@ coverage
 npm-debug.log*
 test
 scripts
+database
+*.sql
 
