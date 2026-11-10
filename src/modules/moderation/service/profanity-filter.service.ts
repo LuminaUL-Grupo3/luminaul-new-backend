@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { ModerationRepository } from '../repositories/moderation.repository';
+import { ModerationRepository } from '../repository/moderation.repository';
 import { findBannedWords, normalizeText } from './lexical-filter';
 
 @Injectable()

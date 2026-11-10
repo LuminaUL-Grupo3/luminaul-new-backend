@@ -1,8 +1,8 @@
 import { type Mock, type Mocked } from 'vitest';
-import { ModerationTaskWorkerService } from '../../src/modules/moderation/services/moderation-task-worker.service';
-import { ModerationRepository } from '../../src/modules/moderation/repositories/moderation.repository';
-import { ProfanityFilterService } from '../../src/modules/moderation/services/profanity-filter.service';
-import { OpenAiModerationException, OpenAiModerationService } from '../../src/modules/moderation/services/openai-moderation.service';
+import { ModerationTaskWorkerService } from '../../src/modules/moderation/service/moderation-task-worker.service';
+import { ModerationRepository } from '../../src/modules/moderation/repository/moderation.repository';
+import { ProfanityFilterService } from '../../src/modules/moderation/service/profanity-filter.service';
+import { OpenAiModerationException, OpenAiModerationService } from '../../src/modules/moderation/service/openai-moderation.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   LexicalResult,

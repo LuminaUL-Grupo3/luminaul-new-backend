@@ -1,5 +1,5 @@
 import { type Mocked } from 'vitest';
-import { OpenAiModerationException, OpenAiModerationService } from '../../src/modules/moderation/services/openai-moderation.service';
+import { OpenAiModerationException, OpenAiModerationService } from '../../src/modules/moderation/service/openai-moderation.service';
 import { ConfigService } from '@nestjs/config';
 
 describe('OpenAiModerationService', () => {

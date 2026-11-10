@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
-import { BannedWordEntity } from '../entities/banned-word.entity';
-import { ContentModerationLogEntity } from '../entities/content-moderation-log.entity';
-import { ContentReportEntity } from '../entities/content-report.entity';
-import { ContentAppealEntity } from '../entities/content-appeal.entity';
-import { ContentModerationTaskEntity } from '../entities/content-moderation-task.entity';
+import { BannedWordEntity } from '../../entities/banned-word.entity';
+import { ContentModerationLogEntity } from '../../entities/content-moderation-log.entity';
+import { ContentReportEntity } from '../../entities/content-report.entity';
+import { ContentAppealEntity } from '../../entities/content-appeal.entity';
+import { ContentModerationTaskEntity } from '../../entities/content-moderation-task.entity';
 import {
   AppealStatus,
   LexicalResult,
@@ -15,25 +15,17 @@ import {
   SemanticStatus,
   TargetContentType,
   TaskStatus,
-} from '../enums/moderation.enums';
-import { MODERATED_CONTENT, ModeratedContentSource } from '../policies/moderated-content';
+} from '../../enums/moderation.enums';
+import { MODERATED_CONTENT, ModeratedContentSource } from '../../policies/moderated-content';
+import {
+  ContentSnapshot,
+  ModerationLogWithAppeal,
+  ModerationRepository,
+} from '../moderation.repository';
 
-// Datos mínimos de un contenido de otro módulo, leídos por SQL (AGENTS.md §3.2)
-export interface ContentSnapshot {
-  authorId: string;
-  groupId: string | null;
-  status: string;
-  text?: string;
-}
-
-export interface ModerationLogWithAppeal {
-  log: ContentModerationLogEntity;
-  appealStatus: AppealStatus | null;
-  content: string | null;
-}
-
+// Implementación con TypeORM + SQL por nombre de tabla para contenidos de otros módulos.
 @Injectable()
-export class ModerationRepository {
+export class ModerationRepositoryImpl extends ModerationRepository {
   constructor(
     private readonly dataSource: DataSource,
     @InjectRepository(BannedWordEntity)
@@ -46,7 +38,9 @@ export class ModerationRepository {
     private readonly appeals: Repository<ContentAppealEntity>,
     @InjectRepository(ContentModerationTaskEntity)
     private readonly tasks: Repository<ContentModerationTaskEntity>,
-  ) {}
+  ) {
+    super();
+  }
 
   // ---------- Motor léxico y catálogo (HU 6.2) ----------
 

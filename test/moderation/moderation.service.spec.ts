@@ -5,8 +5,9 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { type Mocked } from 'vitest';
-import { ModerationService } from '../../src/modules/moderation/services/moderation.service';
-import { ModerationRepository } from '../../src/modules/moderation/repositories/moderation.repository';
+import { ModerationService } from '../../src/modules/moderation/service/moderation.service';
+import { ModerationServiceImpl } from '../../src/modules/moderation/service/impl/moderation.service.impl';
+import { ModerationRepository } from '../../src/modules/moderation/repository/moderation.repository';
 import { ContentReportEntity } from '../../src/modules/moderation/entities/content-report.entity';
 import { ContentModerationLogEntity } from '../../src/modules/moderation/entities/content-moderation-log.entity';
 import { ContentAppealEntity } from '../../src/modules/moderation/entities/content-appeal.entity';
@@ -41,67 +42,140 @@ describe('ModerationService (Unit)', () => {
       findLogsByAuthor: vi.fn(),
     } as unknown as Mocked<ModerationRepository>;
 
-    service = new ModerationService(mockRepo);
+    service = new ModerationServiceImpl(mockRepo);
   });
 
-  describe('createReport', () => {
-    it('debe registrar un reporte exitosamente (Happy Path)', async () => {
-      mockRepo.findContent.mockResolvedValue({
-        authorId,
-        groupId: null,
-        status: 'published',
-      });
-      mockRepo.findPendingReport.mockResolvedValue(null);
+  // HU 6.1 · createReport. Complejidad ciclomática V(G) = 9 (8 decisiones + 1), así que hay
+  // 9 caminos independientes. Cada prueba recorre uno (C1..C9, ver informe cap. 10.2).
+  describe('createReport (HU 6.1)', () => {
+    const messageId = 'msg-uuid-1';
+    const groupId = 'group-uuid-1';
+    const publicationDto = {
+      targetType: TargetContentType.PUBLICATION,
+      targetId: publicationId,
+      reason: 'Spam o contenido comercial',
+    };
+    const publishedPost = { authorId, groupId: null, status: 'published' };
+    const savedReport = {
+      id: 'report-uuid-1',
+      reporterId,
+      targetType: TargetContentType.PUBLICATION,
+      targetId: publicationId,
+      reason: 'Spam o contenido comercial',
+      status: ReportStatus.PENDING,
+      createdAt: new Date(),
+    } as ContentReportEntity;
 
-      const fakeReport: Partial<ContentReportEntity> = {
-        id: 'report-uuid-1',
-        reporterId,
-        targetType: TargetContentType.PUBLICATION,
-        targetId: publicationId,
-        reason: 'Spam o contenido comercial',
-        status: ReportStatus.PENDING,
-        createdAt: new Date(),
-      };
-      mockRepo.createReport.mockResolvedValue(fakeReport as ContentReportEntity);
-
-      const result = await service.createReport(reporterId, {
-        targetType: TargetContentType.PUBLICATION,
-        targetId: publicationId,
-        reason: 'Spam o contenido comercial',
-      });
-
-      expect(result.reportId).toBe('report-uuid-1');
-      expect(result.status).toBe(ReportStatus.PENDING);
-      expect(mockRepo.createReport).toHaveBeenCalled();
-    });
-
-    it('debe lanzar NotFoundException si el recurso reportado no existe', async () => {
-      mockRepo.findContent.mockResolvedValue(null);
-
+    it('C1: rechaza con 404 un tipo de contenido no soportado sin consultar la base', async () => {
       await expect(
         service.createReport(reporterId, {
-          targetType: TargetContentType.PUBLICATION,
-          targetId: 'invalido',
-          reason: 'Cualquiera',
+          ...publicationDto,
+          targetType: 'comment' as TargetContentType,
         }),
       ).rejects.toThrow(NotFoundException);
+      expect(mockRepo.findContent).not.toHaveBeenCalled();
     });
 
-    it('debe lanzar ConflictException si el usuario ya tiene un reporte pendiente sobre el mismo recurso', async () => {
-      mockRepo.findContent.mockResolvedValue({
-        authorId,
-        groupId: null,
-        status: 'published',
-      });
-      mockRepo.findPendingReport.mockResolvedValue({} as ContentReportEntity);
+    it('C2: rechaza con 404 si el contenido no existe o fue eliminado', async () => {
+      mockRepo.findContent.mockResolvedValue(null);
+
+      await expect(service.createReport(reporterId, publicationDto)).rejects.toThrow(
+        'El contenido que intentas reportar no existe o fue eliminado',
+      );
+      expect(mockRepo.createReport).not.toHaveBeenCalled();
+    });
+
+    it('C3: rechaza con 404 un mensaje de un grupo al que el alumno no pertenece', async () => {
+      mockRepo.findContent.mockResolvedValue({ authorId, groupId, status: 'published' });
+      mockRepo.canAccessGroup.mockResolvedValue(false);
 
       await expect(
         service.createReport(reporterId, {
-          targetType: TargetContentType.PUBLICATION,
-          targetId: publicationId,
-          reason: 'Reporte repetido',
+          targetType: TargetContentType.MESSAGE,
+          targetId: messageId,
+          reason: 'Acoso o intimidación',
         }),
-      ).rejects.toThrow(ConflictException);
+      ).rejects.toThrow(NotFoundException);
+      expect(mockRepo.canAccessGroup).toHaveBeenCalledWith(groupId, reporterId);
+      expect(mockRepo.findPendingReport).not.toHaveBeenCalled();
+    });
+
+    it('C4: registra el reporte de un mensaje cuando el alumno es miembro del grupo', async () => {
+      mockRepo.findContent.mockResolvedValue({ authorId, groupId, status: 'published' });
+      mockRepo.canAccessGroup.mockResolvedValue(true);
+      mockRepo.findPendingReport.mockResolvedValue(null);
+      mockRepo.createReport.mockResolvedValue({
+        ...savedReport,
+        targetType: TargetContentType.MESSAGE,
+        targetId: messageId,
+      } as ContentReportEntity);
+
+      const result = await service.createReport(reporterId, {
+        targetType: TargetContentType.MESSAGE,
+        targetId: messageId,
+        reason: 'Acoso o intimidación',
+      });
+
+      expect(result.status).toBe(ReportStatus.PENDING);
+      expect(mockRepo.createReport).toHaveBeenCalledWith(
+        reporterId,
+        TargetContentType.MESSAGE,
+        messageId,
+        'Acoso o intimidación',
+      );
+    });
+
+    it('C5: rechaza con 400 que el alumno reporte su propio contenido', async () => {
+      mockRepo.findContent.mockResolvedValue({ ...publishedPost, authorId: reporterId });
+
+      await expect(service.createReport(reporterId, publicationDto)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(mockRepo.findPendingReport).not.toHaveBeenCalled();
+    });
+
+    it('C6: rechaza con 409 si ya tiene un reporte pendiente del mismo contenido', async () => {
+      mockRepo.findContent.mockResolvedValue(publishedPost);
+      mockRepo.findPendingReport.mockResolvedValue(savedReport);
+
+      await expect(service.createReport(reporterId, publicationDto)).rejects.toThrow(
+        'Ya reportaste este contenido anteriormente',
+      );
+      expect(mockRepo.createReport).not.toHaveBeenCalled();
+    });
+
+    it('C7: registra el reporte de una publicación y responde con el mensaje de éxito', async () => {
+      mockRepo.findContent.mockResolvedValue(publishedPost);
+      mockRepo.findPendingReport.mockResolvedValue(null);
+      mockRepo.createReport.mockResolvedValue(savedReport);
+
+      const result = await service.createReport(reporterId, publicationDto);
+
+      expect(result).toEqual({
+        message: 'Tu reporte fue enviado con éxito. El equipo de administración revisará el caso.',
+        reportId: 'report-uuid-1',
+        status: ReportStatus.PENDING,
+      });
+      expect(mockRepo.canAccessGroup).not.toHaveBeenCalled();
+    });
+
+    it('C8: responde 409 si dos envíos simultáneos chocan con el índice único uq_reporter_target', async () => {
+      mockRepo.findContent.mockResolvedValue(publishedPost);
+      mockRepo.findPendingReport.mockResolvedValue(null);
+      mockRepo.createReport.mockRejectedValue({ driverError: { code: '23505' } });
+
+      await expect(service.createReport(reporterId, publicationDto)).rejects.toThrow(
+        ConflictException,
+      );
+    });
+
+    it('C9: propaga cualquier otro error de la base de datos sin convertirlo', async () => {
+      mockRepo.findContent.mockResolvedValue(publishedPost);
+      mockRepo.findPendingReport.mockResolvedValue(null);
+      const dbError = new Error('connection terminated');
+      mockRepo.createReport.mockRejectedValue(dbError);
+
+      await expect(service.createReport(reporterId, publicationDto)).rejects.toBe(dbError);
     });
   });
 

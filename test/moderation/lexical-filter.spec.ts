@@ -1,4 +1,4 @@
-import { findBannedWords, normalizeText } from '../../src/modules/moderation/services/lexical-filter';
+import { findBannedWords, normalizeText } from '../../src/modules/moderation/service/lexical-filter';
 
 /** SPEC-06 / HU 6.2: motor léxico de moderación, sin base de datos. */
 describe('SPEC-06 motor léxico', () => {

@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { randomUUID } from 'crypto';
-import { ModerationRepository } from '../repositories/moderation.repository';
+import { ModerationRepository } from '../repository/moderation.repository';
 import { ProfanityFilterService } from './profanity-filter.service';
 import { OpenAiModerationService } from './openai-moderation.service';
 import { resolveModeratedContent } from '../policies/moderated-content';

@@ -6,14 +6,16 @@ import { ContentModerationLogEntity } from './entities/content-moderation-log.en
 import { ContentReportEntity } from './entities/content-report.entity';
 import { ContentAppealEntity } from './entities/content-appeal.entity';
 import { ContentModerationTaskEntity } from './entities/content-moderation-task.entity';
-import { ModerationRepository } from './repositories/moderation.repository';
-import { ModerationService } from './services/moderation.service';
-import { ContentModerationService } from './services/content-moderation.service';
+import { ModerationRepository } from './repository/moderation.repository';
+import { ModerationRepositoryImpl } from './repository/impl/moderation.repository.impl';
+import { ModerationService } from './service/moderation.service';
+import { ModerationServiceImpl } from './service/impl/moderation.service.impl';
+import { ContentModerationService } from './service/content-moderation.service';
 import { ContentCreatedListener } from './listeners/content-created.listener';
-import { ModerationController } from './controllers/moderation.controller';
-import { ProfanityFilterService } from './services/profanity-filter.service';
-import { OpenAiModerationService } from './services/openai-moderation.service';
-import { ModerationTaskWorkerService } from './services/moderation-task-worker.service';
+import { ModerationController } from './controller/moderation.controller';
+import { ProfanityFilterService } from './service/profanity-filter.service';
+import { OpenAiModerationService } from './service/openai-moderation.service';
+import { ModerationTaskWorkerService } from './service/moderation-task-worker.service';
 import { MODERATED_CONTENT } from './policies/moderated-content';
 import { TargetContentType } from './enums/moderation.enums';
 
@@ -29,9 +31,10 @@ import { TargetContentType } from './enums/moderation.enums';
     AuthModule,
   ],
   controllers: [ModerationController],
+  // Inversión de dependencias: cada abstracción recibe aquí su implementación (como SPEC-05).
   providers: [
-    ModerationRepository,
-    ModerationService,
+    { provide: ModerationRepository, useClass: ModerationRepositoryImpl },
+    { provide: ModerationService, useClass: ModerationServiceImpl },
     ContentModerationService,
     ContentCreatedListener,
     ProfanityFilterService,

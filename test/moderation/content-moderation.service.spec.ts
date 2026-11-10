@@ -1,7 +1,7 @@
 import { type Mocked } from 'vitest';
-import { ContentModerationService } from '../../src/modules/moderation/services/content-moderation.service';
-import { ModerationRepository } from '../../src/modules/moderation/repositories/moderation.repository';
-import { ModerationTaskWorkerService } from '../../src/modules/moderation/services/moderation-task-worker.service';
+import { ContentModerationService } from '../../src/modules/moderation/service/content-moderation.service';
+import { ModerationRepository } from '../../src/modules/moderation/repository/moderation.repository';
+import { ModerationTaskWorkerService } from '../../src/modules/moderation/service/moderation-task-worker.service';
 import { TargetContentType } from '../../src/modules/moderation/enums/moderation.enums';
 
 describe('SPEC-06 ContentModerationService', () => {

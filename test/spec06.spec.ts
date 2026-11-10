@@ -8,8 +8,8 @@ import { DataSource } from 'typeorm';
 import { hash } from 'bcryptjs';
 import { AppModule } from '../src/app.module';
 import { API_PREFIX, configureHttpApp } from '../src/config/http-app.config';
-import { ModerationTaskWorkerService } from '../src/modules/moderation/services/moderation-task-worker.service';
-import { ModerationRepository } from '../src/modules/moderation/repositories/moderation.repository';
+import { ModerationTaskWorkerService } from '../src/modules/moderation/service/moderation-task-worker.service';
+import { ModerationRepository } from '../src/modules/moderation/repository/moderation.repository';
 import { TargetContentType } from '../src/modules/moderation/enums/moderation.enums';
 
 describe('SPEC-06: Moderación y Denuncias (End-to-End Suite Oficial)', () => {
@@ -171,6 +171,58 @@ describe('SPEC-06: Moderación y Denuncias (End-to-End Suite Oficial)', () => {
 
       expect(res.status).toBe(409);
       expect(res.body.message).toContain('Ya reportaste');
+    });
+
+    it('debe rechazar con HTTP 400 que el autor reporte su propia publicación', async () => {
+      const res = await apiRequest('POST', '/moderation/reports', {
+        token: token1,
+        body: {
+          targetType: 'publication',
+          targetId: testPostId,
+          reason: 'Prueba de auto-reporte',
+        },
+      });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe('No puedes reportar tu propio contenido');
+    });
+
+    it('debe rechazar con HTTP 400 un payload inválido (tipo, id y motivo)', async () => {
+      const res = await apiRequest('POST', '/moderation/reports', {
+        token: token2,
+        body: { targetType: 'comment', targetId: 'no-es-uuid', reason: '   ' },
+      });
+
+      expect(res.status).toBe(400);
+      const messages = ([] as string[]).concat(res.body.message);
+      expect(messages).toEqual(
+        expect.arrayContaining([
+          'Debes indicar el motivo del reporte',
+          'El tipo de contenido debe ser publication, message o review',
+          'El identificador del contenido no es válido',
+        ]),
+      );
+    });
+
+    it('debe responder HTTP 404 si la publicación reportada no existe', async () => {
+      const res = await apiRequest('POST', '/moderation/reports', {
+        token: token2,
+        body: {
+          targetType: 'publication',
+          targetId: '7f1c2b8e-3a4d-4e5f-9a6b-1c2d3e4f5a6b',
+          reason: 'Spam o contenido engañoso',
+        },
+      });
+
+      expect(res.status).toBe(404);
+    });
+
+    it('debe responder HTTP 401 si no hay sesión', async () => {
+      const res = await apiRequest('POST', '/moderation/reports', {
+        body: { targetType: 'publication', targetId: testPostId, reason: 'Spam' },
+      });
+
+      expect(res.status).toBe(401);
     });
 
     it('debe listar los reportes enviados por el usuario autenticado', async () => {
