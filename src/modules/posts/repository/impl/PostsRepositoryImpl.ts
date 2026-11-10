@@ -170,12 +170,6 @@ export class PostsRepositoryImpl extends PostsRepository {
       return null;
     }
 
-    if (postData.courseId !== undefined) {
-      post.courseId = postData.courseId;
-    }
-    if (postData.type !== undefined) {
-      post.type = postData.type;
-    }
     if (postData.description !== undefined) {
       post.description = postData.description;
     }
@@ -193,7 +187,8 @@ export class PostsRepositoryImpl extends PostsRepository {
     }
     post.updatedAt = new Date();
 
-    return this.postRepo.save(post);
+    const saved = await this.postRepo.save(post);
+    return (await this.getPostById(saved.id)) ?? saved;
   }
 
   async delete(postId: string): Promise<boolean> {

@@ -34,14 +34,19 @@ export abstract class PostsService {
   // H.U 1.2: Obtener publicación por ID para edición o consulta
   abstract getPostById(postId: string): Promise<PostResponseDto>;
 
-  // H.U 1.2: Editar publicación propia
+  // H.U 1.2: Editar publicación propia (o administrador según SPEC)
   abstract editPost(
     postId: string,
     payload: PostUpdateDto,
     userId: string,
+    userRole?: string,
   ): Promise<PostResponseDto>;
 
-  // H.U 1.4: Eliminar publicación propia (soft delete)
-  abstract deletePost(postId: string, userId: string): Promise<DeletePostResponseDto>;
+  // H.U 1.4: Eliminar publicación propia (soft delete, o administrador según SPEC)
+  abstract deletePost(
+    postId: string,
+    userId: string,
+    userRole?: string,
+  ): Promise<DeletePostResponseDto>;
 }
 
