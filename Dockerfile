@@ -1,7 +1,8 @@
 # ==========================================
 # STAGE 1: Compilación de la Aplicación NestJS
 # ==========================================
-FROM node:22-alpine AS build
+ARG NODE_VERSION=24-alpine
+FROM node:${NODE_VERSION} AS build
 
 WORKDIR /app
 
@@ -14,7 +15,7 @@ RUN npm run build && npm prune --omit=dev
 # ==========================================
 # STAGE 2: Imagen Final de Producción
 # ==========================================
-FROM node:22-alpine
+FROM node:${NODE_VERSION}
 
 WORKDIR /app
 
