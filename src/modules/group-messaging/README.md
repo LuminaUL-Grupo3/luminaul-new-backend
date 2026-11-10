@@ -154,7 +154,7 @@ El módulo de moderación debe guardar primero `status='hidden'` y después emit
 Desde backend:
 
 ```powershell
-node --experimental-vm-modules node_modules/jest/bin/jest.js src/modules/group-messaging/gateways/room-presence.spec.ts --runInBand
+npx vitest run src/modules/group-messaging/gateways/room-presence.spec.ts
 ```
 
 Desde frontend, con las carpetas de ambos repos como hermanas `frontend` y `backend` (o `SPEC04_BACKEND_DIR` apuntando al backend):

@@ -68,16 +68,34 @@ El build compila directamente con NestJS y genera la documentación OpenAPI para
 
 ---
 
-## 4. Pruebas Automatizadas (Jest / xUnit)
+## 4. Pruebas Automatizadas (Vitest)
 
-El backend utiliza **Jest** como framework estándar de la familia xUnit para pruebas de integración contra la base de datos real PostgreSQL:
+El backend utiliza **Vitest** optimizado con **SWC** (`unplugin-swc`) como framework moderno de pruebas con compilación en memoria ultrarrápida, soporte nativo de ECMAScript Modules (ESM) y decorators de NestJS:
 
 ```bash
-# Ejecutar la suite completa de integración con Jest
+# Ejecutar todas las pruebas unitarias (src/modules/**)
 npm test
 
-# Ejecutar la suite de integración SPEC-01 (Auth) <-> SPEC-03 (Posts)
-npm run test:integration
+# Modo observador interactivo (watch)
+npm run test:watch
+
+# Pruebas unitarias
+npm run test:unit
+
+# Suite completa de integración E2E (7 módulos integrados)
+npm run test:e2e
+
+# Pruebas de WebSockets y mensajería en tiempo real
+npm run test:ws
+
+# Suite de auditoría de seguridad y control de acceso (OWASP Top 10)
+npm run test:security
+
+# Ejecutar todas las suites combinadas (unitarias + integración)
+npm run test:all
+
+# Reporte de cobertura de código
+npm run test:cov
 ```
 
 ### Cobertura de la Suite (`test/spec01-spec03.spec.ts`):
