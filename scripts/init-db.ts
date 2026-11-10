@@ -18,7 +18,7 @@ async function runManualMigration() {
     dbUrl = dbUrl.replace('postgres://', 'postgresql://');
   }
 
-  const sqlPath = path.resolve(__dirname, '../init-db.sql');
+  const sqlPath = path.resolve(__dirname, '../database/init-db.sql');
   if (!fs.existsSync(sqlPath)) {
     console.error(`[ERROR] No se encontró el archivo SQL en: ${sqlPath}`);
     process.exit(1);
@@ -35,7 +35,7 @@ async function runManualMigration() {
 
   try {
     await dataSource.initialize();
-    console.log('[INFO] Ejecutando script init-db.sql (SPECS.md v3.0.0)...');
+    console.log('[INFO] Ejecutando script init-db.sql (SPECS.md v4.0.0)...');
     await dataSource.query(sql);
 
     console.log('[OK] Inicialización de base de datos completada con éxito.');
