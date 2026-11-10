@@ -131,61 +131,67 @@ describe('Real-Time WebSockets: ChatGateway (SPEC-04)', () => {
   });
 
   describe('Handshake y Autenticación WebSocket', () => {
-    it('debe conectar exitosamente con JWT Bearer válido en handshake.auth.token', (done) => {
-      socketLeader = io(wsUrl, {
-        auth: { token: tokenLeader },
-        transports: ['websocket'],
-        reconnection: false,
-      });
+    it('debe conectar exitosamente con JWT Bearer válido en handshake.auth.token', async () => {
+      await new Promise<void>((resolve, reject) => {
+        socketLeader = io(wsUrl, {
+          auth: { token: tokenLeader },
+          transports: ['websocket'],
+          reconnection: false,
+        });
 
-      socketLeader.on('connect', () => {
-        expect(socketLeader.connected).toBe(true);
-        done();
-      });
+        socketLeader.on('connect', () => {
+          expect(socketLeader.connected).toBe(true);
+          resolve();
+        });
 
-      socketLeader.on('connect_error', (err) => done(err));
+        socketLeader.on('connect_error', (err) => reject(err));
+      });
     });
 
-    it('debe rechazar conexión con connect_error ante JWT corrupto o ausente', (done) => {
-      const corruptSocket = io(wsUrl, {
-        auth: { token: 'invalid.corrupted.jwt' },
-        transports: ['websocket'],
-        reconnection: false,
-      });
+    it('debe rechazar conexión con connect_error ante JWT corrupto o ausente', async () => {
+      await new Promise<void>((resolve, reject) => {
+        const corruptSocket = io(wsUrl, {
+          auth: { token: 'invalid.corrupted.jwt' },
+          transports: ['websocket'],
+          reconnection: false,
+        });
 
-      corruptSocket.on('connect', () => {
-        corruptSocket.disconnect();
-        done(new Error('No debió permitir la conexión con token corrupto'));
-      });
+        corruptSocket.on('connect', () => {
+          corruptSocket.disconnect();
+          reject(new Error('No debió permitir la conexión con token corrupto'));
+        });
 
-      corruptSocket.on('connect_error', (err) => {
-        expect(err.message).toContain('La sesión no está disponible');
-        corruptSocket.disconnect();
-        done();
+        corruptSocket.on('connect_error', (err) => {
+          expect(err.message).toContain('La sesión no está disponible');
+          corruptSocket.disconnect();
+          resolve();
+        });
       });
     });
   });
 
   describe('Control de Acceso a Salas (chat:join_room)', () => {
-    beforeAll((done) => {
-      socketMember = io(wsUrl, {
-        auth: { token: tokenMember },
-        transports: ['websocket'],
-        reconnection: false,
-      });
-      socketOutsider = io(wsUrl, {
-        auth: { token: tokenOutsider },
-        transports: ['websocket'],
-        reconnection: false,
-      });
+    beforeAll(async () => {
+      await new Promise<void>((resolve) => {
+        socketMember = io(wsUrl, {
+          auth: { token: tokenMember },
+          transports: ['websocket'],
+          reconnection: false,
+        });
+        socketOutsider = io(wsUrl, {
+          auth: { token: tokenOutsider },
+          transports: ['websocket'],
+          reconnection: false,
+        });
 
-      let ready = 0;
-      const check = () => {
-        ready++;
-        if (ready === 2) done();
-      };
-      socketMember.on('connect', check);
-      socketOutsider.on('connect', check);
+        let ready = 0;
+        const check = () => {
+          ready++;
+          if (ready === 2) resolve();
+        };
+        socketMember.on('connect', check);
+        socketOutsider.on('connect', check);
+      });
     });
 
     it('debe permitir unirse a la sala a un miembro activo del grupo', async () => {

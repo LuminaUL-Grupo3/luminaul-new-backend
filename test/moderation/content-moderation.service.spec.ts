@@ -1,3 +1,4 @@
+import { type Mocked } from 'vitest';
 import { ContentModerationService } from '../../src/modules/moderation/services/content-moderation.service';
 import { ModerationRepository } from '../../src/modules/moderation/repositories/moderation.repository';
 import { ModerationTaskWorkerService } from '../../src/modules/moderation/services/moderation-task-worker.service';
@@ -7,16 +8,16 @@ describe('SPEC-06 ContentModerationService', () => {
   const AUTHOR = 'd290f1ee-6c54-4b01-90e6-d701748f0851';
   const CONTENT = '18938a12-6f2b-4d43-9801-bca908234fed';
 
-  let repository: jest.Mocked<Pick<ModerationRepository, 'enqueueTask'>>;
-  let worker: jest.Mocked<Pick<ModerationTaskWorkerService, 'processBatch'>>;
+  let repository: Mocked<Pick<ModerationRepository, 'enqueueTask'>>;
+  let worker: Mocked<Pick<ModerationTaskWorkerService, 'processBatch'>>;
   let service: ContentModerationService;
 
   beforeEach(() => {
     repository = {
-      enqueueTask: jest.fn().mockResolvedValue({ id: 'task-1' } as any),
+      enqueueTask: vi.fn().mockResolvedValue({ id: 'task-1' } as any),
     };
     worker = {
-      processBatch: jest.fn().mockResolvedValue(1),
+      processBatch: vi.fn().mockResolvedValue(1),
     };
     service = new ContentModerationService(
       repository as unknown as ModerationRepository,

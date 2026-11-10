@@ -1,4 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
+import { type Mocked } from 'vitest';
 import { ReviewsServiceImpl } from '../service/impl/ReviewsServiceImpl';
 import { ReviewsRepository } from '../repository/ReviewsRepository';
 import { ModerationClient } from '../client/ModerationClient';
@@ -9,47 +10,47 @@ import { ReviewException } from '../exception/ReviewException';
 
 describe('ReviewsService (Unit)', () => {
   let service: ReviewsServiceImpl;
-  let mockReviewsRepo: jest.Mocked<ReviewsRepository>;
-  let mockModeration: jest.Mocked<ModerationClient>;
-  let mockProfiles: jest.Mocked<ProfileClient>;
-  let mockRule1: jest.Mocked<ReviewEligibilityStrategy>;
-  let mockRule2: jest.Mocked<ReviewEligibilityStrategy>;
+  let mockReviewsRepo: Mocked<ReviewsRepository>;
+  let mockModeration: Mocked<ModerationClient>;
+  let mockProfiles: Mocked<ProfileClient>;
+  let mockRule1: Mocked<ReviewEligibilityStrategy>;
+  let mockRule2: Mocked<ReviewEligibilityStrategy>;
 
   const reviewerId = 'user-uuid-reviewer';
   const reviewedUserId = 'user-uuid-reviewed';
 
   beforeEach(() => {
     mockReviewsRepo = {
-      findById: jest.fn(),
-      findAll: jest.fn(),
-      insert: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-      findByReviewerAndReviewed: jest.fn(),
-      findByReviewer: jest.fn(),
-      findPublishedByReviewedUser: jest.fn(),
-    } as unknown as jest.Mocked<ReviewsRepository>;
+      findById: vi.fn(),
+      findAll: vi.fn(),
+      insert: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      findByReviewerAndReviewed: vi.fn(),
+      findByReviewer: vi.fn(),
+      findPublishedByReviewedUser: vi.fn(),
+    } as unknown as Mocked<ReviewsRepository>;
 
     mockModeration = {
-      reviewWritten: jest.fn(),
-    } as unknown as jest.Mocked<ModerationClient>;
+      reviewWritten: vi.fn(),
+    } as unknown as Mocked<ModerationClient>;
 
     mockProfiles = {
-      findPeople: jest.fn().mockResolvedValue(
+      findPeople: vi.fn().mockResolvedValue(
         new Map([
           [reviewerId, { id: reviewerId, name: 'Reviewer Name', profilePhotoUrl: null }],
           [reviewedUserId, { id: reviewedUserId, name: 'Reviewed Name', profilePhotoUrl: null }],
         ]),
       ),
-    } as unknown as jest.Mocked<ProfileClient>;
+    } as unknown as Mocked<ProfileClient>;
 
     mockRule1 = {
-      evaluate: jest.fn().mockResolvedValue(null),
-    };
+      evaluate: vi.fn().mockResolvedValue(null),
+    } as unknown as Mocked<ReviewEligibilityStrategy>;
 
     mockRule2 = {
-      evaluate: jest.fn().mockResolvedValue(null),
-    };
+      evaluate: vi.fn().mockResolvedValue(null),
+    } as unknown as Mocked<ReviewEligibilityStrategy>;
 
     service = new ReviewsServiceImpl(
       mockReviewsRepo,

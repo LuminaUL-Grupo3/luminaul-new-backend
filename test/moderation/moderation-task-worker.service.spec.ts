@@ -1,3 +1,4 @@
+import { type Mock, type Mocked } from 'vitest';
 import { ModerationTaskWorkerService } from '../../src/modules/moderation/services/moderation-task-worker.service';
 import { ModerationRepository } from '../../src/modules/moderation/repositories/moderation.repository';
 import { ProfanityFilterService } from '../../src/modules/moderation/services/profanity-filter.service';
@@ -12,26 +13,26 @@ import {
 
 describe('ModerationTaskWorkerService', () => {
   let worker: ModerationTaskWorkerService;
-  let mockRepo: jest.Mocked<Partial<ModerationRepository>>;
-  let mockProfanity: jest.Mocked<Partial<ProfanityFilterService>>;
-  let mockOpenAi: jest.Mocked<Partial<OpenAiModerationService>>;
-  let mockEvents: { emit: jest.Mock };
+  let mockRepo: Mocked<Partial<ModerationRepository>>;
+  let mockProfanity: Mocked<Partial<ProfanityFilterService>>;
+  let mockOpenAi: Mocked<Partial<OpenAiModerationService>>;
+  let mockEvents: { emit: Mock };
 
   beforeEach(() => {
     mockRepo = {
-      claimNextBatch: jest.fn(),
-      findContent: jest.fn(),
-      completeTaskSuccess: jest.fn(),
-      completeTaskDiscarded: jest.fn(),
-      rescheduleTaskRetry: jest.fn(),
+      claimNextBatch: vi.fn(),
+      findContent: vi.fn(),
+      completeTaskSuccess: vi.fn(),
+      completeTaskDiscarded: vi.fn(),
+      rescheduleTaskRetry: vi.fn(),
     };
     mockProfanity = {
-      checkMessage: jest.fn(),
+      checkMessage: vi.fn(),
     };
     mockOpenAi = {
-      moderateText: jest.fn(),
+      moderateText: vi.fn(),
     };
-    mockEvents = { emit: jest.fn() };
+    mockEvents = { emit: vi.fn() };
 
     worker = new ModerationTaskWorkerService(
       mockRepo as unknown as ModerationRepository,
@@ -42,7 +43,7 @@ describe('ModerationTaskWorkerService', () => {
   });
 
   it('debe ocultar inmediatamente si la Capa 1 léxica detecta palabras prohibidas sin llamar a OpenAI', async () => {
-    mockRepo.claimNextBatch = jest.fn().mockResolvedValue([
+    mockRepo.claimNextBatch = vi.fn().mockResolvedValue([
       {
         id: 'task-1',
         contentType: TargetContentType.PUBLICATION,
@@ -53,17 +54,17 @@ describe('ModerationTaskWorkerService', () => {
         lockToken: 'token-abc',
       },
     ]);
-    mockRepo.findContent = jest.fn().mockResolvedValue({
+    mockRepo.findContent = vi.fn().mockResolvedValue({
       authorId: 'user-1',
       groupId: null,
       status: 'pending_moderation',
       text: 'Este contenido es una estafa total',
     });
-    mockProfanity.checkMessage = jest.fn().mockResolvedValue({
+    mockProfanity.checkMessage = vi.fn().mockResolvedValue({
       clean: false,
       detectedWords: ['estafa'],
     });
-    mockRepo.completeTaskSuccess = jest.fn().mockResolvedValue({ id: 'log-1' } as unknown as null);
+    mockRepo.completeTaskSuccess = vi.fn().mockResolvedValue({ id: 'log-1' } as unknown as null);
 
     const processedCount = await worker.processBatch();
 
@@ -88,7 +89,7 @@ describe('ModerationTaskWorkerService', () => {
   });
 
   it('debe aprobar el contenido si la Capa 1 y la Capa 2 resultan limpias', async () => {
-    mockRepo.claimNextBatch = jest.fn().mockResolvedValue([
+    mockRepo.claimNextBatch = vi.fn().mockResolvedValue([
       {
         id: 'task-2',
         contentType: TargetContentType.PUBLICATION,
@@ -99,17 +100,17 @@ describe('ModerationTaskWorkerService', () => {
         lockToken: 'token-xyz',
       },
     ]);
-    mockRepo.findContent = jest.fn().mockResolvedValue({
+    mockRepo.findContent = vi.fn().mockResolvedValue({
       authorId: 'user-2',
       groupId: null,
       status: 'pending_moderation',
       text: 'Grupo de estudio de algoritmos',
     });
-    mockProfanity.checkMessage = jest.fn().mockResolvedValue({
+    mockProfanity.checkMessage = vi.fn().mockResolvedValue({
       clean: true,
       detectedWords: [],
     });
-    mockOpenAi.moderateText = jest.fn().mockResolvedValue({
+    mockOpenAi.moderateText = vi.fn().mockResolvedValue({
       available: true,
       flagged: false,
       categories: [],
@@ -134,7 +135,7 @@ describe('ModerationTaskWorkerService', () => {
   });
 
   it('debe ocultar el contenido si la Capa 2 de OpenAI detecta acoso u odio', async () => {
-    mockRepo.claimNextBatch = jest.fn().mockResolvedValue([
+    mockRepo.claimNextBatch = vi.fn().mockResolvedValue([
       {
         id: 'task-3',
         contentType: TargetContentType.PUBLICATION,
@@ -145,22 +146,22 @@ describe('ModerationTaskWorkerService', () => {
         lockToken: 'token-hate',
       },
     ]);
-    mockRepo.findContent = jest.fn().mockResolvedValue({
+    mockRepo.findContent = vi.fn().mockResolvedValue({
       authorId: 'user-3',
       groupId: null,
       status: 'pending_moderation',
       text: 'Texto con acoso y odio',
     });
-    mockProfanity.checkMessage = jest.fn().mockResolvedValue({
+    mockProfanity.checkMessage = vi.fn().mockResolvedValue({
       clean: true,
       detectedWords: [],
     });
-    mockOpenAi.moderateText = jest.fn().mockResolvedValue({
+    mockOpenAi.moderateText = vi.fn().mockResolvedValue({
       available: true,
       flagged: true,
       categories: ['harassment'],
     });
-    mockRepo.completeTaskSuccess = jest.fn().mockResolvedValue({ id: 'log-3' } as unknown as null);
+    mockRepo.completeTaskSuccess = vi.fn().mockResolvedValue({ id: 'log-3' } as unknown as null);
 
     const processedCount = await worker.processBatch();
 
@@ -183,7 +184,7 @@ describe('ModerationTaskWorkerService', () => {
   });
 
   it('debe programar reintento con backoff ante fallo recuperable de OpenAI si no agotó maxAttempts', async () => {
-    mockRepo.claimNextBatch = jest.fn().mockResolvedValue([
+    mockRepo.claimNextBatch = vi.fn().mockResolvedValue([
       {
         id: 'task-4',
         contentType: TargetContentType.PUBLICATION,
@@ -194,14 +195,14 @@ describe('ModerationTaskWorkerService', () => {
         lockToken: 'token-err1',
       },
     ]);
-    mockRepo.findContent = jest.fn().mockResolvedValue({
+    mockRepo.findContent = vi.fn().mockResolvedValue({
       authorId: 'user-4',
       groupId: null,
       status: 'pending_moderation',
       text: 'Consulta de matemáticas',
     });
-    mockProfanity.checkMessage = jest.fn().mockResolvedValue({ clean: true, detectedWords: [] });
-    mockOpenAi.moderateText = jest.fn().mockRejectedValue(new OpenAiModerationException('Timeout', true));
+    mockProfanity.checkMessage = vi.fn().mockResolvedValue({ clean: true, detectedWords: [] });
+    mockOpenAi.moderateText = vi.fn().mockRejectedValue(new OpenAiModerationException('Timeout', true));
 
     await worker.processBatch();
 
@@ -216,7 +217,7 @@ describe('ModerationTaskWorkerService', () => {
   });
 
   it('debe aplicar fallback al filtro local tras agotar los 2 reintentos de OpenAI', async () => {
-    mockRepo.claimNextBatch = jest.fn().mockResolvedValue([
+    mockRepo.claimNextBatch = vi.fn().mockResolvedValue([
       {
         id: 'task-5',
         contentType: TargetContentType.PUBLICATION,
@@ -227,14 +228,14 @@ describe('ModerationTaskWorkerService', () => {
         lockToken: 'token-err3',
       },
     ]);
-    mockRepo.findContent = jest.fn().mockResolvedValue({
+    mockRepo.findContent = vi.fn().mockResolvedValue({
       authorId: 'user-5',
       groupId: null,
       status: 'pending_moderation',
       text: 'Consulta legítima con OpenAI caído',
     });
-    mockProfanity.checkMessage = jest.fn().mockResolvedValue({ clean: true, detectedWords: [] });
-    mockOpenAi.moderateText = jest.fn().mockRejectedValue(new OpenAiModerationException('503 Service Unavailable', true));
+    mockProfanity.checkMessage = vi.fn().mockResolvedValue({ clean: true, detectedWords: [] });
+    mockOpenAi.moderateText = vi.fn().mockRejectedValue(new OpenAiModerationException('503 Service Unavailable', true));
 
     await worker.processBatch();
 
@@ -253,7 +254,7 @@ describe('ModerationTaskWorkerService', () => {
   });
 
   it('debe descartar la tarea sin insertar log falso si el contenido fue eliminado antes de procesarse', async () => {
-    mockRepo.claimNextBatch = jest.fn().mockResolvedValue([
+    mockRepo.claimNextBatch = vi.fn().mockResolvedValue([
       {
         id: 'task-deleted',
         contentType: TargetContentType.PUBLICATION,
@@ -264,8 +265,8 @@ describe('ModerationTaskWorkerService', () => {
         lockToken: 'token-del',
       },
     ]);
-    mockRepo.findContent = jest.fn().mockResolvedValue(null);
-    mockRepo.completeTaskDiscarded = jest.fn().mockResolvedValue(true);
+    mockRepo.findContent = vi.fn().mockResolvedValue(null);
+    mockRepo.completeTaskDiscarded = vi.fn().mockResolvedValue(true);
 
     const processedCount = await worker.processBatch();
 

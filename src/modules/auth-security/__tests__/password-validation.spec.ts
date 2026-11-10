@@ -1,4 +1,5 @@
 import { BadRequestException, HttpStatus, ValidationPipe } from '@nestjs/common';
+import { type Mocked } from 'vitest';
 import { ChangePasswordDto } from '../dto/ChangePasswordDto';
 import { LoginDto } from '../dto/LoginDto';
 import { RegisterDto } from '../dto/RegisterDto';
@@ -88,8 +89,8 @@ describe('mensajes en español en los demás DTOs de auth', () => {
 
 describe('PasswordService.changePassword', () => {
   let service: PasswordServiceImpl;
-  let users: jest.Mocked<UsersRepository>;
-  let hasher: jest.Mocked<PasswordHasher>;
+  let users: Mocked<UsersRepository>;
+  let hasher: Mocked<PasswordHasher>;
   let user: UserEntity;
 
   beforeEach(() => {
@@ -99,13 +100,13 @@ describe('PasswordService.changePassword', () => {
       tokensValidAfter: new Date('2026-01-01T00:00:00Z'),
     });
     users = {
-      findById: jest.fn().mockResolvedValue(user),
-      save: jest.fn().mockImplementation(async (u: UserEntity) => u),
-    } as unknown as jest.Mocked<UsersRepository>;
+      findById: vi.fn().mockResolvedValue(user),
+      save: vi.fn().mockImplementation(async (u: UserEntity) => u),
+    } as unknown as Mocked<UsersRepository>;
     hasher = {
-      compare: jest.fn().mockImplementation(async (plain: string) => plain === 'ActualSegura123'),
-      hash: jest.fn().mockResolvedValue('hash-nuevo'),
-    } as unknown as jest.Mocked<PasswordHasher>;
+      compare: vi.fn().mockImplementation(async (plain: string) => plain === 'ActualSegura123'),
+      hash: vi.fn().mockResolvedValue('hash-nuevo'),
+    } as unknown as Mocked<PasswordHasher>;
     service = new PasswordServiceImpl(
       users,
       hasher,

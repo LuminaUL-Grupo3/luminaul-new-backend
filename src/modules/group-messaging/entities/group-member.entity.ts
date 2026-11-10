@@ -14,8 +14,8 @@ export class GroupMemberEntity {
   @PrimaryGeneratedColumn("uuid") id!: string;
   @Column({ name: "group_id", type: "uuid" }) groupId!: string;
   @Column({ name: "user_id", type: "uuid" }) userId!: string;
-  @Column({ length: 20, default: "member" }) role!: GroupRole;
-  @Column({ length: 20, default: "active" }) status!: MemberStatus;
+  @Column({ type: "varchar", length: 20, default: "member" }) role!: GroupRole;
+  @Column({ type: "varchar", length: 20, default: "active" }) status!: MemberStatus;
   @CreateDateColumn({ name: "joined_at", type: "timestamptz" }) joinedAt!: Date;
   @Column({ name: "left_at", type: "timestamptz", nullable: true })
   leftAt!: Date | null;

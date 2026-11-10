@@ -1,4 +1,5 @@
 import { NotFoundException, BadRequestException, ValidationPipe } from '@nestjs/common';
+import { type Mocked } from 'vitest';
 import { UserProfileService } from '../user-profile.service';
 import { UserProfileRepository, UserAccount } from '../user-profile.repository';
 import { ProfileEntity } from '../entities/profile.entity';
@@ -7,24 +8,24 @@ import { UpdateProfileDto } from '../dto/update-profile.dto';
 
 describe('UserProfileService (Unit)', () => {
   let service: UserProfileService;
-  let mockRepo: jest.Mocked<UserProfileRepository>;
+  let mockRepo: Mocked<UserProfileRepository>;
 
   const userId = 'user-uuid-profile-1';
 
   beforeEach(() => {
     mockRepo = {
-      findAccount: jest.fn(),
-      findProfile: jest.fn(),
-      findSkills: jest.fn(),
-      findInterests: jest.fn(),
-      findAvailabilities: jest.fn(),
-      findAvailabilitiesByDay: jest.fn(),
-      updateProfile: jest.fn(),
-      createAvailability: jest.fn(),
-      findOwnAvailability: jest.fn(),
-      saveAvailability: jest.fn(),
-      deleteAvailability: jest.fn(),
-    } as unknown as jest.Mocked<UserProfileRepository>;
+      findAccount: vi.fn(),
+      findProfile: vi.fn(),
+      findSkills: vi.fn(),
+      findInterests: vi.fn(),
+      findAvailabilities: vi.fn(),
+      findAvailabilitiesByDay: vi.fn(),
+      updateProfile: vi.fn(),
+      createAvailability: vi.fn(),
+      findOwnAvailability: vi.fn(),
+      saveAvailability: vi.fn(),
+      deleteAvailability: vi.fn(),
+    } as unknown as Mocked<UserProfileRepository>;
 
     service = new UserProfileService(mockRepo);
   });

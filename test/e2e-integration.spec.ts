@@ -17,8 +17,8 @@ describe('E2E Integration Flow: LuminaUL Monolito Modular (7 Módulos)', () => {
   let baseUrl: string;
 
   const ts = Date.now();
-  const userAEmail = `jest_leader_${ts}@aloe.ulima.edu.pe`;
-  const userBEmail = `jest_applicant_${ts}@aloe.ulima.edu.pe`;
+  const userAEmail = `vitest_leader_${ts}@aloe.ulima.edu.pe`;
+  const userBEmail = `vitest_applicant_${ts}@aloe.ulima.edu.pe`;
   const adminEmail = 'admin@aloe.ulima.edu.pe';
   const defaultPassword = 'PasswordSegura2026!';
 

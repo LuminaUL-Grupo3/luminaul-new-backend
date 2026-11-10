@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { GUARDS_METADATA } from '@nestjs/common/constants';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { plainToInstance } from 'class-transformer';
@@ -43,7 +43,7 @@ const REPORT = 'd5a19022-77aa-4899-b1c2-349801289fed';
 const APPEAL = 'f7b32144-99cc-4011-b3e4-561023401bcd';
 const POST = '18938a12-6f2b-4d43-9801-bca908234fed';
 
-const asyncMock = () => jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const asyncMock = () => vi.fn<(...args: unknown[]) => Promise<unknown>>();
 
 function buildRepository() {
   return {
@@ -100,12 +100,12 @@ const errorsOf = async <T extends object>(type: new () => T, body: object) =>
 
 describe('SPEC-07: Panel de Administración y Notificaciones', () => {
   let repository: ReturnType<typeof buildRepository>;
-  let events: { emit: jest.Mock };
+  let events: { emit: Mock };
   let service: AdminServiceImpl;
 
   beforeEach(() => {
     repository = buildRepository();
-    events = { emit: jest.fn() };
+    events = { emit: vi.fn() };
     const emitter = events as unknown as EventEmitter2;
     const dao = repository as unknown as AdminRepository;
     const notificationClient = new NotificationClientImpl(emitter);

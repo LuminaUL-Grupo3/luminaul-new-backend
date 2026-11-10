@@ -1,4 +1,5 @@
 import { NotFoundException, ForbiddenException, UnprocessableEntityException } from '@nestjs/common';
+import { type Mocked } from 'vitest';
 import { validate } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 import { PostFilterQueryDto } from '../dto/post-query.dto';
@@ -20,38 +21,38 @@ describe('PostsModule Patterns (Unit Tests)', () => {
   const courseId = 'course-uuid-1';
 
   let service: PostsService;
-  let mockPostsRepo: jest.Mocked<PostsRepository>;
-  let mockCoursesClient: jest.Mocked<CoursesClient>;
-  let mockModerationClient: jest.Mocked<ModerationClient>;
-  let mockGroupMessagingClient: jest.Mocked<GroupMessagingClient>;
+  let mockPostsRepo: Mocked<PostsRepository>;
+  let mockCoursesClient: Mocked<CoursesClient>;
+  let mockModerationClient: Mocked<ModerationClient>;
+  let mockGroupMessagingClient: Mocked<GroupMessagingClient>;
   let studyGroupCreator: StudyGroupPostCreator;
   let tutoringCreator: TutoringPostCreator;
   let postCreatorFactory: PostCreatorFactory;
 
   beforeEach(() => {
     mockPostsRepo = {
-      create: jest.fn(),
-      getPosts: jest.fn(),
-      getPostById: jest.fn(),
-      getPostsByUser: jest.fn(),
-      searchByFilter: jest.fn(),
-      edit: jest.fn(),
-      delete: jest.fn(),
-      findGroupById: jest.fn(),
-    } as unknown as jest.Mocked<PostsRepository>;
+      create: vi.fn(),
+      getPosts: vi.fn(),
+      getPostById: vi.fn(),
+      getPostsByUser: vi.fn(),
+      searchByFilter: vi.fn(),
+      edit: vi.fn(),
+      delete: vi.fn(),
+      findGroupById: vi.fn(),
+    } as unknown as Mocked<PostsRepository>;
 
     mockCoursesClient = {
-      findById: jest.fn(),
-    } as unknown as jest.Mocked<CoursesClient>;
+      findById: vi.fn(),
+    } as unknown as Mocked<CoursesClient>;
 
     mockModerationClient = {
-      publicationCreated: jest.fn(),
-    } as unknown as jest.Mocked<ModerationClient>;
+      publicationCreated: vi.fn(),
+    } as unknown as Mocked<ModerationClient>;
 
     mockGroupMessagingClient = {
-      findActiveById: jest.fn(),
-      createAutoGroup: jest.fn(),
-    } as unknown as jest.Mocked<GroupMessagingClient>;
+      findActiveById: vi.fn(),
+      createAutoGroup: vi.fn(),
+    } as unknown as Mocked<GroupMessagingClient>;
 
     studyGroupCreator = new StudyGroupPostCreator(mockGroupMessagingClient);
     tutoringCreator = new TutoringPostCreator(mockGroupMessagingClient);
@@ -158,7 +159,7 @@ describe('PostsModule Patterns (Unit Tests)', () => {
     it('debe permitir extender nuevos tipos de publicación dinámicamente sin modificar código (Open/Closed Principle)', () => {
       const mockCustomCreator = {
         type: 'workshop',
-        create: jest.fn(),
+        create: vi.fn(),
       } as unknown as StudyGroupPostCreator;
 
       const dynamicFactory = new PostCreatorFactory([
