@@ -1,24 +1,25 @@
+import { type Mocked } from 'vitest';
 import { OpenAiModerationException, OpenAiModerationService } from '../../src/modules/moderation/services/openai-moderation.service';
 import { ConfigService } from '@nestjs/config';
 
 describe('OpenAiModerationService', () => {
   let service: OpenAiModerationService;
-  let mockConfigService: jest.Mocked<Partial<ConfigService>>;
+  let mockConfigService: Mocked<Partial<ConfigService>>;
 
   beforeEach(() => {
     mockConfigService = {
-      get: jest.fn().mockReturnValue('test-api-key'),
+      get: vi.fn().mockReturnValue('test-api-key'),
     };
     service = new OpenAiModerationService(mockConfigService as ConfigService);
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('debe degradar a fallback local si OPENAI_API_KEY no está configurada', async () => {
     const unconfiguredService = new OpenAiModerationService({
-      get: jest.fn().mockReturnValue(undefined),
+      get: vi.fn().mockReturnValue(undefined),
     } as unknown as ConfigService);
 
     const result = await unconfiguredService.moderateText('Mensaje cualquiera');
@@ -29,10 +30,10 @@ describe('OpenAiModerationService', () => {
   });
 
   it('debe detectar categorías bloqueadas cuando OpenAI retorna flagged', async () => {
-    global.fetch = jest.fn().mockResolvedValue({
+    global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      json: jest.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({
         results: [
           {
             flagged: true,
@@ -55,10 +56,10 @@ describe('OpenAiModerationService', () => {
   });
 
   it('debe retornar clean si ninguna de las BLOCKED_CATEGORIES está activa', async () => {
-    global.fetch = jest.fn().mockResolvedValue({
+    global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      json: jest.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({
         results: [
           {
             flagged: false,
@@ -80,7 +81,7 @@ describe('OpenAiModerationService', () => {
   });
 
   it('debe marcar como recuperables los errores HTTP 429 y 5xx', async () => {
-    global.fetch = jest.fn().mockResolvedValue({
+    global.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 429,
     } as unknown as Response);
@@ -95,7 +96,7 @@ describe('OpenAiModerationService', () => {
   });
 
   it('debe marcar como no recuperables los errores HTTP 401', async () => {
-    global.fetch = jest.fn().mockResolvedValue({
+    global.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 401,
     } as unknown as Response);

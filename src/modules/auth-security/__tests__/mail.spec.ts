@@ -1,6 +1,7 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import { vi, type Mock } from 'vitest';
 import { Module } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -87,7 +88,7 @@ describe('SmtpMailSender', () => {
   // jsonTransport: transporte en memoria de nodemailer, arma el mensaje completo sin red
   const buildSender = () => {
     const transporter = createTransport({ jsonTransport: true });
-    const sendMail = jest.spyOn(transporter, 'sendMail');
+    const sendMail = vi.spyOn(transporter, 'sendMail');
     return { sender: new SmtpMailSender(transporter, SMTP_ENV.MAIL_FROM), transporter, sendMail };
   };
 
@@ -115,14 +116,14 @@ describe('SmtpMailSender', () => {
 
   it('propaga el error del SMTP para que NonBlockingMailSender lo registre', async () => {
     const { sender, sendMail } = buildSender();
-    // sendMail está sobrecargado (promesa o callback); el cast evita que Jest infiera `never`
-    (sendMail as unknown as jest.Mock).mockRejectedValueOnce(new Error('535 Authentication failed'));
+    // sendMail está sobrecargado (promesa o callback); el cast evita que Jest/Vitest infiera `never`
+    (sendMail as unknown as Mock).mockRejectedValueOnce(new Error('535 Authentication failed'));
     await expect(sender.sendVerificationCode(sampleMail)).rejects.toThrow('535');
   });
 
   it('cierra el pool de conexiones al apagar el módulo', () => {
     const { sender, transporter } = buildSender();
-    const close = jest.spyOn(transporter, 'close');
+    const close = vi.spyOn(transporter, 'close');
     sender.onModuleDestroy();
     expect(close).toHaveBeenCalled();
   });

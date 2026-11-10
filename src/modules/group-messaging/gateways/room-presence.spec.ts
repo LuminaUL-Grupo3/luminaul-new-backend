@@ -10,12 +10,12 @@ describe("SPEC-04 presencia y escritura", () => {
   };
   let registry: RoomPresence;
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     registry = new RoomPresence();
   });
   afterEach(() => {
     registry.onModuleDestroy();
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it("mantiene online al usuario hasta que cierre su última pestaña", () => {
@@ -33,12 +33,12 @@ describe("SPEC-04 presencia y escritura", () => {
     registry.join("group", user, "tab-1");
     registry.join("group", user, "tab-2");
     registry.type("group", user, "tab-1", true, notify);
-    jest.advanceTimersByTime(2000);
+    vi.advanceTimersByTime(2000);
     registry.type("group", user, "tab-2", true, notify);
-    jest.advanceTimersByTime(2501);
+    vi.advanceTimersByTime(2501);
     expect(registry.isTyping("group", user.id)).toBe(true);
     expect(events.map((event) => event.isTyping)).toEqual([true]);
-    jest.advanceTimersByTime(2000);
+    vi.advanceTimersByTime(2000);
     expect(registry.isTyping("group", user.id)).toBe(false);
     expect(events.map((event) => event.isTyping)).toEqual([true, false]);
   });
@@ -48,7 +48,7 @@ describe("SPEC-04 presencia y escritura", () => {
     registry.type("group-a", user, "tab-1", true, () => {});
     expect(registry.online("group-b")).toEqual([]);
     registry.onModuleDestroy();
-    expect(jest.getTimerCount()).toBe(0);
+    expect(vi.getTimerCount()).toBe(0);
     expect(registry.online("group-a")).toEqual([]);
   });
 });

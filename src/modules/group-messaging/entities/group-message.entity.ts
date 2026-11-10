@@ -15,7 +15,7 @@ export class GroupMessageEntity {
   @Column({ name: "group_id", type: "uuid" }) groupId!: string;
   @Column({ name: "sender_id", type: "uuid" }) senderId!: string;
   @Column({ type: "text" }) content!: string;
-  @Column({ length: 20, default: "published" }) status!: MessageStatus;
+  @Column({ type: "varchar", length: 20, default: "published" }) status!: MessageStatus;
   @Column({ name: "client_message_id", type: "uuid", nullable: true })
   clientMessageId!: string | null;
   @Column({ name: "reply_to_id", type: "uuid", nullable: true }) replyToId!:

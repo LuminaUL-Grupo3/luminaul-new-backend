@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import { AdminRepository, UserRecord } from '../repository/AdminRepository';
@@ -30,15 +30,15 @@ const STUDENT: UserRecord = {
 };
 
 describe('SPEC-07: patrones del curso', () => {
-  let changeUserStatus: jest.Mock<(...args: unknown[]) => Promise<boolean>>;
+  let changeUserStatus: Mock<(...args: unknown[]) => Promise<boolean>>;
   let repository: AdminRepository;
-  let notify: jest.Mock<(...args: unknown[]) => void>;
+  let notify: Mock<(...args: unknown[]) => void>;
   let notificationClient: NotificationClient;
 
   beforeEach(() => {
-    changeUserStatus = jest.fn<(...args: unknown[]) => Promise<boolean>>().mockResolvedValue(true);
+    changeUserStatus = vi.fn<(...args: unknown[]) => Promise<boolean>>().mockResolvedValue(true);
     repository = { changeUserStatus } as unknown as AdminRepository;
-    notify = jest.fn<(...args: unknown[]) => void>();
+    notify = vi.fn<(...args: unknown[]) => void>();
     notificationClient = { notify } as unknown as NotificationClient;
   });
 
@@ -107,11 +107,11 @@ describe('SPEC-07: patrones del curso', () => {
   });
 
   describe('Adapter: clientes sobre EventEmitter2', () => {
-    let emit: jest.Mock<(...args: unknown[]) => boolean>;
+    let emit: Mock<(...args: unknown[]) => boolean>;
     let emitter: EventEmitter2;
 
     beforeEach(() => {
-      emit = jest.fn<(...args: unknown[]) => boolean>();
+      emit = vi.fn<(...args: unknown[]) => boolean>();
       emitter = { emit } as unknown as EventEmitter2;
     });
 

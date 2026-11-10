@@ -4,6 +4,7 @@ import {
   ConflictException,
   ForbiddenException,
 } from '@nestjs/common';
+import { type Mocked } from 'vitest';
 import { ModerationService } from '../../src/modules/moderation/services/moderation.service';
 import { ModerationRepository } from '../../src/modules/moderation/repositories/moderation.repository';
 import { ContentReportEntity } from '../../src/modules/moderation/entities/content-report.entity';
@@ -19,7 +20,7 @@ import {
 
 describe('ModerationService (Unit)', () => {
   let service: ModerationService;
-  let mockRepo: jest.Mocked<ModerationRepository>;
+  let mockRepo: Mocked<ModerationRepository>;
 
   const reporterId = 'user-uuid-reporter';
   const authorId = 'user-uuid-author';
@@ -28,17 +29,17 @@ describe('ModerationService (Unit)', () => {
 
   beforeEach(() => {
     mockRepo = {
-      listBannedWords: jest.fn(),
-      findContent: jest.fn(),
-      canAccessGroup: jest.fn(),
-      findPendingReport: jest.fn(),
-      createReport: jest.fn(),
-      findReportsByReporter: jest.fn(),
-      findLog: jest.fn(),
-      findLatestAppeal: jest.fn(),
-      createAppeal: jest.fn(),
-      findLogsByAuthor: jest.fn(),
-    } as unknown as jest.Mocked<ModerationRepository>;
+      listBannedWords: vi.fn(),
+      findContent: vi.fn(),
+      canAccessGroup: vi.fn(),
+      findPendingReport: vi.fn(),
+      createReport: vi.fn(),
+      findReportsByReporter: vi.fn(),
+      findLog: vi.fn(),
+      findLatestAppeal: vi.fn(),
+      createAppeal: vi.fn(),
+      findLogsByAuthor: vi.fn(),
+    } as unknown as Mocked<ModerationRepository>;
 
     service = new ModerationService(mockRepo);
   });

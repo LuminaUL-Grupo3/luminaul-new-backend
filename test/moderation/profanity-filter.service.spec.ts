@@ -1,13 +1,14 @@
+import { type Mocked } from 'vitest';
 import { ProfanityFilterService } from '../../src/modules/moderation/services/profanity-filter.service';
 import { ModerationRepository } from '../../src/modules/moderation/repositories/moderation.repository';
 
 describe('ProfanityFilterService', () => {
   let service: ProfanityFilterService;
-  let mockRepository: jest.Mocked<Partial<ModerationRepository>>;
+  let mockRepository: Mocked<Partial<ModerationRepository>>;
 
   beforeEach(() => {
     mockRepository = {
-      listBannedWords: jest.fn().mockResolvedValue(['estafa', 'fraude', 'plagio']),
+      listBannedWords: vi.fn().mockResolvedValue(['estafa', 'fraude', 'plagio']),
     };
     service = new ProfanityFilterService(mockRepository as unknown as ModerationRepository);
   });

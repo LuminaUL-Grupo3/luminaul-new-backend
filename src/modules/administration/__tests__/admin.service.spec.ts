@@ -1,4 +1,5 @@
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { type Mocked } from 'vitest';
 import { AdminServiceImpl } from '../service/impl/AdminServiceImpl';
 import { NotificationClientImpl } from '../client/impl/NotificationClientImpl';
 import { ChatClientImpl } from '../client/impl/ChatClientImpl';
@@ -9,8 +10,8 @@ import { ManagedUserStatus, AppealStatus, ContentType } from '../enums/administr
 
 describe('AdminServiceImpl (Unit)', () => {
   let service: AdminServiceImpl;
-  let mockRepo: jest.Mocked<AdminRepository>;
-  let mockEventEmitter: jest.Mocked<EventEmitter2>;
+  let mockRepo: Mocked<AdminRepository>;
+  let mockEventEmitter: Mocked<EventEmitter2>;
 
   const adminId = 'user-uuid-admin';
   const targetUserId = 'user-uuid-student';
@@ -18,22 +19,22 @@ describe('AdminServiceImpl (Unit)', () => {
 
   beforeEach(() => {
     mockRepo = {
-      findReports: jest.fn(),
-      findReportById: jest.fn(),
-      resolveReport: jest.fn(),
-      findAppeals: jest.fn(),
-      findAppealById: jest.fn(),
-      resolveAppeal: jest.fn(),
-      findUsers: jest.fn(),
-      findUserById: jest.fn(),
-      changeUserStatus: jest.fn(),
-      getStats: jest.fn(),
-      findContent: jest.fn(),
-    } as unknown as jest.Mocked<AdminRepository>;
+      findReports: vi.fn(),
+      findReportById: vi.fn(),
+      resolveReport: vi.fn(),
+      findAppeals: vi.fn(),
+      findAppealById: vi.fn(),
+      resolveAppeal: vi.fn(),
+      findUsers: vi.fn(),
+      findUserById: vi.fn(),
+      changeUserStatus: vi.fn(),
+      getStats: vi.fn(),
+      findContent: vi.fn(),
+    } as unknown as Mocked<AdminRepository>;
 
     mockEventEmitter = {
-      emit: jest.fn(),
-    } as unknown as jest.Mocked<EventEmitter2>;
+      emit: vi.fn(),
+    } as unknown as Mocked<EventEmitter2>;
 
     const notificationClient = new NotificationClientImpl(mockEventEmitter);
     service = new AdminServiceImpl(mockRepo, notificationClient, new ChatClientImpl(mockEventEmitter), {

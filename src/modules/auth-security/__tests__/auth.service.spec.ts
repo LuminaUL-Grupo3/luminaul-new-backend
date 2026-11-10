@@ -1,4 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
+import { type Mocked } from 'vitest';
 import { AuthServiceImpl } from '../service/impl/AuthServiceImpl';
 import { UsersRepository } from '../repository/UsersRepository';
 import { PasswordHasher } from '../strategy/PasswordHasher';
@@ -13,41 +14,41 @@ import { AuthException } from '../exception/AuthException';
 
 describe('AuthService (Unit)', () => {
   let service: AuthServiceImpl;
-  let mockUsersRepo: jest.Mocked<UsersRepository>;
-  let mockPasswordHasher: jest.Mocked<PasswordHasher>;
-  let mockOneTimeCodes: jest.Mocked<OneTimeCodeService>;
-  let mockSessions: jest.Mocked<SessionService>;
-  let mockMailSender: jest.Mocked<MailSender>;
+  let mockUsersRepo: Mocked<UsersRepository>;
+  let mockPasswordHasher: Mocked<PasswordHasher>;
+  let mockOneTimeCodes: Mocked<OneTimeCodeService>;
+  let mockSessions: Mocked<SessionService>;
+  let mockMailSender: Mocked<MailSender>;
 
   beforeEach(() => {
     mockUsersRepo = {
-      existsByEmail: jest.fn(),
-      findByEmail: jest.fn(),
-      findById: jest.fn(),
-      build: jest.fn(),
-      save: jest.fn(),
-      createWithProfile: jest.fn(),
-    } as unknown as jest.Mocked<UsersRepository>;
+      existsByEmail: vi.fn(),
+      findByEmail: vi.fn(),
+      findById: vi.fn(),
+      build: vi.fn(),
+      save: vi.fn(),
+      createWithProfile: vi.fn(),
+    } as unknown as Mocked<UsersRepository>;
 
     mockPasswordHasher = {
-      hash: jest.fn().mockResolvedValue('hashed_pw_123'),
-      compare: jest.fn(),
-    } as unknown as jest.Mocked<PasswordHasher>;
+      hash: vi.fn().mockResolvedValue('hashed_pw_123'),
+      compare: vi.fn(),
+    } as unknown as Mocked<PasswordHasher>;
 
     mockOneTimeCodes = {
-      issue: jest.fn().mockReturnValue({ code: '123456', expiresAt: new Date() }),
-      consume: jest.fn(),
-    } as unknown as jest.Mocked<OneTimeCodeService>;
+      issue: vi.fn().mockReturnValue({ code: '123456', expiresAt: new Date() }),
+      consume: vi.fn(),
+    } as unknown as Mocked<OneTimeCodeService>;
 
     mockSessions = {
-      issueAccessToken: jest.fn().mockReturnValue('mock_jwt_token'),
-      revokeCurrentSession: jest.fn(),
-    } as unknown as jest.Mocked<SessionService>;
+      issueAccessToken: vi.fn().mockReturnValue('mock_jwt_token'),
+      revokeCurrentSession: vi.fn(),
+    } as unknown as Mocked<SessionService>;
 
     mockMailSender = {
-      sendVerificationCode: jest.fn().mockResolvedValue(undefined),
-      sendPasswordResetCode: jest.fn().mockResolvedValue(undefined),
-    } as unknown as jest.Mocked<MailSender>;
+      sendVerificationCode: vi.fn().mockResolvedValue(undefined),
+      sendPasswordResetCode: vi.fn().mockResolvedValue(undefined),
+    } as unknown as Mocked<MailSender>;
 
     service = new AuthServiceImpl(
       mockUsersRepo,

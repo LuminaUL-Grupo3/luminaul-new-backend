@@ -1,4 +1,5 @@
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { type Mocked } from 'vitest';
 import { GroupMessagingService } from '../group-messaging.service';
 import { GroupsRepository } from '../repositories/groups.repository';
 import { MessagesRepository } from '../repositories/messages.repository';
@@ -6,9 +7,9 @@ import { GroupDetailDto } from '../types/messaging.types';
 
 describe('GroupMessagingService (Unit)', () => {
   let service: GroupMessagingService;
-  let mockGroupsRepo: jest.Mocked<GroupsRepository>;
-  let mockMessagesRepo: jest.Mocked<MessagesRepository>;
-  let mockEventEmitter: jest.Mocked<EventEmitter2>;
+  let mockGroupsRepo: Mocked<GroupsRepository>;
+  let mockMessagesRepo: Mocked<MessagesRepository>;
+  let mockEventEmitter: Mocked<EventEmitter2>;
 
   const leaderId = 'user-uuid-leader';
   const applicantId = 'user-uuid-applicant';
@@ -17,31 +18,31 @@ describe('GroupMessagingService (Unit)', () => {
 
   beforeEach(() => {
     mockGroupsRepo = {
-      list: jest.fn(),
-      detail: jest.fn(),
-      members: jest.fn(),
-      create: jest.fn(),
-      requestJoin: jest.fn(),
-      requests: jest.fn(),
-      decide: jest.fn(),
-      removeMember: jest.fn(),
-      transfer: jest.fn(),
-      requestGroup: jest.fn(),
-      findActiveById: jest.fn(),
-      createWithAdmin: jest.fn(),
-    } as unknown as jest.Mocked<GroupsRepository>;
+      list: vi.fn(),
+      detail: vi.fn(),
+      members: vi.fn(),
+      create: vi.fn(),
+      requestJoin: vi.fn(),
+      requests: vi.fn(),
+      decide: vi.fn(),
+      removeMember: vi.fn(),
+      transfer: vi.fn(),
+      requestGroup: vi.fn(),
+      findActiveById: vi.fn(),
+      createWithAdmin: vi.fn(),
+    } as unknown as Mocked<GroupsRepository>;
 
     mockMessagesRepo = {
-      insert: jest.fn(),
-      history: jest.fn(),
-      toggleReaction: jest.fn(),
-      markRead: jest.fn(),
-    } as unknown as jest.Mocked<MessagesRepository>;
+      insert: vi.fn(),
+      history: vi.fn(),
+      toggleReaction: vi.fn(),
+      markRead: vi.fn(),
+    } as unknown as Mocked<MessagesRepository>;
 
     mockEventEmitter = {
-      emit: jest.fn(),
-      emitAsync: jest.fn().mockResolvedValue([]),
-    } as unknown as jest.Mocked<EventEmitter2>;
+      emit: vi.fn(),
+      emitAsync: vi.fn().mockResolvedValue([]),
+    } as unknown as Mocked<EventEmitter2>;
 
     service = new GroupMessagingService(
       mockGroupsRepo,

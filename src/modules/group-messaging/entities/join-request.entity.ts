@@ -15,7 +15,7 @@ export class JoinRequestEntity {
   @Column({ type: "varchar", length: 255, nullable: true }) message!:
     | string
     | null;
-  @Column({ length: 20, default: "pending" }) status!: RequestStatus;
+  @Column({ type: "varchar", length: 20, default: "pending" }) status!: RequestStatus;
   @Column({ name: "reviewed_by", type: "uuid", nullable: true }) reviewedBy!:
     | string
     | null;

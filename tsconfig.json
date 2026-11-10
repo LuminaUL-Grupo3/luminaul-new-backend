@@ -17,6 +17,7 @@
     "strictNullChecks": true,
     "strictBindCallApply": true,
     "forceConsistentCasingInFileNames": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "types": ["node", "vitest/globals"]
   }
 }
