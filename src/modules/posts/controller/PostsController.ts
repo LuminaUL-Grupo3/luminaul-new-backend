@@ -27,7 +27,7 @@ import { PostResponseDto } from '../dto/post-response.dto';
 import { PostFeedResponseDto } from '../dto/post-feed-response.dto';
 import { MyPostHistoryResponseDto } from '../dto/my-post-history-response.dto';
 import { DeletePostResponseDto } from '../dto/delete-post-response.dto';
-import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { CurrentUser, CurrentUserRole } from '../../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 
 @ApiTags('Posts')
@@ -181,8 +181,9 @@ export class PostsController {
     @Param('post_id', ParseUUIDPipe) postId: string,
     @Body() payload: PostUpdateDto,
     @CurrentUser() userId: string,
+    @CurrentUserRole() userRole?: string,
   ): Promise<PostResponseDto> {
-    return this.postsService.editPost(postId, payload, userId);
+    return this.postsService.editPost(postId, payload, userId, userRole);
   }
 
   // H.U 1.4: DELETE /posts/:post_id (Eliminar publicación)
@@ -218,8 +219,9 @@ export class PostsController {
   async deletePost(
     @Param('post_id', ParseUUIDPipe) postId: string,
     @CurrentUser() userId: string,
+    @CurrentUserRole() userRole?: string,
   ): Promise<DeletePostResponseDto> {
-    return this.postsService.deletePost(postId, userId);
+    return this.postsService.deletePost(postId, userId, userRole);
   }
 }
 

@@ -16,3 +16,10 @@ export const CurrentUser = createParamDecorator(
     return request.user.id;
   },
 );
+
+export const CurrentUserRole = createParamDecorator(
+  (_data: unknown, ctx: ExecutionContext): string | undefined => {
+    const request = ctx.switchToHttp().getRequest<Request & { user?: AuthenticatedUser }>();
+    return request.user?.role;
+  },
+);

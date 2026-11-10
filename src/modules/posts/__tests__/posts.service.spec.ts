@@ -1,8 +1,9 @@
-import { NotFoundException, ForbiddenException, UnprocessableEntityException } from '@nestjs/common';
+import { BadRequestException, NotFoundException, ForbiddenException, UnprocessableEntityException, ValidationPipe } from '@nestjs/common';
 import { type Mocked } from 'vitest';
 import { validate } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 import { PostFilterQueryDto } from '../dto/post-query.dto';
+import { PostUpdateDto } from '../dto/post-update.dto';
 import { PostsService } from '../service/PostsService';
 import { PostsServiceImpl } from '../service/impl/PostsServiceImpl';
 import { PostsRepository } from '../repository/PostsRepository';
@@ -63,6 +64,7 @@ describe('PostsModule Patterns (Unit Tests)', () => {
       mockCoursesClient,
       mockModerationClient,
       postCreatorFactory,
+      mockGroupMessagingClient,
     );
   });
 
@@ -287,6 +289,67 @@ describe('PostsModule Patterns (Unit Tests)', () => {
       await expect(
         service.editPost('post-of-other', { description: 'Hack desc' }, userId),
       ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('debe permitir editar al usuario con rol admin según SPEC Regla 1', async () => {
+      const otherPost: Partial<PostEntity> = {
+        id: 'post-of-other',
+        userId: otherUserId,
+        courseId,
+        type: POST_TYPES.TUTORING,
+        description: 'Original',
+        status: 'published',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      const updatedEntity = {
+        ...otherPost,
+        description: 'Editado por admin',
+      } as PostEntity;
+      mockPostsRepo.getPostById.mockResolvedValue(otherPost as PostEntity);
+      mockPostsRepo.edit.mockResolvedValue(updatedEntity);
+
+      const res = await service.editPost(
+        'post-of-other',
+        { description: 'Editado por admin' },
+        userId,
+        'admin',
+      );
+
+      expect(res.description).toBe('Editado por admin');
+      expect(mockModerationClient.publicationCreated).toHaveBeenCalledWith(updatedEntity);
+    });
+
+    it('debe rechazar cualquier intento de cambiar courseId o type en PostUpdateDto vía ValidationPipe', async () => {
+      const pipe = new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true });
+      await expect(
+        pipe.transform({ courseId: '8c537243-ea7d-411a-8bb7-fce5230bfdf2' }, { type: 'body', metatype: PostUpdateDto }),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        pipe.transform({ type: 'tutoring' }, { type: 'body', metatype: PostUpdateDto }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('debe lanzar NotFoundException si se intenta vincular un groupId inexistente al editar', async () => {
+      const myPost: Partial<PostEntity> = {
+        id: 'post-1',
+        userId,
+        courseId,
+        type: POST_TYPES.STUDY_GROUP,
+      };
+      mockPostsRepo.getPostById.mockResolvedValue(myPost as PostEntity);
+      mockGroupMessagingClient.findActiveById.mockResolvedValue(null);
+
+      await expect(
+        service.editPost('post-1', { groupId: 'grupo-inexistente' }, userId),
+      ).rejects.toThrow(NotFoundException);
+      expect(mockPostsRepo.edit).not.toHaveBeenCalled();
+    });
+
+    it('debe validar PostUpdateDto rechazando descripción con solo espacios en blanco', async () => {
+      const dto = plainToInstance(PostUpdateDto, { description: '   ' });
+      const errors = await validate(dto);
+      expect(errors.length).toBeGreaterThan(0);
     });
   });
 

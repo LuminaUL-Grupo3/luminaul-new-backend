@@ -3,10 +3,12 @@ import {
   NotFoundException,
   ForbiddenException,
   UnprocessableEntityException,
+  Optional,
 } from '@nestjs/common';
 import { PostsService } from '../PostsService';
 import { PostsRepository } from '../../repository/PostsRepository';
 import { CoursesClient } from '../../client/CoursesClient';
+import { GroupMessagingClient } from '../../client/GroupMessagingClient';
 import { ModerationClient } from '../../client/ModerationClient';
 import { PostCreatorFactory } from '../../factory/PostCreatorFactory';
 import { PostCreateDto } from '../../dto/post-create.dto';
@@ -25,6 +27,7 @@ export class PostsServiceImpl extends PostsService {
     private readonly coursesClient: CoursesClient,
     private readonly moderationClient: ModerationClient,
     private readonly postCreatorFactory: PostCreatorFactory,
+    @Optional() private readonly groupMessagingClient?: GroupMessagingClient,
   ) {
     super();
   }
@@ -228,15 +231,26 @@ export class PostsServiceImpl extends PostsService {
     postId: string,
     payload: PostUpdateDto,
     userId: string,
+    userRole?: string,
   ): Promise<PostResponseDto> {
     const existingPost = await this.postsRepository.getPostById(postId);
     if (!existingPost) {
       throw new NotFoundException(POST_MESSAGES.POST_NOT_FOUND);
     }
 
-    // Validar propiedad
-    if (existingPost.userId !== userId) {
+    // Validar propiedad o rol administrador (SPEC Regla 1)
+    if (existingPost.userId !== userId && userRole !== 'admin') {
       throw new ForbiddenException(POST_MESSAGES.FORBIDDEN_EDIT);
+    }
+
+    // Validar integridad de grupo si se especifica
+    if (payload.groupId) {
+      const existingGroup = this.groupMessagingClient
+        ? await this.groupMessagingClient.findActiveById(payload.groupId)
+        : await this.postsRepository.findGroupById(payload.groupId);
+      if (!existingGroup) {
+        throw new NotFoundException(POST_MESSAGES.GROUP_NOT_FOUND);
+      }
     }
 
     const updatedPost = await this.postsRepository.edit(postId, payload);
@@ -260,14 +274,15 @@ export class PostsServiceImpl extends PostsService {
   async deletePost(
     postId: string,
     userId: string,
+    userRole?: string,
   ): Promise<DeletePostResponseDto> {
     const existingPost = await this.postsRepository.getPostById(postId);
     if (!existingPost) {
       throw new NotFoundException(POST_MESSAGES.POST_NOT_FOUND);
     }
 
-    // Validar propiedad
-    if (existingPost.userId !== userId) {
+    // Validar propiedad o rol administrador (SPEC Regla 1)
+    if (existingPost.userId !== userId && userRole !== 'admin') {
       throw new ForbiddenException(POST_MESSAGES.FORBIDDEN_DELETE);
     }
 
