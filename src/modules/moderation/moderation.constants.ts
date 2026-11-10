@@ -12,8 +12,10 @@ export const NOTIFICATION_SEND_EVENT = 'notification.send';
 export const MODERATION_MESSAGES = {
   REPORT_CREATED:
     'Tu reporte fue enviado con éxito. El equipo de administración revisará el caso.',
-  REPORT_DUPLICATED: 'Ya reportaste este contenido y el reporte sigue en revisión',
+  // Texto del criterio de aceptación de HU 6.1 (escenario de reporte duplicado)
+  REPORT_DUPLICATED: 'Ya reportaste este contenido anteriormente',
   TARGET_NOT_FOUND: 'El contenido que intentas reportar no existe o fue eliminado',
+  SELF_REPORT: 'No puedes reportar tu propio contenido',
   APPEAL_CREATED: 'Apelación enviada al equipo de moderación',
   APPEAL_DUPLICATED: 'Ya existe una apelación para esta moderación',
   LOG_NOT_FOUND: 'No se encontró la moderación indicada',

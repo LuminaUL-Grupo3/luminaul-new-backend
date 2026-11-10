@@ -6,7 +6,8 @@ export default defineConfig({
     globals: true,
     root: './',
     environment: 'node',
-    include: ['src/**/*.spec.ts'],
+    // test/moderation tiene las pruebas unitarias de SPEC-06 (no usan base de datos)
+    include: ['src/**/*.spec.ts', 'test/moderation/**/*.spec.ts'],
     testTimeout: 30000,
   },
   plugins: [

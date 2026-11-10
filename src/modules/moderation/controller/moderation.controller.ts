@@ -2,7 +2,7 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@n
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth-security/guard/JwtAuthGuard';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
-import { ModerationService } from '../services/moderation.service';
+import { ModerationService } from '../service/moderation.service';
 import { CreateAppealDto, CreateReportDto } from '../dto/moderation-request.dto';
 import {
   CreateAppealResponseDto,

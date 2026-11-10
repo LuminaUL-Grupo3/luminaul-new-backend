@@ -5,23 +5,24 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ModerationRepository } from '../repositories/moderation.repository';
-import { resolveModeratedContent } from '../policies/moderated-content';
-import { CreateAppealDto, CreateReportDto } from '../dto/moderation-request.dto';
+import { ModerationRepository } from '../../repository/moderation.repository';
+import { ModerationService } from '../moderation.service';
+import { resolveModeratedContent } from '../../policies/moderated-content';
+import { CreateAppealDto, CreateReportDto } from '../../dto/moderation-request.dto';
 import {
   CreateAppealResponseDto,
   CreateReportResponseDto,
   ModerationLogDto,
   ReportDto,
-} from '../dto/moderation-response.dto';
-import { ContentReportEntity } from '../entities/content-report.entity';
+} from '../../dto/moderation-response.dto';
+import { ContentReportEntity } from '../../entities/content-report.entity';
 import {
   AppealStatus,
   ModerationDecision,
   ModerationResult,
   ReportStatus,
-} from '../enums/moderation.enums';
-import { MODERATION_MESSAGES } from '../moderation.constants';
+} from '../../enums/moderation.enums';
+import { MODERATION_MESSAGES } from '../../moderation.constants';
 
 // Código de PostgreSQL para violación de índice único (uq_reporter_target)
 const UNIQUE_VIOLATION = '23505';
@@ -53,8 +54,10 @@ const APPEAL_BLOCKING_STATUSES: readonly AppealStatus[] = [
 ];
 
 @Injectable()
-export class ModerationService {
-  constructor(private readonly repository: ModerationRepository) {}
+export class ModerationServiceImpl extends ModerationService {
+  constructor(private readonly repository: ModerationRepository) {
+    super();
+  }
 
   // HU 6.1: reportar una publicación, mensaje o reseña
   async createReport(userId: string, dto: CreateReportDto): Promise<CreateReportResponseDto> {
@@ -63,6 +66,10 @@ export class ModerationService {
     if (!content) throw new NotFoundException(MODERATION_MESSAGES.TARGET_NOT_FOUND);
     if (content.groupId && !(await this.repository.canAccessGroup(content.groupId, userId))) {
       throw new NotFoundException(MODERATION_MESSAGES.TARGET_NOT_FOUND);
+    }
+    // El chat ya oculta "Reportar" en mensajes propios; la API aplica la misma regla a todo
+    if (content.authorId === userId) {
+      throw new BadRequestException(MODERATION_MESSAGES.SELF_REPORT);
     }
 
     const pending = await this.repository.findPendingReport(userId, dto.targetType, dto.targetId);

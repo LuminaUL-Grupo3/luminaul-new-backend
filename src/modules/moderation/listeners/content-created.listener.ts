@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { ContentModerationService } from '../services/content-moderation.service';
+import { ContentModerationService } from '../service/content-moderation.service';
 import { ContentCreatedEvent } from '../events/content-created.event';
 import { CONTENT_CREATED_EVENT } from '../moderation.constants';
-import { ModerationTaskWorkerService } from '../services/moderation-task-worker.service';
+import { ModerationTaskWorkerService } from '../service/moderation-task-worker.service';
 
 // Observer de 'content.created' y 'moderation.wakeup'.
 // Se ejecuta en segundo plano (async: true) para no bloquear al usuario.

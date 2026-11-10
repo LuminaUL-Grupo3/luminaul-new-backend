@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ModerationRepository } from '../repositories/moderation.repository';
+import { ModerationRepository } from '../repository/moderation.repository';
 import { TargetContentType } from '../enums/moderation.enums';
 import { ContentCreatedEvent } from '../events/content-created.event';
 import { ModerationTaskWorkerService } from './moderation-task-worker.service';
