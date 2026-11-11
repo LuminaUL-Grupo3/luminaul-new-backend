@@ -55,11 +55,11 @@ export class PasswordServiceImpl extends PasswordService {
     if (!user) {
       throw new AuthException(AUTH_MESSAGES.SESSION_INVALIDATED, HttpStatus.UNAUTHORIZED);
     }
-    if (!(await this.passwordHasher.compare(dto.current_password, user.passwordHash))) {
+    if (!(await this.passwordHasher.compare(dto.currentPassword, user.passwordHash))) {
       throw new AuthException(AUTH_MESSAGES.WRONG_CURRENT_PASSWORD);
     }
-    // Ya se comprobó que current_password es la contraseña vigente, basta compararlas en claro
-    if (dto.password === dto.current_password) {
+    // Ya se comprobó que currentPassword es la contraseña vigente, basta compararlas en claro
+    if (dto.password === dto.currentPassword) {
       throw new AuthException(AUTH_MESSAGES.SAME_PASSWORD);
     }
 

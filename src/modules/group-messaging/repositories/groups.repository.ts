@@ -46,8 +46,6 @@ export class GroupsRepository {
       CASE WHEN mine.status='active' THEN CASE WHEN mine.user_id=g.leader_id THEN 'leader' ELSE 'member' END ELSE NULL END AS "myRole",
       COALESCE(mine.status,'none') AS "myStatus",g.created_at AS "createdAt",
       EXISTS(SELECT 1 FROM join_requests j WHERE j.group_id=g.id AND j.user_id=$1 AND j.status='pending') AS "pendingRequest",
-      CASE WHEN mine.status='active' THEN CASE WHEN mine.user_id=g.leader_id THEN 'leader' ELSE 'member' END
-        WHEN EXISTS(SELECT 1 FROM join_requests j WHERE j.group_id=g.id AND j.user_id=$1 AND j.status='pending') THEN 'pending' ELSE 'none' END AS my_status,
       CASE WHEN mine.status='active' THEN (SELECT CASE WHEN msg.status='hidden' THEN 'Mensaje oculto por moderación' ELSE msg.content END FROM group_messages msg
         WHERE msg.group_id=g.id AND msg.status<>'deleted' AND msg.deleted_at IS NULL ORDER BY msg.created_at DESC,msg.id DESC LIMIT 1) ELSE NULL END AS "lastMessage",
       COALESCE((SELECT MAX(msg.created_at) FROM group_messages msg WHERE msg.group_id=g.id AND msg.status<>'deleted' AND msg.deleted_at IS NULL),g.created_at) AS "lastActivity",

@@ -8,9 +8,6 @@ export class MyPostHistoryResponseDto {
   @ApiPropertyOptional()
   userId?: string;
 
-  @ApiPropertyOptional()
-  user_id?: string;
-
   @ApiProperty()
   type!: string;
 
@@ -27,22 +24,13 @@ export class MyPostHistoryResponseDto {
   maxCapacity!: number;
 
   @ApiPropertyOptional()
-  max_capacity?: number;
-
-  @ApiPropertyOptional()
   groupId!: string | null;
-
-  @ApiPropertyOptional()
-  group_id!: string | null;
 
   @ApiProperty()
   status!: string;
 
   @ApiProperty()
   createdAt!: Date;
-
-  @ApiPropertyOptional()
-  created_at?: Date;
 
   @ApiPropertyOptional({ type: PostAuthorDto })
   author?: PostAuthorDto;

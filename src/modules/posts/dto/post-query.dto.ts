@@ -20,12 +20,7 @@ export class PaginationQueryDto {
 }
 
 export class PostFilterQueryDto extends PaginationQueryDto {
-  @ApiPropertyOptional({ description: 'Filtrar por UUID de curso (snake_case)' })
-  @IsOptional()
-  @IsUUID(undefined, { message: 'course_id must be a valid UUID' })
-  course_id?: string;
-
-  @ApiPropertyOptional({ description: 'Filtrar por UUID de curso (camelCase)' })
+  @ApiPropertyOptional({ description: 'Filtrar por UUID de curso' })
   @IsOptional()
   @IsUUID(undefined, { message: 'courseId must be a valid UUID' })
   courseId?: string;
@@ -47,8 +42,4 @@ export class PostFilterQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
-
-  static getCourseId(dto: PostFilterQueryDto): string | undefined {
-    return dto.courseId || dto.course_id;
-  }
 }

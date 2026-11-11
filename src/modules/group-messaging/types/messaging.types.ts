@@ -38,8 +38,6 @@ export interface GroupDetailDto {
   lastMessage: string | null;
   lastActivity: string;
   unreadCount: number;
-  // Alias de lectura para el feed actual; el rol canónico del grupo siempre es leader/member.
-  my_status: GroupRole | "pending" | "none";
 }
 export interface JoinRequestDto {
   id: string;
