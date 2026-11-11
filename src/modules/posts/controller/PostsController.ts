@@ -76,7 +76,7 @@ export class PostsController {
   ): Promise<PostFeedResponseDto[]> {
     const limit = query.limit ?? 15;
     const offset = query.offset ?? 0;
-    const courseId = PostFilterQueryDto.getCourseId(query);
+    const courseId = query.courseId;
 
     if (
       courseId !== undefined ||
@@ -123,13 +123,13 @@ export class PostsController {
     return this.postsService.listPostsByUser(userId, limit, offset);
   }
 
-  // H.U 1.2: GET /posts/:post_id (Obtener publicación por ID para edición o consulta)
-  @Get(':post_id')
+  // H.U 1.2: GET /posts/:postId (Obtener publicación por ID para edición o consulta)
+  @Get(':postId')
   @ApiOperation({
     summary: 'Obtener el detalle de una publicación por ID (H.U 1.2 / SPEC-03)',
   })
   @ApiParam({
-    name: 'post_id',
+    name: 'postId',
     type: 'string',
     format: 'uuid',
     description: 'ID de la publicación',
@@ -144,18 +144,18 @@ export class PostsController {
     description: 'Publicación no encontrada',
   })
   async getPostById(
-    @Param('post_id', ParseUUIDPipe) postId: string,
+    @Param('postId', ParseUUIDPipe) postId: string,
   ): Promise<PostResponseDto> {
     return this.postsService.getPostById(postId);
   }
 
-  // H.U 1.2: PUT /posts/:post_id (Editar publicación)
-  @Put(':post_id')
+  // H.U 1.2: PUT /posts/:postId (Editar publicación)
+  @Put(':postId')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Editar una publicación existente (H.U 1.2 / SPEC-03)' })
   @ApiParam({
-    name: 'post_id',
+    name: 'postId',
     type: 'string',
     format: 'uuid',
     description: 'ID de la publicación a editar',
@@ -178,7 +178,7 @@ export class PostsController {
     description: 'Publicación no encontrada',
   })
   async editPost(
-    @Param('post_id', ParseUUIDPipe) postId: string,
+    @Param('postId', ParseUUIDPipe) postId: string,
     @Body() payload: PostUpdateDto,
     @CurrentUser() userId: string,
     @CurrentUserRole() userRole?: string,
@@ -186,15 +186,15 @@ export class PostsController {
     return this.postsService.editPost(postId, payload, userId, userRole);
   }
 
-  // H.U 1.4: DELETE /posts/:post_id (Eliminar publicación)
-  @Delete(':post_id')
+  // H.U 1.4: DELETE /posts/:postId (Eliminar publicación)
+  @Delete(':postId')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Eliminar una publicación existente (soft delete) (H.U 1.4 / SPEC-03)',
   })
   @ApiParam({
-    name: 'post_id',
+    name: 'postId',
     type: 'string',
     format: 'uuid',
     description: 'ID de la publicación a eliminar',
@@ -217,7 +217,7 @@ export class PostsController {
     description: 'Publicación no encontrada',
   })
   async deletePost(
-    @Param('post_id', ParseUUIDPipe) postId: string,
+    @Param('postId', ParseUUIDPipe) postId: string,
     @CurrentUser() userId: string,
     @CurrentUserRole() userRole?: string,
   ): Promise<DeletePostResponseDto> {

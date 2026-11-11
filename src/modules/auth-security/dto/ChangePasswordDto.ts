@@ -8,7 +8,7 @@ import { AUTH_LIMITS, AUTH_VALIDATION_MESSAGES } from '../auth.constants';
 export class ChangePasswordDto {
   @ApiProperty({ description: 'Contraseña actual del usuario', example: 'ActualSegura123' })
   @IsRequiredText(AUTH_VALIDATION_MESSAGES.CURRENT_PASSWORD_REQUIRED)
-  current_password!: string;
+  currentPassword!: string;
 
   @ApiProperty({
     description: 'Nueva contraseña',

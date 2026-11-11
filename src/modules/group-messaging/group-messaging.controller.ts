@@ -178,18 +178,9 @@ export class JoinRequestsController {
   /** Retorna las solicitudes pendientes del usuario líder. */
   @Get("me")
   async mine(@GroupActor() user: ChatIdentity) {
-    const requests = await this.service.requests(user.id);
+    const requests: JoinRequestDto[] = await this.service.requests(user.id);
     return {
-      requests: requests.map((request: JoinRequestDto) => ({
-        ...request,
-        group: { group_id: request.groupId, group_name: request.groupName },
-        requester: {
-          user_id: request.userId,
-          name: request.applicant.name,
-          profile_photo_url: request.applicant.profilePhotoUrl,
-        },
-        created_at: request.createdAt,
-      })),
+      requests,
       total: requests.length,
       message: requests.length
         ? null

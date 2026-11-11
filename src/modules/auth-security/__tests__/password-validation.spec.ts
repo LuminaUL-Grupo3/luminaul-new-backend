@@ -32,7 +32,7 @@ async function validationMessages(metatype: unknown, body: unknown): Promise<str
   }
 }
 
-const VALID_CHANGE = { current_password: 'ActualSegura123', password: 'NuevaSegura456' };
+const VALID_CHANGE = { currentPassword: 'ActualSegura123', password: 'NuevaSegura456' };
 
 describe('ChangePasswordDto', () => {
   it('acepta lo que envía SettingsPage', async () => {
@@ -41,7 +41,7 @@ describe('ChangePasswordDto', () => {
 
   it.each([
     ['sin contraseña actual', { password: 'NuevaSegura456' }, 'Debes ingresar tu contraseña actual'],
-    ['sin nueva contraseña', { current_password: 'ActualSegura123' }, 'Debes ingresar tu nueva contraseña'],
+    ['sin nueva contraseña', { currentPassword: 'ActualSegura123' }, 'Debes ingresar tu nueva contraseña'],
     ['nueva contraseña vacía', { ...VALID_CHANGE, password: '' }, 'Debes ingresar tu nueva contraseña'],
     ['nueva contraseña corta', { ...VALID_CHANGE, password: 'corta' }, 'La contraseña debe tener por lo menos 10 caracteres'],
     ['solo espacios', { ...VALID_CHANGE, password: '            ' }, 'La contraseña no puede estar formada solo por espacios'],
@@ -126,14 +126,14 @@ describe('PasswordService.changePassword', () => {
 
   it('rechaza una contraseña actual incorrecta sin guardar nada', async () => {
     await expect(
-      service.changePassword('user-1', { ...VALID_CHANGE, current_password: 'Equivocada123' }),
+      service.changePassword('user-1', { ...VALID_CHANGE, currentPassword: 'Equivocada123' }),
     ).rejects.toThrow(new AuthException(AUTH_MESSAGES.WRONG_CURRENT_PASSWORD));
     expect(users.save).not.toHaveBeenCalled();
   });
 
   it('rechaza que la nueva contraseña sea igual a la actual', async () => {
     await expect(
-      service.changePassword('user-1', { current_password: 'ActualSegura123', password: 'ActualSegura123' }),
+      service.changePassword('user-1', { currentPassword: 'ActualSegura123', password: 'ActualSegura123' }),
     ).rejects.toThrow(new AuthException(AUTH_MESSAGES.SAME_PASSWORD));
     expect(users.save).not.toHaveBeenCalled();
   });
