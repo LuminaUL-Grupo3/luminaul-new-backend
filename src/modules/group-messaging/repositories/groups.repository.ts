@@ -17,8 +17,14 @@ import {
 
 export interface LockedGroup {
   id: string;
+  name: string;
   leaderId: string;
   maxCapacity: number;
+}
+/** Resultado mínimo confirmado que permite notificar al solicitante sin importar entidades ajenas. */
+export interface JoinDecisionResult {
+  applicantId: string;
+  groupName: string;
 }
 interface GroupRow extends Omit<GroupDetailDto, "createdAt" | "lastActivity"> {
   createdAt: Date;
@@ -106,7 +112,7 @@ export class GroupsRepository {
   /** Bloquea el grupo antes de aprobar, enviar o retirar miembros para serializar sus invariantes. */
   async lock(manager: EntityManager, groupId: string): Promise<LockedGroup> {
     const rows: LockedGroup[] = await manager.query(
-      `SELECT id,leader_id AS "leaderId",COALESCE(max_capacity,6) AS "maxCapacity"
+      `SELECT id,name,leader_id AS "leaderId",COALESCE(max_capacity,6) AS "maxCapacity"
       FROM groups WHERE id=$1 AND deleted_at IS NULL FOR UPDATE`,
       [groupId],
     );
@@ -254,10 +260,10 @@ export class GroupsRepository {
           input.description || null,
           input.benefits || null,
           input.requirements || null,
-          input.courseCode || 'CS001',
+          input.courseCode || "CS001",
           adminId,
-          input.meetingMode || 'virtual',
-          input.meetingShift || 'manana',
+          input.meetingMode || "virtual",
+          input.meetingShift || "manana",
           input.maxCapacity ?? 6,
         ],
       );
@@ -267,7 +273,9 @@ export class GroupsRepository {
          VALUES($1, $2, 'leader', 'active')`,
         [groupId, adminId],
       );
-      const group = await manager.getRepository(GroupEntity).findOneOrFail({ where: { id: groupId } });
+      const group = await manager
+        .getRepository(GroupEntity)
+        .findOneOrFail({ where: { id: groupId } });
       return group;
     };
 
@@ -310,8 +318,8 @@ export class GroupsRepository {
     requestId: string,
     actorId: string,
     decision: "approved" | "rejected",
-  ): Promise<void> {
-    await this.db.transaction(async (manager) => {
+  ): Promise<JoinDecisionResult> {
+    return this.db.transaction(async (manager) => {
       const group = await this.lock(manager, groupId);
       if (group.leaderId !== actorId)
         throw new ForbiddenException(
@@ -355,6 +363,7 @@ export class GroupsRepository {
         "UPDATE join_requests SET status=$3,reviewed_by=$4,reviewed_at=NOW(),responded_at=NOW() WHERE id=$1 AND group_id=$2",
         [requestId, groupId, decision, actorId],
       );
+      return { applicantId: rows[0].userId, groupName: group.name };
     });
   }
 
@@ -408,10 +417,10 @@ export class GroupsRepository {
         "UPDATE group_members SET role=CASE WHEN user_id=$2 THEN 'leader' ELSE 'member' END WHERE group_id=$1 AND status='active'",
         [groupId, targetId],
       );
-      await manager.query(
-        "UPDATE groups SET leader_id=$2 WHERE id=$1",
-        [groupId, targetId],
-      );
+      await manager.query("UPDATE groups SET leader_id=$2 WHERE id=$1", [
+        groupId,
+        targetId,
+      ]);
     });
   }
 

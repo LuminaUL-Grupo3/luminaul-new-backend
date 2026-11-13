@@ -1,0 +1,296 @@
+{
+  "date": "2026-11-13",
+  "branch": "SPEC04-hu22-fluidez-pruebas",
+  "spec04": {
+    "passed": 39,
+    "total": 39,
+    "success": true,
+    "suites": [
+      {
+        "file": "src/modules/group-messaging/gateways/room-presence.spec.ts",
+        "cases": [
+          {
+            "name": "SPEC-04 presencia y escritura mantiene online al usuario hasta que cierre su última pestaña",
+            "status": "passed"
+          },
+          {
+            "name": "SPEC-04 presencia y escritura la caducidad de una pestaña no cancela la escritura de otra pestaña activa",
+            "status": "passed"
+          },
+          {
+            "name": "SPEC-04 presencia y escritura no mezcla presencia entre grupos y libera temporizadores al cerrar NestJS",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "src/modules/group-messaging/__tests__/group-messaging.service.spec.ts",
+        "cases": [
+          {
+            "name": "GroupMessagingService (Unit) create debe crear un grupo y retornar su detalle completo (Happy Path)",
+            "status": "passed"
+          },
+          {
+            "name": "GroupMessagingService (Unit) requestJoin debe registrar solicitud de ingreso y retornar status pending (Happy Path)",
+            "status": "passed"
+          },
+          {
+            "name": "GroupMessagingService (Unit) decide debe aprobar solicitud y emitir evento group.changed",
+            "status": "passed"
+          },
+          {
+            "name": "GroupMessagingService (Unit) decide debe rechazar solicitud y emitir evento group.changed",
+            "status": "passed"
+          },
+          {
+            "name": "GroupMessagingService (Unit) remove debe expulsar miembro y emitir group.member_removed asíncronamente",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "src/modules/group-messaging/__tests__/hu22.decide.spec.ts",
+        "cases": [
+          {
+            "name": "HU 2.2 caja blanca y unitarias de decide P7 aprueba e incorpora al alumno antes de resolver la solicitud",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 caja blanca y unitarias de decide P4 rechaza sin incorporar ni comprobar capacidad",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 caja blanca y unitarias de decide P1 impide decidir a un usuario que no es líder",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 caja blanca y unitarias de decide P2 rechaza una solicitud que no existe en el grupo",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 caja blanca y unitarias de decide P3 no procesa otra vez una solicitud approved",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 caja blanca y unitarias de decide P3 no procesa otra vez una solicitud rejected",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 caja blanca y unitarias de decide P5 no incorpora una cuenta suspendida, eliminada o no verificada",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 caja blanca y unitarias de decide P6 impide duplicar una membresía activa",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 caja blanca y unitarias de decide permite ocupar exactamente el último cupo",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 caja blanca y unitarias de decide no supera la capacidad cuando ya existen 3 miembros",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 caja blanca y unitarias de decide no supera la capacidad cuando ya existen 4 miembros",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 caja blanca y unitarias de decide reactiva una membresía histórica left mediante upsert",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 caja blanca y unitarias de decide reactiva una membresía histórica kicked mediante upsert",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 caja blanca y unitarias de decide rechaza un grupo inexistente antes de consultar la solicitud",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 caja blanca y unitarias de decide propaga una falla de escritura y no intenta resolver la solicitud",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 caja blanca y unitarias de decide notifica personalmente al solicitante después de approved",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 caja blanca y unitarias de decide notifica personalmente al solicitante después de rejected",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 caja blanca y unitarias de decide no emite eventos ni notificaciones cuando falla la decisión",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "src/modules/group-messaging/__tests__/hu22.integration.spec.ts",
+        "cases": [
+          {
+            "name": "HU 2.2 contrato HTTP y PostgreSQL real CN01 devuelve lista vacía al líder sin pendientes",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 contrato HTTP y PostgreSQL real CN02 consulta solo las solicitudes de grupos liderados por la sesión",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 contrato HTTP y PostgreSQL real CN03/CN04 resuelve approved y entrega una notificación personal",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 contrato HTTP y PostgreSQL real CN03/CN04 resuelve rejected y entrega una notificación personal",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 contrato HTTP y PostgreSQL real CN05 deniega a quien no lidera el grupo",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 contrato HTTP y PostgreSQL real CN06 responde 404 para una solicitud inexistente",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 contrato HTTP y PostgreSQL real CN07 no procesa otra vez una solicitud resuelta",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 contrato HTTP y PostgreSQL real CN08 rechaza el ingreso al alcanzar la capacidad máxima",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 contrato HTTP y PostgreSQL real CN09 rechaza un contrato inválido {\"status\":\"accepted\"}",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 contrato HTTP y PostgreSQL real CN09 rechaza un contrato inválido {\"status\":\"approved\",\"userId\":\"81921801-c5c4-439e-aaef-6c9c558a3046\"}",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 contrato HTTP y PostgreSQL real CN10 exige sesión y valida UUID antes de modificar datos",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 contrato HTTP y PostgreSQL real CN11 dos aprobaciones concurrentes no ocupan el mismo último cupo",
+            "status": "passed"
+          },
+          {
+            "name": "HU 2.2 contrato HTTP y PostgreSQL real CN12 un fallo real al resolver revierte la incorporación del alumno",
+            "status": "passed"
+          }
+        ]
+      }
+    ]
+  },
+  "regression": {
+    "passed": 271,
+    "skipped": 13,
+    "success": true
+  },
+  "methods": {
+    "GroupMessagingService.decide": {
+      "range": {
+        "start": {
+          "line": 59,
+          "column": 4
+        },
+        "end": {
+          "line": 76,
+          "column": null
+        }
+      },
+      "statements": {
+        "covered": 4,
+        "total": 4
+      },
+      "branches": {
+        "covered": 6,
+        "total": 6
+      }
+    },
+    "GroupsRepository.decide": {
+      "range": {
+        "start": {
+          "line": 321,
+          "column": 33
+        },
+        "end": {
+          "line": 368,
+          "column": null
+        }
+      },
+      "statements": {
+        "covered": 20,
+        "total": 20
+      },
+      "branches": {
+        "covered": 12,
+        "total": 12
+      }
+    }
+  },
+  "complexity": {
+    "value": 7,
+    "decisions": [
+      {
+        "line": 324,
+        "condition": "group.leaderId !== actorId"
+      },
+      {
+        "line": 332,
+        "condition": "!rows[0]"
+      },
+      {
+        "line": 336,
+        "condition": "rows[0].status !== \"pending\""
+      },
+      {
+        "line": 338,
+        "condition": "decision === \"approved\""
+      },
+      {
+        "line": 343,
+        "condition": "!user.length"
+      },
+      {
+        "line": 351,
+        "condition": "member[0]?.status === \"active\""
+      }
+    ],
+    "convention": "Seis if explícitos del callback; helpers y optional chaining no se cuentan como decisiones adicionales."
+  },
+  "fileCoverage": {
+    "lines": {
+      "total": 142,
+      "covered": 46,
+      "skipped": 0,
+      "pct": 32.39
+    },
+    "statements": {
+      "total": 146,
+      "covered": 47,
+      "skipped": 0,
+      "pct": 32.19
+    },
+    "functions": {
+      "total": 45,
+      "covered": 14,
+      "skipped": 0,
+      "pct": 31.11
+    },
+    "branches": {
+      "total": 91,
+      "covered": 26,
+      "skipped": 0,
+      "pct": 28.57
+    },
+    "branchesTrue": {
+      "total": 0,
+      "covered": 0,
+      "skipped": 0,
+      "pct": 100
+    }
+  }
+}

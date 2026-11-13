@@ -50,15 +50,23 @@ export class GroupMessagingService {
   requests(userId: string, groupId?: string) {
     return this.groups.requests(userId, groupId);
   }
-  /** Persiste la decisión antes de avisar que las listas de grupos cambiaron. */
+  /** Publica la actualización y la notificación personal únicamente después de confirmar la decisión. */
   async decide(
     groupId: string,
     requestId: string,
     userId: string,
     status: "approved" | "rejected",
   ) {
-    await this.groups.decide(groupId, requestId, userId, status);
+    const result = await this.groups.decide(groupId, requestId, userId, status);
     this.events.emit("group.changed", { groupId });
+    // SPEC-07 ya consume este contrato: no se duplica aquí el almacenamiento de notificaciones.
+    this.events.emit("notification.send", {
+      userId: result.applicantId,
+      title:
+        status === "approved" ? "Solicitud aceptada" : "Solicitud rechazada",
+      message: `Tu solicitud para unirte a «${result.groupName}» fue ${status === "approved" ? "aceptada. Ya puedes conversar con el grupo." : "rechazada."}`,
+      type: "GROUP",
+    });
     return {
       message:
         status === "approved"

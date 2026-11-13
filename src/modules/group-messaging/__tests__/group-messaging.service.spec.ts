@@ -104,7 +104,7 @@ describe('GroupMessagingService (Unit)', () => {
 
   describe('decide', () => {
     it('debe aprobar solicitud y emitir evento group.changed', async () => {
-      mockGroupsRepo.decide.mockResolvedValue(undefined);
+      mockGroupsRepo.decide.mockResolvedValue({ applicantId, groupName: 'Grupo de prueba' });
 
       const result = await service.decide(groupId, requestId, leaderId, 'approved');
 
@@ -119,7 +119,7 @@ describe('GroupMessagingService (Unit)', () => {
     });
 
     it('debe rechazar solicitud y emitir evento group.changed', async () => {
-      mockGroupsRepo.decide.mockResolvedValue(undefined);
+      mockGroupsRepo.decide.mockResolvedValue({ applicantId, groupName: 'Grupo de prueba' });
 
       const result = await service.decide(groupId, requestId, leaderId, 'rejected');
 
