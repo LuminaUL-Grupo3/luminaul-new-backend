@@ -1,5 +1,6 @@
 import {
   Injectable,
+  BadRequestException,
   NotFoundException,
   ForbiddenException,
   UnprocessableEntityException,
@@ -117,6 +118,17 @@ export class PostsServiceImpl extends PostsService {
     postDto: PostCreateDto,
     userId: string,
   ): Promise<PostResponseDto> {
+    if (!postDto.description || postDto.description.trim().length === 0) {
+      throw new BadRequestException('description cannot be empty');
+    }
+
+    if (
+      postDto.maxCapacity !== undefined &&
+      (postDto.maxCapacity < 1 || postDto.maxCapacity > 50)
+    ) {
+      throw new BadRequestException('maxCapacity must be between 1 and 50');
+    }
+
     const course = await this.coursesClient.findById(postDto.courseId);
     if (!course) {
       throw new UnprocessableEntityException(POST_MESSAGES.COURSE_NOT_FOUND);

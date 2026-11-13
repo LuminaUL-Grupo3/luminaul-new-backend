@@ -176,15 +176,19 @@ describe('PostsModule Patterns (Unit Tests)', () => {
     });
   });
 
-  describe('PostsService.createPost (con Adapter y Factory)', () => {
+  describe('PostsService.createPost (Unitarias HU 1.1)', () => {
+    const course: CourseData = {
+      id: courseId,
+      name: 'Ingeniería de Software I',
+      cycle: 7,
+    };
+
+    // Prueba Unitaria 1 (Happy Path con Stub, Mock y Spy de observación): verifica delegación en Factory, persistencia y moderación
     it('debe crear un post delegando en Factory, Repository y notificar a ModerationClient (Happy Path)', async () => {
-      const course: CourseData = {
-        id: courseId,
-        name: 'Ingeniería de Software I',
-        cycle: 7,
-      };
       mockCoursesClient.findById.mockResolvedValue(course);
       mockGroupMessagingClient.createAutoGroup.mockResolvedValue('group-123');
+      const getCreatorSpy = vi.spyOn(postCreatorFactory, 'getCreator');
+      const studyCreateSpy = vi.spyOn(studyGroupCreator, 'create');
 
       const fakeSavedPost: Partial<PostEntity> = {
         id: 'post-123',
@@ -202,8 +206,8 @@ describe('PostsModule Patterns (Unit Tests)', () => {
         profile: {
           name: 'Autor Juan',
           profilePhotoUrl: null,
-        } as any,
-        course: course as any,
+        } as unknown as PostEntity['profile'],
+        course: course as unknown as PostEntity['course'],
       };
 
       mockPostsRepo.create.mockResolvedValue(fakeSavedPost as PostEntity);
@@ -222,11 +226,57 @@ describe('PostsModule Patterns (Unit Tests)', () => {
 
       expect(result.id).toBe('post-123');
       expect(result.author?.name).toBe('Autor Juan');
-      expect(mockPostsRepo.create).toHaveBeenCalled();
+      expect(getCreatorSpy).toHaveBeenCalledWith('study_group');
+      expect(studyCreateSpy).toHaveBeenCalledTimes(1);
+      expect(mockPostsRepo.create).toHaveBeenCalledTimes(1);
       expect(mockModerationClient.publicationCreated).toHaveBeenCalledWith(fakeSavedPost);
+      getCreatorSpy.mockRestore();
+      studyCreateSpy.mockRestore();
     });
 
-    it('debe lanzar UnprocessableEntityException si el curso no existe vía CoursesClient', async () => {
+    // Prueba Unitaria 2 (Spy con reemplazo puntual): aísla PostsServiceImpl interceptando temporalmente TutoringPostCreator.create
+    it('debe usar Spy con reemplazo puntual (mockResolvedValueOnce) para aislar PostsServiceImpl de PostCreator concreto', async () => {
+      mockCoursesClient.findById.mockResolvedValue(course);
+      const stubbedEntity = {
+        id: 'post-spy-override',
+        userId,
+        courseId,
+        type: 'tutoring',
+        description: 'Entidad controlada por Spy',
+        benefits: null,
+        requirements: null,
+        maxCapacity: 3,
+        groupId: null,
+        status: 'published',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+      } as PostEntity;
+
+      const tutoringSpy = vi
+        .spyOn(tutoringCreator, 'create')
+        .mockResolvedValueOnce(stubbedEntity);
+      mockPostsRepo.create.mockResolvedValue(stubbedEntity);
+
+      const result = await service.createPost(
+        {
+          courseId,
+          type: 'tutoring',
+          description: 'Tutoría aislada con Spy',
+          maxCapacity: 3,
+        },
+        userId,
+      );
+
+      expect(tutoringSpy).toHaveBeenCalledTimes(1);
+      expect(mockPostsRepo.create).toHaveBeenCalledWith(stubbedEntity);
+      expect(result.id).toBe('post-spy-override');
+      expect(result.maxCapacity).toBe(3);
+      tutoringSpy.mockRestore();
+    });
+
+    // Prueba Unitaria 3 (Stub de respuesta nula + Mock de no-invocación): curso inexistente lanza UnprocessableEntityException
+    it('debe lanzar UnprocessableEntityException si el curso no existe vía CoursesClient (Stub)', async () => {
       mockCoursesClient.findById.mockResolvedValue(null);
 
       await expect(
@@ -239,6 +289,27 @@ describe('PostsModule Patterns (Unit Tests)', () => {
           userId,
         ),
       ).rejects.toThrow(UnprocessableEntityException);
+      expect(mockPostsRepo.create).not.toHaveBeenCalled();
+      expect(mockModerationClient.publicationCreated).not.toHaveBeenCalled();
+    });
+
+    // Prueba Unitaria 4 (Mock de excepción en repositorio): si falla la persistencia no se notifica a ModerationClient
+    it('no debe notificar a ModerationClient si el repositorio lanza error de persistencia (Mock de fallo)', async () => {
+      mockCoursesClient.findById.mockResolvedValue(course);
+      mockGroupMessagingClient.createAutoGroup.mockResolvedValue('auto-group-id');
+      mockPostsRepo.create.mockRejectedValue(new Error('DB connection error'));
+
+      await expect(
+        service.createPost(
+          {
+            courseId,
+            type: 'study_group',
+            description: 'Fallo simulado de BD',
+          },
+          userId,
+        ),
+      ).rejects.toThrow('DB connection error');
+      expect(mockModerationClient.publicationCreated).not.toHaveBeenCalled();
     });
   });
 
