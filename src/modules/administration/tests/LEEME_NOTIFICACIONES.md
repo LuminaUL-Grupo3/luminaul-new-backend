@@ -26,7 +26,7 @@ Sin la variable, los 11 casos quedan omitidos. No apuntar a la base de demostrac
 10. Reactivación: acceso con sesión nueva y rechazo del token anterior.
 11. Reconexión: recuperación del historial persistido.
 
-Resultado: 11/11 aprobados. La ejecución completa del backend obtuvo 295/295: 271 pruebas existentes, 13 de HU 2.2 con PostgreSQL/HTTP y estas 11 de notificaciones. El resumen no equivale a cobertura de líneas ni a una auditoría de seguridad.
+Resultado: 11/11 aprobados. Tras incorporar las pruebas de HU 5.2 del último main, la ejecución completa del backend obtuvo 317/317: 293 pruebas existentes, 13 de HU 2.2 con PostgreSQL/HTTP y estas 11 de notificaciones. El resumen no equivale a cobertura de líneas ni a una auditoría de seguridad.
 
 La prueba de suspensión separa temporalmente la emisión del token y la suspensión; no certifica el caso límite de suspensión/reactivación en el mismo segundo de SPEC01. El caso de moderación valida la estrategia léxica, no la precisión de un proveedor externo.
 
