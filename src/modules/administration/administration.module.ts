@@ -15,12 +15,17 @@ import { NotificationsRepository } from './repository/NotificationsRepository';
 import { NotificationsRepositoryImpl } from './repository/impl/NotificationsRepositoryImpl';
 import { NotificationClient } from './client/NotificationClient';
 import { NotificationClientImpl } from './client/impl/NotificationClientImpl';
+import { NotificationRealtimeClient } from './client/NotificationRealtimeClient';
+import { NotificationRealtimeClientImpl } from './client/impl/NotificationRealtimeClientImpl';
+import { AdminDirectoryClient } from './client/AdminDirectoryClient';
+import { AdminDirectoryClientImpl } from './client/impl/AdminDirectoryClientImpl';
 import { ChatClient } from './client/ChatClient';
 import { ChatClientImpl } from './client/impl/ChatClientImpl';
 import { buildStatusStrategies } from './strategy/UserStatusChangeStrategy';
 import { SuspendUserStrategy } from './strategy/impl/SuspendUserStrategy';
 import { ReactivateUserStrategy } from './strategy/impl/ReactivateUserStrategy';
 import { NotificationsListener } from './listeners/notifications.listener';
+import { NotificationsGateway } from './gateways/notifications.gateway';
 import { USER_STATUS_STRATEGIES } from './administration.constants';
 
 // SPEC-07: panel de administración, auditoría y centro de notificaciones.
@@ -36,6 +41,8 @@ import { USER_STATUS_STRATEGIES } from './administration.constants';
     { provide: AdminRepository, useClass: AdminRepositoryImpl },
     { provide: NotificationsRepository, useClass: NotificationsRepositoryImpl },
     { provide: NotificationClient, useClass: NotificationClientImpl },
+    { provide: NotificationRealtimeClient, useClass: NotificationRealtimeClientImpl },
+    { provide: AdminDirectoryClient, useClass: AdminDirectoryClientImpl },
     { provide: ChatClient, useClass: ChatClientImpl },
     SuspendUserStrategy,
     ReactivateUserStrategy,
@@ -47,6 +54,7 @@ import { USER_STATUS_STRATEGIES } from './administration.constants';
       inject: [SuspendUserStrategy, ReactivateUserStrategy],
     },
     NotificationsListener,
+    NotificationsGateway,
   ],
   exports: [NotificationsService],
 })

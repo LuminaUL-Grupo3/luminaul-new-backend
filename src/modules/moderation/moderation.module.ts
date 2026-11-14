@@ -10,6 +10,8 @@ import { ModerationRepository } from './repository/moderation.repository';
 import { ModerationRepositoryImpl } from './repository/impl/moderation.repository.impl';
 import { ModerationService } from './service/moderation.service';
 import { ModerationServiceImpl } from './service/impl/moderation.service.impl';
+import { NotificationClient } from './client/NotificationClient';
+import { NotificationClientImpl } from './client/impl/NotificationClientImpl';
 import { ContentModerationService } from './service/content-moderation.service';
 import { ContentCreatedListener } from './listeners/content-created.listener';
 import { ModerationController } from './controller/moderation.controller';
@@ -35,6 +37,7 @@ import { TargetContentType } from './enums/moderation.enums';
   providers: [
     { provide: ModerationRepository, useClass: ModerationRepositoryImpl },
     { provide: ModerationService, useClass: ModerationServiceImpl },
+    { provide: NotificationClient, useClass: NotificationClientImpl },
     ContentModerationService,
     ContentCreatedListener,
     ProfanityFilterService,

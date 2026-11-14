@@ -1,6 +1,6 @@
 import { UserEntity } from '../entities/user.entity';
 
-// Repository (DAO): acceso a la tabla users para el módulo de autenticación. Los servicios
+// Patrón Repository: acceso a la tabla users para el módulo de autenticación. Los servicios
 // dependen de esta abstracción y no ven TypeORM ni SQL.
 export abstract class UsersRepository {
   // Incluye cuentas borradas lógicamente: el correo sigue ocupado

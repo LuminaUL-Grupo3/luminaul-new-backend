@@ -1,8 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { NotificationsService } from '../service/NotificationsService';
-import { NotificationSendEvent } from '../events/notification-send.event';
-import { NOTIFICATION_SEND_EVENT } from '../administration.constants';
+import { AdministratorNotificationEvent, NotificationSendEvent } from '../events/notification-send.event';
+import {
+  NOTIFICATION_ADMINISTRATORS_EVENT,
+  NOTIFICATION_SEND_EVENT,
+} from '../administration.constants';
 
 // Suscriptor del evento 'notification.send' (mecanismo de eventos de NestJS). Un fallo al guardar
 // la notificación queda en el log y no rompe la operación que la originó (moderar, expulsar...).
@@ -22,8 +25,8 @@ export class NotificationsListener {
     }
   }
 
-  @OnEvent('notification.administrators', { async: true })
-  async administrators(event: Omit<NotificationSendEvent, 'userId'>): Promise<void> {
+  @OnEvent(NOTIFICATION_ADMINISTRATORS_EVENT, { async: true })
+  async administrators(event: AdministratorNotificationEvent): Promise<void> {
     try {
       await this.notifications.sendToAdministrators(event);
     } catch (error: unknown) {

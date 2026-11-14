@@ -3,6 +3,7 @@ import { DataSource, EntityManager } from "typeorm";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { GroupsRepository } from "../repositories/groups.repository";
 import { GroupMessagingService } from "../group-messaging.service";
+import { GroupEventsClientImpl } from "../client/impl/GroupEventsClientImpl";
 import { MessagesRepository } from "../repositories/messages.repository";
 
 interface Scenario {
@@ -67,7 +68,7 @@ function fixture(scenario: Scenario = {}) {
   const service = new GroupMessagingService(
     repository,
     {} as MessagesRepository,
-    { emit } as unknown as EventEmitter2,
+    new GroupEventsClientImpl({ emit } as unknown as EventEmitter2),
   );
   return { repository, service, query, emit, transaction };
 }

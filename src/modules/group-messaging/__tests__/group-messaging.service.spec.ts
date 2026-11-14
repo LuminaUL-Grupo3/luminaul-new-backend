@@ -3,6 +3,7 @@ import { type Mocked } from "vitest";
 import { GroupMessagingService } from "../group-messaging.service";
 import { GroupsRepository } from "../repositories/groups.repository";
 import { MessagesRepository } from "../repositories/messages.repository";
+import { GroupEventsClientImpl } from "../client/impl/GroupEventsClientImpl";
 import { GroupDetailDto } from "../types/messaging.types";
 
 describe("GroupMessagingService (Unit)", () => {
@@ -47,7 +48,7 @@ describe("GroupMessagingService (Unit)", () => {
     service = new GroupMessagingService(
       mockGroupsRepo,
       mockMessagesRepo,
-      mockEventEmitter,
+      new GroupEventsClientImpl(mockEventEmitter),
     );
   });
 

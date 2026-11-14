@@ -15,6 +15,8 @@ import {
 import { GroupSession, GroupSessionGuard } from "./security/group-session";
 import { ChatGateway } from "./gateways/chat.gateway";
 import { RoomPresence } from "./gateways/room-presence";
+import { GroupEventsClient } from "./client/GroupEventsClient";
+import { GroupEventsClientImpl } from "./client/impl/GroupEventsClientImpl";
 
 /** Punto de composición de SPEC-04; reutiliza sesiones y publica eventos para moderación. */
 @Module({
@@ -31,6 +33,7 @@ import { RoomPresence } from "./gateways/room-presence";
   providers: [
     GroupsRepository,
     MessagesRepository,
+    { provide: GroupEventsClient, useClass: GroupEventsClientImpl },
     GroupMessagingService,
     GroupSession,
     GroupSessionGuard,

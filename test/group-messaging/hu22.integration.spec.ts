@@ -5,7 +5,7 @@ import { NestFactory } from "@nestjs/core";
 import type { INestApplication } from "@nestjs/common";
 import { hash } from "bcryptjs";
 import { DataSource } from "typeorm";
-import { configureHttpApp } from "../../../config/http-app.config";
+import { configureHttpApp } from "../../src/config/http-app.config";
 
 const databaseUrl = process.env.TEST_HU22_DATABASE_URL;
 /** Las pruebas de integración son optativas y solo admiten una base local dedicada a HU 2.2. */
@@ -83,7 +83,7 @@ describe.skipIf(!databaseUrl)("HU 2.2 contrato HTTP y PostgreSQL real", () => {
       MAIL_TRANSPORT: "console",
     });
     delete process.env.OPENAI_API_KEY;
-    const { AppModule } = await import("../../../app.module");
+    const { AppModule } = await import("../../src/app.module");
     app = await NestFactory.create(AppModule, { logger: false });
     configureHttpApp(app);
     await app.listen(0, "127.0.0.1");

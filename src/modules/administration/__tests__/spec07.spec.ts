@@ -16,6 +16,8 @@ import { AdminRepository } from '../repository/AdminRepository';
 import { NotificationsRepository } from '../repository/NotificationsRepository';
 import { AdminServiceImpl } from '../service/impl/AdminServiceImpl';
 import { NotificationClientImpl } from '../client/impl/NotificationClientImpl';
+import { NotificationRealtimeClientImpl } from '../client/impl/NotificationRealtimeClientImpl';
+import { AdminDirectoryClient } from '../client/AdminDirectoryClient';
 import { ChatClientImpl } from '../client/impl/ChatClientImpl';
 import { SuspendUserStrategy } from '../strategy/impl/SuspendUserStrategy';
 import { ReactivateUserStrategy } from '../strategy/impl/ReactivateUserStrategy';
@@ -104,11 +106,11 @@ describe('SPEC-07: Panel de Administración y Notificaciones', () => {
     repository = buildRepository();
     events = { emit: vi.fn() };
     const emitter = events as unknown as EventEmitter2;
-    const dao = repository as unknown as AdminRepository;
+    const adminRepo = repository as unknown as AdminRepository;
     const notificationClient = new NotificationClientImpl(emitter);
-    service = new AdminServiceImpl(dao, notificationClient, new ChatClientImpl(emitter), {
-      [ManagedUserStatus.SUSPENDED]: new SuspendUserStrategy(dao, notificationClient),
-      [ManagedUserStatus.ACTIVE]: new ReactivateUserStrategy(dao, notificationClient),
+    service = new AdminServiceImpl(adminRepo, notificationClient, new ChatClientImpl(emitter), {
+      [ManagedUserStatus.SUSPENDED]: new SuspendUserStrategy(adminRepo, notificationClient),
+      [ManagedUserStatus.ACTIVE]: new ReactivateUserStrategy(adminRepo, notificationClient),
     });
   });
 
@@ -415,18 +417,24 @@ describe('SPEC-07: Panel de Administración y Notificaciones', () => {
       createdAt: new Date('2026-11-01T10:00:00.000Z'),
     };
     let notificationsRepo: Record<string, ReturnType<typeof asyncMock>>;
+    let adminDirectory: { findActiveAdminIds: ReturnType<typeof asyncMock> };
     let notifications: NotificationsServiceImpl;
 
     beforeEach(() => {
       notificationsRepo = {
         create: asyncMock().mockResolvedValue(notification),
+        createMany: asyncMock().mockResolvedValue([notification]),
         findByUser: asyncMock().mockResolvedValue([notification]),
         findOwn: asyncMock().mockResolvedValue(notification),
         markRead: asyncMock().mockResolvedValue(undefined),
       };
+      adminDirectory = {
+        findActiveAdminIds: asyncMock().mockResolvedValue([ADMIN]),
+      };
       notifications = new NotificationsServiceImpl(
         notificationsRepo as unknown as NotificationsRepository,
-        new EventEmitter2(),
+        new NotificationRealtimeClientImpl(new EventEmitter2()),
+        adminDirectory as unknown as AdminDirectoryClient,
       );
     });
 

@@ -40,7 +40,7 @@ import { ADMIN_MESSAGES, AuditAction, NOTICES, USER_STATUS_STRATEGIES } from '..
  *
  * El controller ya garantizó que quien llama es admin (JwtAuthGuard + RolesGuard).
  * Aquí viven las reglas de negocio de las HU. Esta clase colabora con:
- *   - AdminRepository (DAO): lee y escribe en la base de datos.
+ *   - AdminRepository (Repository): lee y escribe en la base de datos.
  *   - NotificationClient y ChatClient (Adapter): avisan al alumno y al chat.
  *   - UserStatusChangeStrategy (Strategy): suspender o reactivar una cuenta (HU 7.1).
  * Todas llegan por el constructor como abstracciones (DIP).
@@ -132,10 +132,7 @@ export class AdminServiceImpl extends AdminService {
     }
     this.notificationClient.notify({
       userId: report.reporterId,
-      title: 'Reporte revisado',
-      message: dismissed
-        ? 'Administración revisó y desestimó tu reporte.'
-        : 'Administración revisó y resolvió tu reporte.',
+      ...(dismissed ? NOTICES.REPORT_DISMISSED : NOTICES.REPORT_RESOLVED),
       type: NotificationType.MODERATION,
     });
 

@@ -1,10 +1,19 @@
+import { DOMAIN_EVENTS } from '../../common/events/domain-events';
+
 // Parámetros y mensajes de SPEC-07 (los literales de las HU 7.1–7.5 se respetan tal cual)
 
 // Evento que otros módulos (SPEC-04, SPEC-06...) emiten para avisar a un alumno
-export const NOTIFICATION_SEND_EVENT = 'notification.send';
+export const NOTIFICATION_SEND_EVENT = DOMAIN_EVENTS.NOTIFICATION_SEND;
+
+// Evento para notificar a todos los administradores activos
+export const NOTIFICATION_ADMINISTRATORS_EVENT = DOMAIN_EVENTS.NOTIFICATION_ADMINISTRATORS;
+
+// Eventos internos que NotificationsGateway retransmite en vivo a la sesión del usuario
+export const NOTIFICATION_CREATED_EVENT = DOMAIN_EVENTS.NOTIFICATION_CREATED;
+export const NOTIFICATION_READ_EVENT = DOMAIN_EVENTS.NOTIFICATION_READ;
 
 // Evento que escucha el chat (SPEC-04) para ocultar o restaurar un mensaje en vivo
-export const CONTENT_VISIBILITY_CHANGED_EVENT = 'content.visibility_changed';
+export const CONTENT_VISIBILITY_CHANGED_EVENT = DOMAIN_EVENTS.CONTENT_VISIBILITY_CHANGED;
 
 // Token de inyección del mapa de estrategias de cambio de estado de cuenta (HU 7.1)
 export const USER_STATUS_STRATEGIES = 'USER_STATUS_STRATEGIES';
@@ -42,6 +51,10 @@ export const ADMIN_MESSAGES = {
 
 // Textos que recibe el alumno afectado por una decisión del administrador
 export const NOTICES = {
+  ACCOUNT_SUSPENDED: (reason: string) => ({
+    title: 'Cuenta suspendida',
+    message: `Tu cuenta fue suspendida. Motivo: ${reason}`,
+  }),
   ACCOUNT_REACTIVATED: {
     title: 'Cuenta reactivada',
     message: 'Un administrador reactivó tu cuenta. Ya puedes volver a usar LuminaUL.',
@@ -53,6 +66,14 @@ export const NOTICES = {
   APPEAL_REJECTED: {
     title: 'Apelación rechazada',
     message: 'Revisamos tu apelación: el contenido seguirá oculto por incumplir las normas de la comunidad.',
+  },
+  REPORT_RESOLVED: {
+    title: 'Reporte revisado',
+    message: 'Administración revisó y resolvió tu reporte.',
+  },
+  REPORT_DISMISSED: {
+    title: 'Reporte revisado',
+    message: 'Administración revisó y desestimó tu reporte.',
   },
 } as const;
 

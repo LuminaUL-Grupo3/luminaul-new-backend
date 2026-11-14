@@ -4,12 +4,12 @@ import { AdminRepository } from '../../repository/AdminRepository';
 import { ChangeUserStatusResponseDto } from '../../dto/admin-response.dto';
 import { ManagedUserStatus, NotificationType } from '../../enums/administration.enums';
 import { NotificationClient } from '../../client/NotificationClient';
-import { ADMIN_MESSAGES, AuditAction } from '../../administration.constants';
+import { ADMIN_MESSAGES, AuditAction, NOTICES } from '../../administration.constants';
 
 /**
  * Estrategia concreta (HU 7.1, criterio E1): suspender una cuenta.
  *
- * El DAO guarda status = 'suspended', el motivo y tokens_valid_after = NOW(). Con eso el
+ * El repositorio guarda status = 'suspended', el motivo y tokens_valid_after = NOW(). Con eso el
  * JwtAuthGuard de SPEC-01 rechaza al instante cualquier sesión abierta del alumno, y el
  * login responde "Tu cuenta ha sido suspendida por infringir las normas comunitarias"
  * (criterio E2). El aviso se persiste y la conexión abierta explica la suspensión antes de cerrarse.
@@ -30,8 +30,7 @@ export class SuspendUserStrategy extends UserStatusChangeStrategy {
     await this.saveStatus(change, AuditAction.USER_SUSPENDED);
     this.notificationClient.notify({
       userId: change.user.id,
-      title: 'Cuenta suspendida',
-      message: `Tu cuenta fue suspendida. Motivo: ${change.reason}`,
+      ...NOTICES.ACCOUNT_SUSPENDED(change.reason),
       type: NotificationType.SYSTEM,
       sessionRevoked: true,
     });

@@ -1,4 +1,4 @@
-// Repository (DAO): lista de tokens revocados por logout (se guarda solo el SHA-256)
+// Patrón Repository: lista de tokens revocados por logout (se guarda solo el SHA-256)
 export abstract class RevokedTokensRepository {
   abstract isRevoked(tokenHash: string): Promise<boolean>;
 

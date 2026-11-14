@@ -34,7 +34,7 @@ export abstract class UserStatusChangeStrategy {
 
   abstract execute(change: UserStatusChange): Promise<ChangeUserStatusResponseDto>;
 
-  // Guarda el cambio de estado y su auditoría en una sola transacción (lo hace el DAO).
+  // Guarda el cambio de estado y su auditoría en una sola transacción (lo hace el repositorio).
   // Si otro administrador cambió la cuenta en paralelo, no se afecta ninguna fila: 409.
   protected async saveStatus(change: UserStatusChange, action: AuditAction): Promise<void> {
     const saved = await this.repository.changeUserStatus({

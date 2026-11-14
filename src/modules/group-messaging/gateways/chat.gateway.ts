@@ -9,7 +9,6 @@ import {
   ConnectedSocket,
   MessageBody,
   OnGatewayDisconnect,
-  OnGatewayConnection,
   OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
@@ -40,10 +39,7 @@ import {
   WsAck,
 } from "../types/messaging.types";
 import { RoomPresence } from "./room-presence";
-import {
-  DeliveredNotification,
-  NotificationDeliveryEvent,
-} from "../../../common/events/notification-delivery.event";
+import { GROUP_DOMAIN_EVENTS } from "../group-messaging.constants";
 
 interface SocketState {
   token: string;
@@ -60,10 +56,6 @@ interface ClientEvents {
   [event: string]: (payload: unknown) => void;
 }
 interface ServerEvents {
-  "notifications:ready": () => void;
-  "notification:new": (notification: DeliveredNotification) => void;
-  "notification:read": (event: { id: string }) => void;
-  "account:suspended": (event: { message: string }) => void;
   "chat:new_message": (message: GroupMessageDto) => void;
   "chat:message_updated": (message: GroupMessageDto) => void;
   "chat:message_hidden": (event: HiddenMessageEvent) => void;
@@ -112,7 +104,6 @@ function originAllowed(origin?: string): boolean {
 export class ChatGateway
   implements
     OnGatewayInit<ChatServer>,
-    OnGatewayConnection<ChatSocket>,
     OnGatewayDisconnect<ChatSocket>,
     OnModuleDestroy
 {
@@ -161,56 +152,6 @@ export class ChatGateway
   /** Construye siempre el nombre de sala del servidor, sin aceptar nombres arbitrarios del cliente. */
   private room(groupId: string): string {
     return `room:group:${groupId}`;
-  }
-
-  /** Cada conexión autenticada entra solo a su sala privada; el cliente no elige destinatarios. */
-  async handleConnection(socket: ChatSocket): Promise<void> {
-    await socket.join(`room:user:${socket.data.user.id}`);
-    socket.emit("notifications:ready");
-  }
-
-  /** Comparte el transporte existente con SPEC-07 y vuelve a comprobar la sesión antes de difundir. */
-  @OnEvent("notification.created", { async: true })
-  async notificationCreated(event: NotificationDeliveryEvent): Promise<void> {
-    if (!this.server) return;
-    const ids =
-      this.server.sockets.adapter.rooms.get(
-        `room:user:${event.notification.userId}`,
-      ) || new Set<string>();
-    for (const id of [...ids]) {
-      const socket = this.server.sockets.sockets.get(id);
-      if (!socket || socket.data.user.id !== event.notification.userId)
-        continue;
-      try {
-        await this.session.validate(socket.data.token);
-        socket.emit("notification:new", event.notification);
-      } catch {
-        // No se habilita acceso a una cuenta suspendida: solo se explica por qué termina su sesión.
-        if (event.sessionRevoked)
-          socket.emit("account:suspended", {
-            message: event.notification.message,
-          });
-        socket.disconnect(true);
-      }
-    }
-  }
-
-  @OnEvent("notification.read", { async: true })
-  async notificationRead(event: { userId: string; id: string }): Promise<void> {
-    if (!this.server) return;
-    const ids =
-      this.server.sockets.adapter.rooms.get(`room:user:${event.userId}`) ||
-      new Set<string>();
-    for (const id of [...ids]) {
-      const socket = this.server.sockets.sockets.get(id);
-      if (!socket) continue;
-      try {
-        await this.session.validate(socket.data.token);
-        socket.emit("notification:read", { id: event.id });
-      } catch {
-        socket.disconnect(true);
-      }
-    }
   }
 
   /** Actualiza el agregado online después de conectar, salir o cerrar una pestaña. */
@@ -478,7 +419,7 @@ export class ChatGateway
   }
 
   /** El servicio de grupos llama este evento tras confirmar una salida o expulsión. */
-  @OnEvent("group.member_removed")
+  @OnEvent(GROUP_DOMAIN_EVENTS.GROUP_MEMBER_REMOVED)
   async removeUser(event: MembershipRemovedEvent): Promise<void> {
     if (!this.server) return; // Un contexto de servicios sin transporte no tiene sockets que revocar.
     for (const socket of this.server.sockets.sockets.values()) {
@@ -494,7 +435,7 @@ export class ChatGateway
   }
 
   /** Puente de SPEC-06: solo anuncia ocultaciones que ya fueron guardadas por moderación. */
-  @OnEvent("chat:message_hidden")
+  @OnEvent(GROUP_DOMAIN_EVENTS.CHAT_MESSAGE_HIDDEN)
   async hidden(event: HiddenMessageEvent): Promise<void> {
     if (!this.server) return;
     const message = await this.service.message(event.groupId, event.messageId);
@@ -504,7 +445,7 @@ export class ChatGateway
   }
 
   /** SPEC-07 anuncia una decisión después de su transacción; solo los miembros vigentes la reciben. */
-  @OnEvent("content.visibility_changed")
+  @OnEvent(GROUP_DOMAIN_EVENTS.CONTENT_VISIBILITY_CHANGED)
   async visibilityChanged(event: {
     contentType: string;
     contentId: string;
@@ -519,7 +460,7 @@ export class ChatGateway
   }
 
   /** Actualiza listas y permisos visibles después de aprobar solicitudes o transferir liderazgo. */
-  @OnEvent("group.changed")
+  @OnEvent(GROUP_DOMAIN_EVENTS.GROUP_CHANGED)
   async changed(event: { groupId: string }): Promise<void> {
     if (!this.server) return;
     await this.pruneRoom(event.groupId);

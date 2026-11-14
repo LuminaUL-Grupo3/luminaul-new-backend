@@ -7,10 +7,10 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DataSource } from 'typeorm';
 import { hash } from 'bcryptjs';
 import { io, Socket } from 'socket.io-client';
-import { configureHttpApp } from '../../../config/http-app.config';
-import { NotificationType } from '../enums/administration.enums';
-import { NotificationsService } from '../service/NotificationsService';
-import type { DeliveredNotification } from '../../../common/events/notification-delivery.event';
+import { configureHttpApp } from '../../src/config/http-app.config';
+import { NotificationType } from '../../src/modules/administration/enums/administration.enums';
+import { NotificationsService } from '../../src/modules/administration/service/NotificationsService';
+import type { DeliveredNotification } from '../../src/common/events/notification-delivery.event';
 
 const databaseUrl = process.env.TEST_NOTIFICATIONS_DATABASE_URL;
 /** HTTP y sockets reales; ninguna cuenta del equipo se suspende durante estas pruebas. */
@@ -51,7 +51,7 @@ describe.skipIf(!databaseUrl)('Notificaciones privadas en tiempo real', () => {
     });
   }
   async function connect(actor: number) {
-    const socket = io(origin, {
+    const socket = io(`${origin}/notifications`, {
       auth: { token: tokens[actor] },
       autoConnect: false,
       reconnection: false,
@@ -89,7 +89,7 @@ describe.skipIf(!databaseUrl)('Notificaciones privadas en tiempo real', () => {
       JWT_SECRET: randomBytes(48).toString('hex'),
     });
     delete process.env.OPENAI_API_KEY;
-    const { AppModule } = await import('../../../app.module');
+    const { AppModule } = await import('../../src/app.module');
     app = await NestFactory.create(AppModule, { logger: false });
     configureHttpApp(app);
     await app.listen(0, '127.0.0.1');
@@ -145,7 +145,7 @@ describe.skipIf(!databaseUrl)('Notificaciones privadas en tiempo real', () => {
   });
 
   it('rechaza una conexión sin sesión', async () => {
-    const socket = io(origin, { autoConnect: false, reconnection: false, transports: ['websocket'] });
+    const socket = io(`${origin}/notifications`, { autoConnect: false, reconnection: false, transports: ['websocket'] });
     sockets.push(socket);
     const denied = event<Error>(socket, 'connect_error');
     socket.connect();

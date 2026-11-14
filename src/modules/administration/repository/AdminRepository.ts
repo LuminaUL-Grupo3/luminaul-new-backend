@@ -1,7 +1,7 @@
 import { ContentTarget } from '../policies/content-targets';
 import { AuditAction } from '../administration.constants';
 
-// ---------- Filas que devuelve el DAO (solo datos, sin reglas de negocio) ----------
+// ---------- Filas que devuelve el repositorio (solo datos, sin reglas de negocio) ----------
 
 export interface ReportRecord {
   id: string;
@@ -104,7 +104,7 @@ export interface AuditEntry {
   details: Record<string, unknown>;
 }
 
-// ---------- Datos que recibe el DAO para escribir ----------
+// ---------- Datos que recibe el repositorio para escribir ----------
 
 export interface ResolveReportCommand {
   reportId: string;
@@ -132,9 +132,9 @@ export interface ChangeUserStatusCommand {
 }
 
 /**
- * Patrón DAO (Data Access Object) del panel de administración.
+ * Patrón Repository del panel de administración.
  *
- * Es la "interfaz" del DAO, como ProductoDAO en los laboratorios: declara QUÉ datos se
+ * Es la abstracción del repositorio: declara QUÉ datos se
  * pueden leer y escribir, sin decir CÓMO. El CÓMO (SQL sobre PostgreSQL) está en
  * impl/AdminRepositoryImpl.ts. El service depende de esta abstracción y no del SQL (DIP),
  * y en las pruebas unitarias se reemplaza por un objeto simulado (mock).

@@ -9,7 +9,7 @@ import { ADMIN_MESSAGES, AuditAction, NOTICES } from '../../administration.const
 /**
  * Estrategia concreta (HU 7.1): reactivar una cuenta suspendida.
  *
- * El DAO guarda status = 'active' y borra el motivo de suspensión. Después se avisa al
+ * El repositorio guarda status = 'active' y borra el motivo de suspensión. Después se avisa al
  * alumno con la notificación "Cuenta reactivada" a través del Adapter NotificationClient.
  */
 @Injectable()

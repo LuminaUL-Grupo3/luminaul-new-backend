@@ -63,7 +63,7 @@ describe('SPEC-07: patrones del curso', () => {
       });
     });
 
-    it('409 si otro administrador cambió la cuenta en paralelo (el DAO no afectó filas)', async () => {
+    it('409 si otro administrador cambió la cuenta en paralelo (el repositorio no afectó filas)', async () => {
       changeUserStatus.mockResolvedValue(false);
       const strategy = new SuspendUserStrategy(repository, notificationClient);
 

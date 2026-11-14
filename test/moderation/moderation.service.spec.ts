@@ -1,9 +1,9 @@
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { BadRequestException, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { type Mocked } from 'vitest';
 import { ModerationService } from '../../src/modules/moderation/service/moderation.service';
 import { ModerationServiceImpl } from '../../src/modules/moderation/service/impl/moderation.service.impl';
 import { ModerationRepository } from '../../src/modules/moderation/repository/moderation.repository';
+import { NotificationClient } from '../../src/modules/moderation/client/NotificationClient';
 import { ContentReportEntity } from '../../src/modules/moderation/entities/content-report.entity';
 import { ContentModerationLogEntity } from '../../src/modules/moderation/entities/content-moderation-log.entity';
 import { ContentAppealEntity } from '../../src/modules/moderation/entities/content-appeal.entity';
@@ -38,7 +38,12 @@ describe('ModerationService (Unit)', () => {
       findLogsByAuthor: vi.fn(),
     } as unknown as Mocked<ModerationRepository>;
 
-    service = new ModerationServiceImpl(mockRepo, new EventEmitter2());
+    const mockNotifications = {
+      notifyUser: vi.fn(),
+      notifyAdministrators: vi.fn(),
+    } as unknown as Mocked<NotificationClient>;
+
+    service = new ModerationServiceImpl(mockRepo, mockNotifications);
   });
 
   // HU 6.1 · createReport. Complejidad ciclomática V(G) = 9 (8 decisiones + 1), así que hay

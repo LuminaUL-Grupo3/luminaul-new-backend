@@ -34,11 +34,11 @@ const coalesceColumn = (column: (target: ContentTarget) => string): string =>
   `COALESCE(${TARGET_ENTRIES.map(([, target], index) => `c${index}.${column(target)}`).join(', ')})`;
 
 /**
- * Patrón DAO: implementación con SQL de AdminRepository (como ProductoDAOImpl).
+ * Patrón Repository: implementación con SQL de AdminRepository.
  *
  * Las tablas consultadas pertenecen a otros SPECs (users, reports, appeals, publications,
  * group_messages, reviews), por eso se usa SQL directo sobre su nombre en lugar de importar
- * sus entidades (AGENTS.md §3.2). El DAO no decide reglas de negocio: solo informa lo que
+ * sus entidades (AGENTS.md §3.2). El repositorio no decide reglas de negocio: solo informa lo que
  * encontró o si la escritura afectó filas. Las escrituras que tocan varias tablas van dentro
  * de una transacción: o se guardan todas o ninguna.
  */

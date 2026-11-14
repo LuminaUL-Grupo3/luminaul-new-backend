@@ -6,7 +6,7 @@ import { NotificationSendEvent } from '../../events/notification-send.event';
 import { NotificationsRepository } from '../NotificationsRepository';
 
 /**
- * Patrón DAO: implementación de NotificationsRepository con el repositorio de TypeORM
+ * Patrón Repository: implementación de NotificationsRepository con el repositorio de TypeORM
  * de la entidad propia NotificationEntity.
  */
 @Injectable()
@@ -23,12 +23,12 @@ export class NotificationsRepositoryImpl extends NotificationsRepository {
     return this.notifications.save(this.notifications.create({ userId, title, message, type }));
   }
 
-  /** Resuelve destinatarios dentro del DAO; nunca acepta una sala o lista de usuarios del cliente. */
-  async administratorIds(): Promise<string[]> {
-    const rows: { id: string }[] = await this.notifications.manager.query(
-      "SELECT id FROM users WHERE role='admin' AND status='active' AND deleted_at IS NULL",
+  createMany(values: NotificationSendEvent[]): Promise<NotificationEntity[]> {
+    if (!values.length) return Promise.resolve([]);
+    const entities = values.map(({ userId, title, message, type }) =>
+      this.notifications.create({ userId, title, message, type }),
     );
-    return rows.map((row) => row.id);
+    return this.notifications.save(entities);
   }
 
   findByUser(userId: string, limit: number): Promise<NotificationEntity[]> {
