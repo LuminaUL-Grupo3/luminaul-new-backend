@@ -1,5 +1,8 @@
+import { POST_COLORS } from '../post-colors';
+import { ValidateIf } from 'class-validator';
 import {
   IsUUID,
+  IsIn,
   IsString,
   IsOptional,
   Validate,
@@ -13,6 +16,11 @@ import { IsNotBlankConstraint } from './post-create.dto';
 
 // courseId y type son inmutables tras crear la publicación y no forman parte del DTO de edición
 export class PostUpdateDto {
+  @ApiPropertyOptional({ enum: POST_COLORS, default: 'peach' })
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsIn(POST_COLORS)
+  color?: string;
+
   @ApiPropertyOptional({ description: 'Descripción de la publicación' })
   @IsOptional()
   @IsString()

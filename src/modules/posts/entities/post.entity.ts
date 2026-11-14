@@ -34,6 +34,9 @@ export class PostEntity {
   @Column({ type: 'text', nullable: false })
   description!: string;
 
+  @Column({ type: 'varchar', length: 16, default: 'peach' })
+  color!: string;
+
   @Column({ type: 'text', nullable: true })
   benefits!: string | null;
 

@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { UserStatusChange, UserStatusChangeStrategy } from '../UserStatusChangeStrategy';
 import { AdminRepository } from '../../repository/AdminRepository';
 import { ChangeUserStatusResponseDto } from '../../dto/admin-response.dto';
-import { ManagedUserStatus } from '../../enums/administration.enums';
+import { ManagedUserStatus, NotificationType } from '../../enums/administration.enums';
+import { NotificationClient } from '../../client/NotificationClient';
 import { ADMIN_MESSAGES, AuditAction } from '../../administration.constants';
 
 /**
@@ -11,19 +12,29 @@ import { ADMIN_MESSAGES, AuditAction } from '../../administration.constants';
  * El DAO guarda status = 'suspended', el motivo y tokens_valid_after = NOW(). Con eso el
  * JwtAuthGuard de SPEC-01 rechaza al instante cualquier sesión abierta del alumno, y el
  * login responde "Tu cuenta ha sido suspendida por infringir las normas comunitarias"
- * (criterio E2). No se envía notificación: el alumno suspendido no puede entrar a verla.
+ * (criterio E2). El aviso se persiste y la conexión abierta explica la suspensión antes de cerrarse.
  */
 @Injectable()
 export class SuspendUserStrategy extends UserStatusChangeStrategy {
   readonly targetStatus = ManagedUserStatus.SUSPENDED;
   readonly alreadyInStatusMessage = ADMIN_MESSAGES.USER_ALREADY_SUSPENDED;
 
-  constructor(repository: AdminRepository) {
+  constructor(
+    repository: AdminRepository,
+    private readonly notificationClient: NotificationClient,
+  ) {
     super(repository);
   }
 
   async execute(change: UserStatusChange): Promise<ChangeUserStatusResponseDto> {
     await this.saveStatus(change, AuditAction.USER_SUSPENDED);
+    this.notificationClient.notify({
+      userId: change.user.id,
+      title: 'Cuenta suspendida',
+      message: `Tu cuenta fue suspendida. Motivo: ${change.reason}`,
+      type: NotificationType.SYSTEM,
+      sessionRevoked: true,
+    });
     return {
       message: ADMIN_MESSAGES.USER_SUSPENDED,
       userId: change.user.id,

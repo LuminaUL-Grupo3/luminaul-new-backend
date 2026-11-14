@@ -38,7 +38,7 @@ describe('AdminServiceImpl (Unit)', () => {
 
     const notificationClient = new NotificationClientImpl(mockEventEmitter);
     service = new AdminServiceImpl(mockRepo, notificationClient, new ChatClientImpl(mockEventEmitter), {
-      [ManagedUserStatus.SUSPENDED]: new SuspendUserStrategy(mockRepo),
+      [ManagedUserStatus.SUSPENDED]: new SuspendUserStrategy(mockRepo, notificationClient),
       [ManagedUserStatus.ACTIVE]: new ReactivateUserStrategy(mockRepo, notificationClient),
     });
   });
@@ -135,9 +135,9 @@ describe('AdminServiceImpl (Unit)', () => {
     it('debe lanzar NotFoundException si la apelación no existe', async () => {
       mockRepo.findAppealById.mockResolvedValue(null);
 
-      await expect(
-        service.resolveAppeal(adminId, 'invalida', { status: AppealStatus.APPROVED }),
-      ).rejects.toMatchObject({ status: 404 });
+      await expect(service.resolveAppeal(adminId, 'invalida', { status: AppealStatus.APPROVED })).rejects.toMatchObject(
+        { status: 404 },
+      );
     });
 
     it('debe lanzar ConflictException si la apelación ya fue resuelta anteriormente', async () => {
@@ -150,9 +150,9 @@ describe('AdminServiceImpl (Unit)', () => {
       };
       mockRepo.findAppealById.mockResolvedValue(resolvedAppeal as AppealRecord);
 
-      await expect(
-        service.resolveAppeal(adminId, appealId, { status: AppealStatus.APPROVED }),
-      ).rejects.toMatchObject({ status: 409 });
+      await expect(service.resolveAppeal(adminId, appealId, { status: AppealStatus.APPROVED })).rejects.toMatchObject({
+        status: 409,
+      });
     });
   });
 

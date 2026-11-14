@@ -16,13 +16,9 @@ import {
   ReportDto,
 } from '../../dto/moderation-response.dto';
 import { ContentReportEntity } from '../../entities/content-report.entity';
-import {
-  AppealStatus,
-  ModerationDecision,
-  ModerationResult,
-  ReportStatus,
-} from '../../enums/moderation.enums';
+import { AppealStatus, ModerationDecision, ModerationResult, ReportStatus } from '../../enums/moderation.enums';
 import { MODERATION_MESSAGES } from '../../moderation.constants';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 // Código de PostgreSQL para violación de índice único (uq_reporter_target)
 const UNIQUE_VIOLATION = '23505';
@@ -55,7 +51,10 @@ const APPEAL_BLOCKING_STATUSES: readonly AppealStatus[] = [
 
 @Injectable()
 export class ModerationServiceImpl extends ModerationService {
-  constructor(private readonly repository: ModerationRepository) {
+  constructor(
+    private readonly repository: ModerationRepository,
+    private readonly events: EventEmitter2,
+  ) {
     super();
   }
 
@@ -76,12 +75,19 @@ export class ModerationServiceImpl extends ModerationService {
     if (pending) throw new ConflictException(MODERATION_MESSAGES.REPORT_DUPLICATED);
 
     try {
-      const report = await this.repository.createReport(
+      const report = await this.repository.createReport(userId, dto.targetType, dto.targetId, dto.reason);
+      // El denunciante recibe constancia; solo administración recibe el aviso de revisión.
+      this.events.emit('notification.send', {
         userId,
-        dto.targetType,
-        dto.targetId,
-        dto.reason,
-      );
+        title: 'Reporte recibido',
+        message: 'Tu reporte fue registrado y será revisado por administración.',
+        type: 'MODERATION',
+      });
+      this.events.emit('notification.administrators', {
+        title: 'Nuevo reporte pendiente',
+        message: 'Se registró un reporte de contenido. Revisa el panel de reportes.',
+        type: 'MODERATION',
+      });
       return {
         message: MODERATION_MESSAGES.REPORT_CREATED,
         reportId: report.id,
@@ -136,6 +142,11 @@ export class ModerationServiceImpl extends ModerationService {
     try {
       const appeal = await this.repository.createAppeal(log.id, userId, dto.justification);
       if (!appeal) throw new ConflictException(MODERATION_MESSAGES.APPEAL_DUPLICATED);
+      this.events.emit('notification.administrators', {
+        title: 'Nueva apelación pendiente',
+        message: 'Se registró una apelación de moderación. Revisa el panel de apelaciones.',
+        type: 'MODERATION',
+      });
       return {
         message: MODERATION_MESSAGES.APPEAL_CREATED,
         appealId: appeal.id,

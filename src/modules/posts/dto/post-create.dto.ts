@@ -1,3 +1,5 @@
+import { POST_COLORS } from '../post-colors';
+import { ValidateIf } from 'class-validator';
 import {
   IsUUID,
   IsString,
@@ -32,6 +34,11 @@ export class IsNotBlankConstraint implements ValidatorConstraintInterface {
 }
 
 export class PostCreateDto {
+  @ApiPropertyOptional({ enum: POST_COLORS, default: 'peach' })
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsIn(POST_COLORS)
+  color?: string;
+
   @ApiProperty({
     description: 'UUID del curso asociado',
     example: '8c537243-ea7d-411a-8bb7-fce5230bfdf2',

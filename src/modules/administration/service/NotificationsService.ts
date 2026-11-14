@@ -8,6 +8,7 @@ import { MarkNotificationReadResponseDto, NotificationDto } from '../dto/admin-r
  */
 export abstract class NotificationsService {
   abstract send(event: NotificationSendEvent): Promise<NotificationDto>;
+  abstract sendToAdministrators(event: Omit<NotificationSendEvent, 'userId'>): Promise<void>;
   abstract listMine(userId: string): Promise<NotificationDto[]>;
   abstract markRead(userId: string, notificationId: string): Promise<MarkNotificationReadResponseDto>;
 }

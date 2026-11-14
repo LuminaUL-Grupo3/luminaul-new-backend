@@ -52,7 +52,7 @@ export class AdminRepositoryImpl extends AdminRepository {
 
   async findReportById(id: string): Promise<ReportRecord | null> {
     const rows: ReportRecord[] = await this.dataSource.query(
-      `SELECT id, status, target_type AS "targetType", target_id AS "targetId"
+      `SELECT id, reporter_id AS "reporterId", status, target_type AS "targetType", target_id AS "targetId"
        FROM reports WHERE id = $1`,
       [id],
     );
@@ -77,10 +77,9 @@ export class AdminRepositoryImpl extends AdminRepository {
          LIMIT $2 OFFSET $3`,
         [status, limit, offset],
       ) as Promise<ReportRow[]>,
-      this.dataSource.query(
-        'SELECT COUNT(*) AS total FROM reports WHERE ($1::text IS NULL OR status = $1)',
-        [status],
-      ) as Promise<{ total: string }[]>,
+      this.dataSource.query('SELECT COUNT(*) AS total FROM reports WHERE ($1::text IS NULL OR status = $1)', [
+        status,
+      ]) as Promise<{ total: string }[]>,
     ]);
     return { total: Number(count[0].total), rows };
   }
@@ -146,10 +145,9 @@ export class AdminRepositoryImpl extends AdminRepository {
          LIMIT $2 OFFSET $3`,
         [status, limit, offset],
       ) as Promise<AppealRow[]>,
-      this.dataSource.query(
-        'SELECT COUNT(*) AS total FROM appeals WHERE ($1::text IS NULL OR status = $1)',
-        [status],
-      ) as Promise<{ total: string }[]>,
+      this.dataSource.query('SELECT COUNT(*) AS total FROM appeals WHERE ($1::text IS NULL OR status = $1)', [
+        status,
+      ]) as Promise<{ total: string }[]>,
     ]);
     return { total: Number(count[0].total), rows };
   }
@@ -183,12 +181,7 @@ export class AdminRepositoryImpl extends AdminRepository {
     return rows[0] ?? null;
   }
 
-  async findUsers(
-    search: string | null,
-    status: string | null,
-    limit: number,
-    offset: number,
-  ): Promise<Page<UserRow>> {
+  async findUsers(search: string | null, status: string | null, limit: number, offset: number): Promise<Page<UserRow>> {
     const where = `WHERE ($1::text IS NULL OR name ILIKE '%' || $1 || '%' OR email ILIKE '%' || $1 || '%')
                      AND ($2::text IS NULL OR status = $2)`;
     const [rows, count] = await Promise.all([

@@ -19,7 +19,16 @@ export class NotificationsRepositoryImpl extends NotificationsRepository {
   }
 
   create(values: NotificationSendEvent): Promise<NotificationEntity> {
-    return this.notifications.save(this.notifications.create(values));
+    const { userId, title, message, type } = values;
+    return this.notifications.save(this.notifications.create({ userId, title, message, type }));
+  }
+
+  /** Resuelve destinatarios dentro del DAO; nunca acepta una sala o lista de usuarios del cliente. */
+  async administratorIds(): Promise<string[]> {
+    const rows: { id: string }[] = await this.notifications.manager.query(
+      "SELECT id FROM users WHERE role='admin' AND status='active' AND deleted_at IS NULL",
+    );
+    return rows.map((row) => row.id);
   }
 
   findByUser(userId: string, limit: number): Promise<NotificationEntity[]> {
