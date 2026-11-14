@@ -148,6 +148,7 @@ CREATE TABLE publications (
   course_id UUID NOT NULL REFERENCES courses(id) ON DELETE RESTRICT,
   type VARCHAR(50) NOT NULL,
   description TEXT NOT NULL,
+  color VARCHAR(16) NOT NULL DEFAULT 'peach' CHECK (color IN ('peach','rose','lavender','lilac','sky','mint','sage','lemon','sand','aqua')),
   benefits TEXT,
   requirements TEXT,
   max_capacity INTEGER NOT NULL DEFAULT 5,
