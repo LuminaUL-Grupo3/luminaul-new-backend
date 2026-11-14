@@ -34,7 +34,7 @@ export class IsNotBlankConstraint implements ValidatorConstraintInterface {
 }
 
 export class PostCreateDto {
-  @ApiPropertyOptional({ enum: POST_COLORS, default: 'peach' })
+  @ApiPropertyOptional({ enum: POST_COLORS, default: 'white' })
   @ValidateIf((_object, value) => value !== undefined)
   @IsIn(POST_COLORS)
   color?: string;

@@ -34,7 +34,7 @@ export class PostEntity {
   @Column({ type: 'text', nullable: false })
   description!: string;
 
-  @Column({ type: 'varchar', length: 16, default: 'peach' })
+  @Column({ type: 'varchar', length: 16, default: 'white' })
   color!: string;
 
   @Column({ type: 'text', nullable: true })

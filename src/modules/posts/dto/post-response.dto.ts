@@ -38,7 +38,7 @@ export class PostResponseDto {
   @ApiProperty({ example: 'Buscamos 2 personas para repasar antes de la PC1' })
   description!: string;
 
-  @ApiProperty({ example: 'peach' })
+  @ApiProperty({ example: 'white' })
   color!: string;
 
   @ApiPropertyOptional({ example: 'Material de estudio y asesorías' })

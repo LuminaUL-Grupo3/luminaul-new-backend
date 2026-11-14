@@ -32,7 +32,7 @@ export abstract class PostCreator {
     post.courseId = courseId;
     post.type = dto.type;
     post.description = dto.description;
-    post.color = dto.color ?? 'peach';
+    post.color = dto.color ?? 'white';
     post.benefits = dto.benefits ?? null;
     post.requirements = dto.requirements ?? null;
     post.maxCapacity = maxCapacity ?? dto.maxCapacity ?? 5;

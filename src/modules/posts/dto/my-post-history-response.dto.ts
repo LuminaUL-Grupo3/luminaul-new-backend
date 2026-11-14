@@ -14,7 +14,7 @@ export class MyPostHistoryResponseDto {
   @ApiProperty()
   description!: string;
 
-  @ApiProperty({ example: 'peach' })
+  @ApiProperty({ example: 'white' })
   color!: string;
 
   @ApiPropertyOptional()

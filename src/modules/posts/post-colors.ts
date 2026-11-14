@@ -1,5 +1,6 @@
 /** Lista cerrada: el cliente elige un tono, nunca introduce CSS arbitrario. */
 export const POST_COLORS = [
+  'white',
   'peach',
   'rose',
   'lavender',

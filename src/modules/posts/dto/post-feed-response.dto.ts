@@ -14,7 +14,7 @@ export class PostFeedResponseDto {
   @ApiProperty()
   description!: string;
 
-  @ApiProperty({ example: 'peach' })
+  @ApiProperty({ example: 'white' })
   color!: string;
 
   @ApiPropertyOptional()

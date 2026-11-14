@@ -52,6 +52,6 @@ describe('Color pastel de publicaciones', () => {
           { id: 'course', name: 'Curso' },
         )
       ).color,
-    ).toBe('peach');
+    ).toBe('white');
   });
 });
