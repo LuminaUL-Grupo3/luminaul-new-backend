@@ -1,13 +1,9 @@
-import {
-  BadRequestException,
-  NotFoundException,
-  ConflictException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { BadRequestException, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { type Mocked } from 'vitest';
 import { ModerationService } from '../../src/modules/moderation/service/moderation.service';
 import { ModerationServiceImpl } from '../../src/modules/moderation/service/impl/moderation.service.impl';
 import { ModerationRepository } from '../../src/modules/moderation/repository/moderation.repository';
+import { NotificationClient } from '../../src/modules/moderation/client/NotificationClient';
 import { ContentReportEntity } from '../../src/modules/moderation/entities/content-report.entity';
 import { ContentModerationLogEntity } from '../../src/modules/moderation/entities/content-moderation-log.entity';
 import { ContentAppealEntity } from '../../src/modules/moderation/entities/content-appeal.entity';
@@ -42,7 +38,12 @@ describe('ModerationService (Unit)', () => {
       findLogsByAuthor: vi.fn(),
     } as unknown as Mocked<ModerationRepository>;
 
-    service = new ModerationServiceImpl(mockRepo);
+    const mockNotifications = {
+      notifyUser: vi.fn(),
+      notifyAdministrators: vi.fn(),
+    } as unknown as Mocked<NotificationClient>;
+
+    service = new ModerationServiceImpl(mockRepo, mockNotifications);
   });
 
   // HU 6.1 · createReport. Complejidad ciclomática V(G) = 9 (8 decisiones + 1), así que hay
@@ -128,9 +129,7 @@ describe('ModerationService (Unit)', () => {
     it('C5: rechaza con 400 que el alumno reporte su propio contenido', async () => {
       mockRepo.findContent.mockResolvedValue({ ...publishedPost, authorId: reporterId });
 
-      await expect(service.createReport(reporterId, publicationDto)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.createReport(reporterId, publicationDto)).rejects.toThrow(BadRequestException);
       expect(mockRepo.findPendingReport).not.toHaveBeenCalled();
     });
 
@@ -164,9 +163,7 @@ describe('ModerationService (Unit)', () => {
       mockRepo.findPendingReport.mockResolvedValue(null);
       mockRepo.createReport.mockRejectedValue({ driverError: { code: '23505' } });
 
-      await expect(service.createReport(reporterId, publicationDto)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.createReport(reporterId, publicationDto)).rejects.toThrow(ConflictException);
     });
 
     it('C9: propaga cualquier otro error de la base de datos sin convertirlo', async () => {
@@ -278,4 +275,3 @@ describe('ModerationService (Unit)', () => {
     });
   });
 });
-

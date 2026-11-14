@@ -7,4 +7,13 @@ export interface NotificationSendEvent {
   title: string;
   message: string;
   type: NotificationType;
+  /** Solo para suspensión confirmada: avisa a la sesión abierta antes de retirarla. No se almacena como columna. */
+  sessionRevoked?: boolean;
+}
+
+export type AdministratorNotificationEvent = Omit<NotificationSendEvent, 'userId'>;
+
+export interface NotificationReadEvent {
+  userId: string;
+  id: string;
 }

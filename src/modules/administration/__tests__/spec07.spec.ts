@@ -11,15 +11,13 @@ import { ROLES_KEY } from '../../auth-security/decorator/Roles';
 import { UserRole } from '../../auth-security/enums/UserRole';
 import { AdminController } from '../controller/AdminController';
 import { NotificationsController } from '../controller/NotificationsController';
-import {
-  ChangeUserStatusDto,
-  ResolveAppealDto,
-  ResolveReportDto,
-} from '../dto/admin-request.dto';
+import { ChangeUserStatusDto, ResolveAppealDto, ResolveReportDto } from '../dto/admin-request.dto';
 import { AdminRepository } from '../repository/AdminRepository';
 import { NotificationsRepository } from '../repository/NotificationsRepository';
 import { AdminServiceImpl } from '../service/impl/AdminServiceImpl';
 import { NotificationClientImpl } from '../client/impl/NotificationClientImpl';
+import { NotificationRealtimeClientImpl } from '../client/impl/NotificationRealtimeClientImpl';
+import { AdminDirectoryClient } from '../client/AdminDirectoryClient';
 import { ChatClientImpl } from '../client/impl/ChatClientImpl';
 import { SuspendUserStrategy } from '../strategy/impl/SuspendUserStrategy';
 import { ReactivateUserStrategy } from '../strategy/impl/ReactivateUserStrategy';
@@ -49,6 +47,7 @@ function buildRepository() {
   return {
     findReportById: asyncMock().mockResolvedValue({
       id: REPORT,
+      reporterId: STUDENT,
       status: 'pending',
       targetType: 'publication',
       targetId: POST,
@@ -107,11 +106,11 @@ describe('SPEC-07: Panel de Administración y Notificaciones', () => {
     repository = buildRepository();
     events = { emit: vi.fn() };
     const emitter = events as unknown as EventEmitter2;
-    const dao = repository as unknown as AdminRepository;
+    const adminRepo = repository as unknown as AdminRepository;
     const notificationClient = new NotificationClientImpl(emitter);
-    service = new AdminServiceImpl(dao, notificationClient, new ChatClientImpl(emitter), {
-      [ManagedUserStatus.SUSPENDED]: new SuspendUserStrategy(dao),
-      [ManagedUserStatus.ACTIVE]: new ReactivateUserStrategy(dao, notificationClient),
+    service = new AdminServiceImpl(adminRepo, notificationClient, new ChatClientImpl(emitter), {
+      [ManagedUserStatus.SUSPENDED]: new SuspendUserStrategy(adminRepo, notificationClient),
+      [ManagedUserStatus.ACTIVE]: new ReactivateUserStrategy(adminRepo, notificationClient),
     });
   });
 
@@ -163,7 +162,12 @@ describe('SPEC-07: Panel de Administración y Notificaciones', () => {
     });
 
     it('409 si el reporte ya fue resuelto', async () => {
-      repository.findReportById.mockResolvedValue({ id: REPORT, status: 'resolved', targetType: 'publication', targetId: POST });
+      repository.findReportById.mockResolvedValue({
+        id: REPORT,
+        status: 'resolved',
+        targetType: 'publication',
+        targetId: POST,
+      });
       await expectAdminError(service.resolveReport(ADMIN, REPORT, deletePost), 409);
     });
 
@@ -173,7 +177,12 @@ describe('SPEC-07: Panel de Administración y Notificaciones', () => {
     });
 
     it('422 si el tipo de contenido no está soportado', async () => {
-      repository.findReportById.mockResolvedValue({ id: REPORT, status: 'pending', targetType: 'group', targetId: POST });
+      repository.findReportById.mockResolvedValue({
+        id: REPORT,
+        status: 'pending',
+        targetType: 'group',
+        targetId: POST,
+      });
       await expectAdminError(service.resolveReport(ADMIN, REPORT, deletePost), 422);
     });
 
@@ -205,25 +214,40 @@ describe('SPEC-07: Panel de Administración y Notificaciones', () => {
       );
     });
 
-    it('desestima sin tocar el contenido ni notificar', async () => {
+    it('desestima sin tocar contenido y comunica el resultado al denunciante', async () => {
       const result = await service.resolveReport(ADMIN, REPORT, { status: ReportStatus.DISMISSED } as ResolveReportDto);
 
       expect(result.message).toBe('Reporte desestimado con éxito');
       expect(repository.findContent).not.toHaveBeenCalled();
       expect(repository.resolveReport).toHaveBeenCalledWith(expect.objectContaining({ contentToDelete: null }));
-      expect(events.emit).not.toHaveBeenCalled();
+      expect(events.emit).toHaveBeenCalledWith(
+        NOTIFICATION_SEND_EVENT,
+        expect.objectContaining({ userId: STUDENT, title: 'Reporte revisado' }),
+      );
     });
   });
 
   describe('resolveAppeal (HU 7.3)', () => {
     it('404 si la apelación no existe', async () => {
       repository.findAppealById.mockResolvedValue(null);
-      await expectAdminError(service.resolveAppeal(ADMIN, APPEAL, { status: AppealStatus.APPROVED } as ResolveAppealDto), 404);
+      await expectAdminError(
+        service.resolveAppeal(ADMIN, APPEAL, { status: AppealStatus.APPROVED } as ResolveAppealDto),
+        404,
+      );
     });
 
     it('409 si la apelación ya fue resuelta', async () => {
-      repository.findAppealById.mockResolvedValue({ id: APPEAL, status: 'rejected', userId: STUDENT, contentType: 'publication', contentId: POST });
-      await expectAdminError(service.resolveAppeal(ADMIN, APPEAL, { status: AppealStatus.APPROVED } as ResolveAppealDto), 409);
+      repository.findAppealById.mockResolvedValue({
+        id: APPEAL,
+        status: 'rejected',
+        userId: STUDENT,
+        contentType: 'publication',
+        contentId: POST,
+      });
+      await expectAdminError(
+        service.resolveAppeal(ADMIN, APPEAL, { status: AppealStatus.APPROVED } as ResolveAppealDto),
+        409,
+      );
     });
 
     it('aprobar restaura el contenido y notifica: "Apelación aprobada con éxito"', async () => {
@@ -261,21 +285,43 @@ describe('SPEC-07: Panel de Administración y Notificaciones', () => {
     });
 
     it('403 si el objetivo es otro administrador', async () => {
-      repository.findUserById.mockResolvedValue({ id: STUDENT, email: 'x', name: 'x', role: 'admin', status: 'active' });
+      repository.findUserById.mockResolvedValue({
+        id: STUDENT,
+        email: 'x',
+        name: 'x',
+        role: 'admin',
+        status: 'active',
+      });
       await expectAdminError(service.changeUserStatus(ADMIN, STUDENT, suspend), 403);
     });
 
     it('409 si la cuenta no está verificada', async () => {
-      repository.findUserById.mockResolvedValue({ id: STUDENT, email: 'x', name: 'x', role: 'student', status: 'pending_verification' });
+      repository.findUserById.mockResolvedValue({
+        id: STUDENT,
+        email: 'x',
+        name: 'x',
+        role: 'student',
+        status: 'pending_verification',
+      });
       await expectAdminError(service.changeUserStatus(ADMIN, STUDENT, activate), 409);
     });
 
     it('409 si ya está suspendida', async () => {
-      repository.findUserById.mockResolvedValue({ id: STUDENT, email: 'x', name: 'x', role: 'student', status: 'suspended' });
-      await expectAdminError(service.changeUserStatus(ADMIN, STUDENT, suspend), 409, 'El usuario ya se encuentra suspendido');
+      repository.findUserById.mockResolvedValue({
+        id: STUDENT,
+        email: 'x',
+        name: 'x',
+        role: 'student',
+        status: 'suspended',
+      });
+      await expectAdminError(
+        service.changeUserStatus(ADMIN, STUDENT, suspend),
+        409,
+        'El usuario ya se encuentra suspendido',
+      );
     });
 
-    it('suspende, audita y no notifica (el suspendido no puede entrar)', async () => {
+    it('suspende, audita y solicita aviso de sesión revocada', async () => {
       const result = await service.changeUserStatus(ADMIN, STUDENT, suspend);
 
       expect(result).toEqual({
@@ -286,11 +332,20 @@ describe('SPEC-07: Panel de Administración y Notificaciones', () => {
       expect(repository.changeUserStatus).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'suspended', reason: 'Lenguaje ofensivo', adminId: ADMIN }),
       );
-      expect(events.emit).not.toHaveBeenCalled();
+      expect(events.emit).toHaveBeenCalledWith(
+        NOTIFICATION_SEND_EVENT,
+        expect.objectContaining({ userId: STUDENT, sessionRevoked: true }),
+      );
     });
 
     it('reactivar notifica al alumno', async () => {
-      repository.findUserById.mockResolvedValue({ id: STUDENT, email: 'x', name: 'x', role: 'student', status: 'suspended' });
+      repository.findUserById.mockResolvedValue({
+        id: STUDENT,
+        email: 'x',
+        name: 'x',
+        role: 'student',
+        status: 'suspended',
+      });
       const result = await service.changeUserStatus(ADMIN, STUDENT, activate);
 
       expect(result.status).toBe('active');
@@ -362,16 +417,25 @@ describe('SPEC-07: Panel de Administración y Notificaciones', () => {
       createdAt: new Date('2026-11-01T10:00:00.000Z'),
     };
     let notificationsRepo: Record<string, ReturnType<typeof asyncMock>>;
+    let adminDirectory: { findActiveAdminIds: ReturnType<typeof asyncMock> };
     let notifications: NotificationsServiceImpl;
 
     beforeEach(() => {
       notificationsRepo = {
         create: asyncMock().mockResolvedValue(notification),
+        createMany: asyncMock().mockResolvedValue([notification]),
         findByUser: asyncMock().mockResolvedValue([notification]),
         findOwn: asyncMock().mockResolvedValue(notification),
         markRead: asyncMock().mockResolvedValue(undefined),
       };
-      notifications = new NotificationsServiceImpl(notificationsRepo as unknown as NotificationsRepository);
+      adminDirectory = {
+        findActiveAdminIds: asyncMock().mockResolvedValue([ADMIN]),
+      };
+      notifications = new NotificationsServiceImpl(
+        notificationsRepo as unknown as NotificationsRepository,
+        new NotificationRealtimeClientImpl(new EventEmitter2()),
+        adminDirectory as unknown as AdminDirectoryClient,
+      );
     });
 
     it('lista las notificaciones propias en formato del contrato', async () => {

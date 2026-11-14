@@ -4,7 +4,7 @@ import type { NotificationEntity } from '../entities/notification.entity';
 
 const iso = (date: Date | null): string | null => (date ? date.toISOString() : null);
 
-// Cada DTO de respuesta sabe construirse a partir de la fila que devuelve el DAO
+// Cada DTO de respuesta sabe construirse a partir de la fila que devuelve el repositorio
 // (fromRow / fromEntity), así el service no arma objetos campo por campo.
 
 // ---------- Reportes (HU 7.4) ----------

@@ -39,6 +39,7 @@ import {
   WsAck,
 } from "../types/messaging.types";
 import { RoomPresence } from "./room-presence";
+import { GROUP_DOMAIN_EVENTS } from "../group-messaging.constants";
 
 interface SocketState {
   token: string;
@@ -155,12 +156,10 @@ export class ChatGateway
 
   /** Actualiza el agregado online después de conectar, salir o cerrar una pestaña. */
   private publishPresence(groupId: string): void {
-    this.server
-      .to(this.room(groupId))
-      .emit("chat:presence", {
-        groupId,
-        userIds: this.presence.online(groupId),
-      });
+    this.server.to(this.room(groupId)).emit("chat:presence", {
+      groupId,
+      userIds: this.presence.online(groupId),
+    });
   }
 
   /** Libera presencia y escritura de una sola conexión sin desconectar el cliente global. */
@@ -168,14 +167,12 @@ export class ChatGateway
     if (!socket.data.user) return;
     this.presence.leave(groupId, socket.data.user.id, socket.id);
     await socket.leave(this.room(groupId));
-    this.server
-      .to(this.room(groupId))
-      .emit("chat:typing", {
-        groupId,
-        userId: socket.data.user.id,
-        name: socket.data.user.name,
-        isTyping: this.presence.isTyping(groupId, socket.data.user.id),
-      });
+    this.server.to(this.room(groupId)).emit("chat:typing", {
+      groupId,
+      userId: socket.data.user.id,
+      name: socket.data.user.name,
+      isTyping: this.presence.isTyping(groupId, socket.data.user.id),
+    });
     this.publishPresence(groupId);
   }
 
@@ -422,7 +419,7 @@ export class ChatGateway
   }
 
   /** El servicio de grupos llama este evento tras confirmar una salida o expulsión. */
-  @OnEvent("group.member_removed")
+  @OnEvent(GROUP_DOMAIN_EVENTS.GROUP_MEMBER_REMOVED)
   async removeUser(event: MembershipRemovedEvent): Promise<void> {
     if (!this.server) return; // Un contexto de servicios sin transporte no tiene sockets que revocar.
     for (const socket of this.server.sockets.sockets.values()) {
@@ -438,7 +435,7 @@ export class ChatGateway
   }
 
   /** Puente de SPEC-06: solo anuncia ocultaciones que ya fueron guardadas por moderación. */
-  @OnEvent("chat:message_hidden")
+  @OnEvent(GROUP_DOMAIN_EVENTS.CHAT_MESSAGE_HIDDEN)
   async hidden(event: HiddenMessageEvent): Promise<void> {
     if (!this.server) return;
     const message = await this.service.message(event.groupId, event.messageId);
@@ -448,17 +445,22 @@ export class ChatGateway
   }
 
   /** SPEC-07 anuncia una decisión después de su transacción; solo los miembros vigentes la reciben. */
-  @OnEvent("content.visibility_changed")
-  async visibilityChanged(event: { contentType: string; contentId: string }): Promise<void> {
+  @OnEvent(GROUP_DOMAIN_EVENTS.CONTENT_VISIBILITY_CHANGED)
+  async visibilityChanged(event: {
+    contentType: string;
+    contentId: string;
+  }): Promise<void> {
     if (!this.server || event.contentType !== "message") return;
     const message = await this.service.messageState(event.contentId);
     if (!message) return;
     await this.pruneRoom(message.groupId);
-    this.server.to(this.room(message.groupId)).emit("chat:message_updated", message);
+    this.server
+      .to(this.room(message.groupId))
+      .emit("chat:message_updated", message);
   }
 
   /** Actualiza listas y permisos visibles después de aprobar solicitudes o transferir liderazgo. */
-  @OnEvent("group.changed")
+  @OnEvent(GROUP_DOMAIN_EVENTS.GROUP_CHANGED)
   async changed(event: { groupId: string }): Promise<void> {
     if (!this.server) return;
     await this.pruneRoom(event.groupId);

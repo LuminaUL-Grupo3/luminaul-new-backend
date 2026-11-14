@@ -16,13 +16,9 @@ import {
   ReportDto,
 } from '../../dto/moderation-response.dto';
 import { ContentReportEntity } from '../../entities/content-report.entity';
-import {
-  AppealStatus,
-  ModerationDecision,
-  ModerationResult,
-  ReportStatus,
-} from '../../enums/moderation.enums';
-import { MODERATION_MESSAGES } from '../../moderation.constants';
+import { AppealStatus, ModerationDecision, ModerationResult, ReportStatus } from '../../enums/moderation.enums';
+import { MODERATION_MESSAGES, MODERATION_NOTICES } from '../../moderation.constants';
+import { NotificationClient } from '../../client/NotificationClient';
 
 // Código de PostgreSQL para violación de índice único (uq_reporter_target)
 const UNIQUE_VIOLATION = '23505';
@@ -55,7 +51,10 @@ const APPEAL_BLOCKING_STATUSES: readonly AppealStatus[] = [
 
 @Injectable()
 export class ModerationServiceImpl extends ModerationService {
-  constructor(private readonly repository: ModerationRepository) {
+  constructor(
+    private readonly repository: ModerationRepository,
+    private readonly notifications: NotificationClient,
+  ) {
     super();
   }
 
@@ -76,12 +75,15 @@ export class ModerationServiceImpl extends ModerationService {
     if (pending) throw new ConflictException(MODERATION_MESSAGES.REPORT_DUPLICATED);
 
     try {
-      const report = await this.repository.createReport(
+      const report = await this.repository.createReport(userId, dto.targetType, dto.targetId, dto.reason);
+      // El denunciante recibe constancia; solo administración recibe el aviso de revisión.
+      this.notifications.notifyUser({
         userId,
-        dto.targetType,
-        dto.targetId,
-        dto.reason,
-      );
+        ...MODERATION_NOTICES.REPORT_RECEIVED,
+      });
+      this.notifications.notifyAdministrators({
+        ...MODERATION_NOTICES.REPORT_PENDING_ADMIN,
+      });
       return {
         message: MODERATION_MESSAGES.REPORT_CREATED,
         reportId: report.id,
@@ -136,6 +138,9 @@ export class ModerationServiceImpl extends ModerationService {
     try {
       const appeal = await this.repository.createAppeal(log.id, userId, dto.justification);
       if (!appeal) throw new ConflictException(MODERATION_MESSAGES.APPEAL_DUPLICATED);
+      this.notifications.notifyAdministrators({
+        ...MODERATION_NOTICES.APPEAL_PENDING_ADMIN,
+      });
       return {
         message: MODERATION_MESSAGES.APPEAL_CREATED,
         appealId: appeal.id,

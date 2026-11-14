@@ -170,6 +170,8 @@ export class PostsRepositoryImpl extends PostsRepository {
       return null;
     }
 
+    if (postData.color !== undefined) post.color = postData.color;
+
     if (postData.description !== undefined) {
       post.description = postData.description;
     }
