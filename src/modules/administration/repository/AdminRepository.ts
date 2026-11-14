@@ -5,6 +5,7 @@ import { AuditAction } from '../administration.constants';
 
 export interface ReportRecord {
   id: string;
+  reporterId: string;
   status: string;
   targetType: string;
   targetId: string;

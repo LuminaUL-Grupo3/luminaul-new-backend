@@ -1,9 +1,5 @@
-import {
-  BadRequestException,
-  NotFoundException,
-  ConflictException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { BadRequestException, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { type Mocked } from 'vitest';
 import { ModerationService } from '../../src/modules/moderation/service/moderation.service';
 import { ModerationServiceImpl } from '../../src/modules/moderation/service/impl/moderation.service.impl';
@@ -42,7 +38,7 @@ describe('ModerationService (Unit)', () => {
       findLogsByAuthor: vi.fn(),
     } as unknown as Mocked<ModerationRepository>;
 
-    service = new ModerationServiceImpl(mockRepo);
+    service = new ModerationServiceImpl(mockRepo, new EventEmitter2());
   });
 
   // HU 6.1 · createReport. Complejidad ciclomática V(G) = 9 (8 decisiones + 1), así que hay
@@ -128,9 +124,7 @@ describe('ModerationService (Unit)', () => {
     it('C5: rechaza con 400 que el alumno reporte su propio contenido', async () => {
       mockRepo.findContent.mockResolvedValue({ ...publishedPost, authorId: reporterId });
 
-      await expect(service.createReport(reporterId, publicationDto)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.createReport(reporterId, publicationDto)).rejects.toThrow(BadRequestException);
       expect(mockRepo.findPendingReport).not.toHaveBeenCalled();
     });
 
@@ -164,9 +158,7 @@ describe('ModerationService (Unit)', () => {
       mockRepo.findPendingReport.mockResolvedValue(null);
       mockRepo.createReport.mockRejectedValue({ driverError: { code: '23505' } });
 
-      await expect(service.createReport(reporterId, publicationDto)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.createReport(reporterId, publicationDto)).rejects.toThrow(ConflictException);
     });
 
     it('C9: propaga cualquier otro error de la base de datos sin convertirlo', async () => {
@@ -278,4 +270,3 @@ describe('ModerationService (Unit)', () => {
     });
   });
 });
-

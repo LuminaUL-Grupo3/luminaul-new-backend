@@ -9,6 +9,7 @@ import {
   ConnectedSocket,
   MessageBody,
   OnGatewayDisconnect,
+  OnGatewayConnection,
   OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
@@ -39,6 +40,10 @@ import {
   WsAck,
 } from "../types/messaging.types";
 import { RoomPresence } from "./room-presence";
+import {
+  DeliveredNotification,
+  NotificationDeliveryEvent,
+} from "../../../common/events/notification-delivery.event";
 
 interface SocketState {
   token: string;
@@ -55,6 +60,10 @@ interface ClientEvents {
   [event: string]: (payload: unknown) => void;
 }
 interface ServerEvents {
+  "notifications:ready": () => void;
+  "notification:new": (notification: DeliveredNotification) => void;
+  "notification:read": (event: { id: string }) => void;
+  "account:suspended": (event: { message: string }) => void;
   "chat:new_message": (message: GroupMessageDto) => void;
   "chat:message_updated": (message: GroupMessageDto) => void;
   "chat:message_hidden": (event: HiddenMessageEvent) => void;
@@ -103,6 +112,7 @@ function originAllowed(origin?: string): boolean {
 export class ChatGateway
   implements
     OnGatewayInit<ChatServer>,
+    OnGatewayConnection<ChatSocket>,
     OnGatewayDisconnect<ChatSocket>,
     OnModuleDestroy
 {
@@ -153,14 +163,62 @@ export class ChatGateway
     return `room:group:${groupId}`;
   }
 
+  /** Cada conexión autenticada entra solo a su sala privada; el cliente no elige destinatarios. */
+  async handleConnection(socket: ChatSocket): Promise<void> {
+    await socket.join(`room:user:${socket.data.user.id}`);
+    socket.emit("notifications:ready");
+  }
+
+  /** Comparte el transporte existente con SPEC-07 y vuelve a comprobar la sesión antes de difundir. */
+  @OnEvent("notification.created", { async: true })
+  async notificationCreated(event: NotificationDeliveryEvent): Promise<void> {
+    if (!this.server) return;
+    const ids =
+      this.server.sockets.adapter.rooms.get(
+        `room:user:${event.notification.userId}`,
+      ) || new Set<string>();
+    for (const id of [...ids]) {
+      const socket = this.server.sockets.sockets.get(id);
+      if (!socket || socket.data.user.id !== event.notification.userId)
+        continue;
+      try {
+        await this.session.validate(socket.data.token);
+        socket.emit("notification:new", event.notification);
+      } catch {
+        // No se habilita acceso a una cuenta suspendida: solo se explica por qué termina su sesión.
+        if (event.sessionRevoked)
+          socket.emit("account:suspended", {
+            message: event.notification.message,
+          });
+        socket.disconnect(true);
+      }
+    }
+  }
+
+  @OnEvent("notification.read", { async: true })
+  async notificationRead(event: { userId: string; id: string }): Promise<void> {
+    if (!this.server) return;
+    const ids =
+      this.server.sockets.adapter.rooms.get(`room:user:${event.userId}`) ||
+      new Set<string>();
+    for (const id of [...ids]) {
+      const socket = this.server.sockets.sockets.get(id);
+      if (!socket) continue;
+      try {
+        await this.session.validate(socket.data.token);
+        socket.emit("notification:read", { id: event.id });
+      } catch {
+        socket.disconnect(true);
+      }
+    }
+  }
+
   /** Actualiza el agregado online después de conectar, salir o cerrar una pestaña. */
   private publishPresence(groupId: string): void {
-    this.server
-      .to(this.room(groupId))
-      .emit("chat:presence", {
-        groupId,
-        userIds: this.presence.online(groupId),
-      });
+    this.server.to(this.room(groupId)).emit("chat:presence", {
+      groupId,
+      userIds: this.presence.online(groupId),
+    });
   }
 
   /** Libera presencia y escritura de una sola conexión sin desconectar el cliente global. */
@@ -168,14 +226,12 @@ export class ChatGateway
     if (!socket.data.user) return;
     this.presence.leave(groupId, socket.data.user.id, socket.id);
     await socket.leave(this.room(groupId));
-    this.server
-      .to(this.room(groupId))
-      .emit("chat:typing", {
-        groupId,
-        userId: socket.data.user.id,
-        name: socket.data.user.name,
-        isTyping: this.presence.isTyping(groupId, socket.data.user.id),
-      });
+    this.server.to(this.room(groupId)).emit("chat:typing", {
+      groupId,
+      userId: socket.data.user.id,
+      name: socket.data.user.name,
+      isTyping: this.presence.isTyping(groupId, socket.data.user.id),
+    });
     this.publishPresence(groupId);
   }
 
@@ -449,12 +505,17 @@ export class ChatGateway
 
   /** SPEC-07 anuncia una decisión después de su transacción; solo los miembros vigentes la reciben. */
   @OnEvent("content.visibility_changed")
-  async visibilityChanged(event: { contentType: string; contentId: string }): Promise<void> {
+  async visibilityChanged(event: {
+    contentType: string;
+    contentId: string;
+  }): Promise<void> {
     if (!this.server || event.contentType !== "message") return;
     const message = await this.service.messageState(event.contentId);
     if (!message) return;
     await this.pruneRoom(message.groupId);
-    this.server.to(this.room(message.groupId)).emit("chat:message_updated", message);
+    this.server
+      .to(this.room(message.groupId))
+      .emit("chat:message_updated", message);
   }
 
   /** Actualiza listas y permisos visibles después de aprobar solicitudes o transferir liderazgo. */

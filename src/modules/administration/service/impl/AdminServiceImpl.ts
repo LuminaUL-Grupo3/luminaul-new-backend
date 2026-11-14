@@ -33,12 +33,7 @@ import {
   ReportStatus,
 } from '../../enums/administration.enums';
 import { resolveContentTarget } from '../../policies/content-targets';
-import {
-  ADMIN_MESSAGES,
-  AuditAction,
-  NOTICES,
-  USER_STATUS_STRATEGIES,
-} from '../../administration.constants';
+import { ADMIN_MESSAGES, AuditAction, NOTICES, USER_STATUS_STRATEGIES } from '../../administration.constants';
 
 /**
  * Implementación de los casos de uso del panel de administración (SPEC-07).
@@ -71,11 +66,7 @@ export class AdminServiceImpl extends AdminService {
 
   // ---------- HU 7.2: resolver un reporte (y eliminar el contenido si corresponde) ----------
 
-  async resolveReport(
-    adminId: string,
-    reportId: string,
-    dto: ResolveReportDto,
-  ): Promise<ResolveReportResponseDto> {
+  async resolveReport(adminId: string, reportId: string, dto: ResolveReportDto): Promise<ResolveReportResponseDto> {
     const report = await this.repository.findReportById(reportId);
     if (!report) {
       throw new AdminException(ADMIN_MESSAGES.REPORT_NOT_FOUND, HttpStatus.NOT_FOUND);
@@ -139,6 +130,14 @@ export class AdminServiceImpl extends AdminService {
         type: NotificationType.MODERATION,
       });
     }
+    this.notificationClient.notify({
+      userId: report.reporterId,
+      title: 'Reporte revisado',
+      message: dismissed
+        ? 'Administración revisó y desestimó tu reporte.'
+        : 'Administración revisó y resolvió tu reporte.',
+      type: NotificationType.MODERATION,
+    });
 
     const message = deleteContent
       ? target.deletedMessage
@@ -157,11 +156,7 @@ export class AdminServiceImpl extends AdminService {
 
   // ---------- HU 7.3: aprobar o rechazar una apelación ----------
 
-  async resolveAppeal(
-    adminId: string,
-    appealId: string,
-    dto: ResolveAppealDto,
-  ): Promise<ResolveAppealResponseDto> {
+  async resolveAppeal(adminId: string, appealId: string, dto: ResolveAppealDto): Promise<ResolveAppealResponseDto> {
     const appeal = await this.repository.findAppealById(appealId);
     if (!appeal) {
       throw new AdminException(ADMIN_MESSAGES.APPEAL_NOT_FOUND, HttpStatus.NOT_FOUND);
@@ -207,12 +202,7 @@ export class AdminServiceImpl extends AdminService {
   // ---------- HU 7.1: suspender o reactivar una cuenta ----------
 
   async listUsers(query: UsersQueryDto): Promise<AdminUserListResponseDto> {
-    const page = await this.repository.findUsers(
-      query.search || null,
-      query.status || null,
-      query.limit,
-      query.offset,
-    );
+    const page = await this.repository.findUsers(query.search || null, query.status || null, query.limit, query.offset);
     return { total: page.total, items: page.rows.map((row) => AdminUserListItemDto.fromRow(row)) };
   }
 

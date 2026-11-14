@@ -21,4 +21,16 @@ export class NotificationsListener {
       this.logger.error(`No se pudo registrar la notificación para ${event.userId}: ${reason}`);
     }
   }
+
+  @OnEvent('notification.administrators', { async: true })
+  async administrators(event: Omit<NotificationSendEvent, 'userId'>): Promise<void> {
+    try {
+      await this.notifications.sendToAdministrators(event);
+    } catch (error: unknown) {
+      this.logger.error(
+        'No se pudo registrar el aviso para administración',
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
+  }
 }

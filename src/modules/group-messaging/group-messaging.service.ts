@@ -39,9 +39,15 @@ export class GroupMessagingService {
   }
   /** Registra la postulación y devuelve su identificador persistido. */
   async requestJoin(groupId: string, userId: string, message?: string) {
-    const id = await this.groups.requestJoin(groupId, userId, message);
+    const result = await this.groups.requestJoin(groupId, userId, message);
+    this.events.emit("notification.send", {
+      userId: result.leaderId,
+      title: "Nueva solicitud de ingreso",
+      message: `Recibiste una solicitud para unirse a «${result.groupName}». Revísala en Solicitudes.`,
+      type: "GROUP",
+    });
     return {
-      id,
+      id: result.id,
       status: "pending" as const,
       message: "Solicitud enviada con éxito.",
     };
@@ -99,6 +105,14 @@ export class GroupMessagingService {
       groupId,
       userId: targetId,
     });
+    if (status === "kicked")
+      this.events.emit("notification.send", {
+        userId: targetId,
+        title: "Retiro del grupo",
+        message:
+          "El líder te retiró de un grupo de estudio. Puedes consultar tus grupos disponibles.",
+        type: "GROUP",
+      });
     return {
       message:
         status === "left" ? "Saliste del grupo." : "Integrante expulsado.",

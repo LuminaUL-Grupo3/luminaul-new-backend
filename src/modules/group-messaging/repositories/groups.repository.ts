@@ -186,7 +186,7 @@ export class GroupsRepository {
     groupId: string,
     actorId: string,
     message?: string,
-  ): Promise<string> {
+  ): Promise<{ id: string; leaderId: string; groupName: string }> {
     return this.db.transaction(async (manager) => {
       const group = await this.lock(manager, groupId);
       const members: { status: MemberStatus }[] = await manager.query(
@@ -208,7 +208,11 @@ export class GroupsRepository {
         "INSERT INTO join_requests(group_id,user_id,message,status) VALUES($1,$2,$3,'pending') RETURNING id",
         [groupId, actorId, message || null],
       );
-      return inserted[0].id;
+      return {
+        id: inserted[0].id,
+        leaderId: group.leaderId,
+        groupName: group.name,
+      };
     });
   }
 

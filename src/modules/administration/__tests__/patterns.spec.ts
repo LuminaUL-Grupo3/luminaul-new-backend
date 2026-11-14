@@ -43,8 +43,8 @@ describe('SPEC-07: patrones del curso', () => {
   });
 
   describe('Strategy: SuspendUserStrategy (HU 7.1-E1)', () => {
-    it('guarda el estado suspended con su auditoría y no notifica', async () => {
-      const strategy = new SuspendUserStrategy(repository);
+    it('guarda la suspensión y solicita el aviso de cierre de sesión', async () => {
+      const strategy = new SuspendUserStrategy(repository, notificationClient);
       const result = await strategy.execute({ adminId: ADMIN, user: STUDENT, reason: 'Spam' });
 
       expect(changeUserStatus).toHaveBeenCalledWith(
@@ -65,11 +65,12 @@ describe('SPEC-07: patrones del curso', () => {
 
     it('409 si otro administrador cambió la cuenta en paralelo (el DAO no afectó filas)', async () => {
       changeUserStatus.mockResolvedValue(false);
-      const strategy = new SuspendUserStrategy(repository);
+      const strategy = new SuspendUserStrategy(repository, notificationClient);
 
-      const error = await strategy
-        .execute({ adminId: ADMIN, user: STUDENT, reason: 'Spam' })
-        .then(() => null, (reason: unknown) => reason);
+      const error = await strategy.execute({ adminId: ADMIN, user: STUDENT, reason: 'Spam' }).then(
+        () => null,
+        (reason: unknown) => reason,
+      );
       expect(error).toBeInstanceOf(AdminException);
       expect((error as AdminException).getStatus()).toBe(409);
       expect((error as AdminException).message).toBe(ADMIN_MESSAGES.USER_ALREADY_SUSPENDED);
@@ -97,7 +98,7 @@ describe('SPEC-07: patrones del curso', () => {
 
   describe('Strategy: registro en el módulo (OCP)', () => {
     it('el factory provider arma el mapa "estado pedido → estrategia"', () => {
-      const suspend = new SuspendUserStrategy(repository);
+      const suspend = new SuspendUserStrategy(repository, notificationClient);
       const reactivate = new ReactivateUserStrategy(repository, notificationClient);
       const strategies = buildStatusStrategies(suspend, reactivate);
 

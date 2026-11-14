@@ -6,6 +6,7 @@ import { NotificationSendEvent } from '../events/notification-send.event';
  * La implementación con TypeORM está en impl/NotificationsRepositoryImpl.ts.
  */
 export abstract class NotificationsRepository {
+  abstract administratorIds(): Promise<string[]>;
   abstract create(values: NotificationSendEvent): Promise<NotificationEntity>;
   abstract findByUser(userId: string, limit: number): Promise<NotificationEntity[]>;
   // Filtra por dueño: una notificación ajena se comporta igual que una inexistente

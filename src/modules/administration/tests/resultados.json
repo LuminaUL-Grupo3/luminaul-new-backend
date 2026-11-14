@@ -1,0 +1,16 @@
+{
+  "date": "2026-11-14T00:20:16.0377035Z",
+  "backend": {
+    "total": 295,
+    "passed": 295,
+    "failed": 0,
+    "skipped": 0
+  },
+  "delivery": {
+    "total": 11,
+    "passed": 11,
+    "failed": 0,
+    "skipped": 0
+  },
+  "scope": "HTTP y Socket.IO reales con PostgreSQL local aislado. No certifica OpenAI ni cobertura porcentual."
+}
