@@ -43,8 +43,8 @@ describe('SPEC-07: patrones del curso', () => {
   });
 
   describe('Strategy: SuspendUserStrategy (HU 7.1-E1)', () => {
-    it('guarda la suspensión y solicita el aviso de cierre de sesión', async () => {
-      const strategy = new SuspendUserStrategy(repository, notificationClient);
+    it('guarda el estado suspended con su auditoría y no notifica', async () => {
+      const strategy = new SuspendUserStrategy(repository);
       const result = await strategy.execute({ adminId: ADMIN, user: STUDENT, reason: 'Spam' });
 
       expect(changeUserStatus).toHaveBeenCalledWith(
@@ -65,7 +65,7 @@ describe('SPEC-07: patrones del curso', () => {
 
     it('409 si otro administrador cambió la cuenta en paralelo (el repositorio no afectó filas)', async () => {
       changeUserStatus.mockResolvedValue(false);
-      const strategy = new SuspendUserStrategy(repository, notificationClient);
+      const strategy = new SuspendUserStrategy(repository);
 
       const error = await strategy.execute({ adminId: ADMIN, user: STUDENT, reason: 'Spam' }).then(
         () => null,
@@ -98,7 +98,7 @@ describe('SPEC-07: patrones del curso', () => {
 
   describe('Strategy: registro en el módulo (OCP)', () => {
     it('el factory provider arma el mapa "estado pedido → estrategia"', () => {
-      const suspend = new SuspendUserStrategy(repository, notificationClient);
+      const suspend = new SuspendUserStrategy(repository);
       const reactivate = new ReactivateUserStrategy(repository, notificationClient);
       const strategies = buildStatusStrategies(suspend, reactivate);
 
