@@ -21,7 +21,7 @@ export class WsSendMessageDto extends WsJoinRoomDto {
   )
   @IsString()
   @IsNotEmpty({ message: "Escribe un mensaje antes de enviarlo." })
-  @MaxLength(4000)
+  @MaxLength(500, { message: "El mensaje no puede superar los 500 caracteres." })
   content!: string;
   @IsOptional() @IsUUID("4") clientMessageId?: string;
   @IsOptional() @IsUUID("4") replyToId?: string;
