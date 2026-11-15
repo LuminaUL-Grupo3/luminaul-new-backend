@@ -11,7 +11,11 @@ export const envValidationSchema = z
     // Secreto HS256 con el que se firman los JWT; obligatorio en producción (mínimo 32 caracteres)
     JWT_SECRET: z.string().min(16, 'JWT_SECRET debe tener al menos 16 caracteres').optional(),
     JWT_EXPIRES_IN: z.string().optional(),
+    DATABASE_SSL: z.enum(['true', 'false']).optional(),
     DATABASE_SSL_REJECT_UNAUTHORIZED: z.enum(['true', 'false']).optional(),
+    WEB_ORIGIN: z.string().optional(),
+    FRONTEND_URL: z.string().optional(),
+    DOMAIN: z.string().optional(),
     // Correo de SPEC-01. Deben declararse aquí: validateEnv descarta las variables desconocidas
     // y ConfigModule solo expone las que devuelve. Las reglas finas viven en
     // modules/auth-security/config/mail.config.ts.

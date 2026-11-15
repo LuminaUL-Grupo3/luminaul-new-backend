@@ -18,6 +18,7 @@ import { OnEvent } from "@nestjs/event-emitter";
 import { plainToInstance, ClassConstructor } from "class-transformer";
 import { validate } from "class-validator";
 import { Server, Socket } from "socket.io";
+import { isOriginAllowed } from "../../../config/cors.config";
 import { extractToken } from "../../auth-security/token/TokenExtractor";
 import { GroupSession } from "../security/group-session";
 import { GroupMessagingService } from "../group-messaging.service";
@@ -79,27 +80,15 @@ type ChatServer = Server<
   SocketState
 >;
 
-/** Comprueba el origen también en WebSocket, donde CORS de HTTP no protege el handshake. */
-function originAllowed(origin?: string): boolean {
-  const origins = (
-    process.env.WEB_ORIGIN ||
-    process.env.FRONTEND_URL ||
-    "http://localhost:5173,http://127.0.0.1:5173"
-  )
-    .split(",")
-    .map((value) => value.trim());
-  return !origin || origins.includes(origin);
-}
-
 /** Transporte Socket.IO: autentica, valida DTOs y delega la persistencia al servicio. */
 @WebSocketGateway({
   maxHttpBufferSize: 32 * 1024,
   cors: {
-    origin: (origin, callback) => callback(null, originAllowed(origin)),
+    origin: (origin, callback) => callback(null, isOriginAllowed(origin)),
     credentials: true,
   },
   allowRequest: (request, callback) =>
-    callback(null, originAllowed(request.headers.origin)),
+    callback(null, isOriginAllowed(request.headers.origin)),
 })
 export class ChatGateway
   implements

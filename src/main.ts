@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { createHttpCorsOptions } from './config/cors.config';
 import { API_PREFIX, configureHttpApp } from './config/http-app.config';
 
 async function bootstrap(): Promise<void> {
@@ -21,12 +22,7 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-  // Configuración de CORS idéntica a FastAPI (preservada según requerimiento)
-  app.enableCors({
-    origin: '*',
-    methods: '*',
-    allowedHeaders: '*',
-  });
+  app.enableCors(createHttpCorsOptions());
 
   // Prefijo /api, filtro de excepciones y validación estricta global (compartido con las pruebas e2e)
   configureHttpApp(app);
