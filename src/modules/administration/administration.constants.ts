@@ -51,10 +51,6 @@ export const ADMIN_MESSAGES = {
 
 // Textos que recibe el alumno afectado por una decisión del administrador
 export const NOTICES = {
-  ACCOUNT_SUSPENDED: (reason: string) => ({
-    title: 'Cuenta suspendida',
-    message: `Tu cuenta fue suspendida. Motivo: ${reason}`,
-  }),
   ACCOUNT_REACTIVATED: {
     title: 'Cuenta reactivada',
     message: 'Un administrador reactivó tu cuenta. Ya puedes volver a usar LuminaUL.',

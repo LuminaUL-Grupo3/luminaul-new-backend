@@ -276,13 +276,11 @@ describe.skipIf(!databaseUrl)('Notificaciones privadas en tiempo real', () => {
       'published',
     );
   });
-  it('explica la suspensión antes de cerrar la conexión y mantiene revocado el token', async () => {
+  it('suspende sin enviar aviso al alumno y deja revocado su token', async () => {
     // El contrato heredado compara iat en segundos; se separa la suspensión del segundo de emisión.
     const issuedAt = JSON.parse(Buffer.from(tokens[2].split('.')[1], 'base64url').toString()).iat as number;
     if (Date.now() < (issuedAt + 1) * 1000)
       await new Promise((resolve) => setTimeout(resolve, (issuedAt + 1) * 1000 - Date.now() + 20));
-    const notice = event<{ message: string }>(outsider, 'account:suspended'),
-      disconnected = event<string>(outsider, 'disconnect');
     expect(
       (
         await api(`/admin/users/${users[2]}/status`, 3, 'PATCH', {
@@ -291,14 +289,12 @@ describe.skipIf(!databaseUrl)('Notificaciones privadas en tiempo real', () => {
         })
       ).status,
     ).toBe(200);
-    expect((await notice).message).toContain('Suspensión de prueba');
-    await disconnected;
     expect((await api('/auth/me', 2)).status).toBe(401);
     expect(received[2]).toHaveLength(0);
     const rows = await db.query("SELECT id FROM notifications WHERE user_id=$1 AND title='Cuenta suspendida'", [
       users[2],
     ]);
-    expect(rows).toHaveLength(1);
+    expect(rows).toHaveLength(0);
   });
   it('reactiva sin revivir el token antiguo y permite consultar la notificación con una sesión nueva', async () => {
     expect(
