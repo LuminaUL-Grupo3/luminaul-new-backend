@@ -122,7 +122,12 @@ export class GroupMessagingService {
     targetId: string,
     status: 'left' | 'kicked',
   ) {
-    await this.groups.removeMember(groupId, userId, targetId, status);
+    const result = await this.groups.removeMember(
+      groupId,
+      userId,
+      targetId,
+      status,
+    );
     await this.events.emitMemberRemoved({
       groupId,
       userId: targetId,
@@ -133,6 +138,16 @@ export class GroupMessagingService {
         ...GROUP_NOTICES.MEMBER_KICKED,
         type: 'GROUP',
       });
+    }
+    if (result?.groupDeleted) {
+      return {
+        message:
+          result.deletedPostsCount > 1
+            ? 'Saliste del grupo. Al ser el último integrante, el grupo y sus publicaciones vinculadas fueron eliminados.'
+            : result.deletedPostsCount === 1
+              ? 'Saliste del grupo. Al ser el último integrante, el grupo y su publicación vinculada fueron eliminados.'
+              : 'Saliste del grupo. Al ser el último integrante, el grupo fue eliminado.',
+      };
     }
     return {
       message:

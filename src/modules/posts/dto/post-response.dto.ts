@@ -53,6 +53,12 @@ export class PostResponseDto {
   @ApiPropertyOptional({ example: '7b134111-9a22-48df-9fa0-cd8213aa0981' })
   groupId!: string | null;
 
+  @ApiPropertyOptional({ example: 5 })
+  groupCurrentMembers?: number | null;
+
+  @ApiPropertyOptional({ example: 5 })
+  groupMaxCapacity?: number | null;
+
   @ApiProperty({ example: 'published' })
   status!: string;
 

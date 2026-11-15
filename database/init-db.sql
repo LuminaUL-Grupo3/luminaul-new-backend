@@ -84,13 +84,13 @@ CREATE TABLE profiles (
 
 CREATE TABLE profile_skills (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  skill_name VARCHAR(50) NOT NULL,
+  skill_name VARCHAR(100) NOT NULL,
   PRIMARY KEY (user_id, skill_name)
 );
 
 CREATE TABLE profile_interests (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  interest_name VARCHAR(50) NOT NULL,
+  interest_name VARCHAR(100) NOT NULL,
   PRIMARY KEY (user_id, interest_name)
 );
 
@@ -133,6 +133,7 @@ CREATE TABLE groups (
   meeting_mode VARCHAR(20) DEFAULT 'virtual',
   meeting_shift VARCHAR(20) DEFAULT 'manana',
   max_capacity INTEGER DEFAULT 6,
+  group_type VARCHAR(20) NOT NULL DEFAULT 'study_group',
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   deleted_at TIMESTAMPTZ
 );
@@ -195,6 +196,22 @@ CREATE TABLE join_requests (
 CREATE UNIQUE INDEX ux_join_requests_pending ON join_requests (group_id, user_id) WHERE status = 'pending';
 CREATE INDEX idx_join_requests_group_status ON join_requests (group_id, status);
 CREATE INDEX ix_join_requests_user ON join_requests (user_id, status);
+
+CREATE TABLE tutoring_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  publication_id UUID NOT NULL REFERENCES publications(id) ON DELETE CASCADE,
+  tutor_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  requester_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  message VARCHAR(255) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  group_id UUID REFERENCES groups(id) ON DELETE SET NULL,
+  responded_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE UNIQUE INDEX ux_tutoring_requests_pending ON tutoring_requests (publication_id, requester_id) WHERE status = 'pending';
+CREATE INDEX ix_tutoring_requests_tutor_status ON tutoring_requests (tutor_id, status);
+CREATE INDEX ix_tutoring_requests_requester ON tutoring_requests (requester_id, status);
 
 CREATE TABLE group_messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

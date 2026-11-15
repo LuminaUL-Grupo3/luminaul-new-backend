@@ -47,6 +47,7 @@ export class GroupsRepository {
     return `SELECT g.id,g.name,g.description,g.benefits,g.requirements,g.course_code AS "courseCode",
       g.leader_id AS "leaderId", COALESCE(g.meeting_mode,'virtual') AS "meetingMode",
       COALESCE(g.meeting_shift,'manana') AS "meetingShift",COALESCE(g.max_capacity,6) AS "maxCapacity",
+      COALESCE(g.group_type,'study_group') AS "groupType",
       (SELECT COUNT(*)::int FROM group_members cm WHERE cm.group_id=g.id AND cm.status='active') AS "currentMembers",
       json_build_object('id',u.id,'name',COALESCE(p.name,u.name),'profilePhotoUrl',p.profile_photo_url) AS leader,
       CASE WHEN mine.status='active' THEN CASE WHEN mine.user_id=g.leader_id THEN 'leader' ELSE 'member' END ELSE NULL END AS "myRole",
@@ -71,6 +72,7 @@ export class GroupsRepository {
     const parameters: unknown[] = [userId || null];
     let where = " WHERE g.deleted_at IS NULL";
     if (mine) where += " AND mine.status='active'";
+    else where += " AND COALESCE(g.group_type,'study_group')='study_group'";
     if (filter.courseCode) {
       parameters.push(filter.courseCode);
       where += ` AND g.course_code=$${parameters.length}`;
@@ -250,14 +252,15 @@ export class GroupsRepository {
       meetingMode?: string;
       meetingShift?: string;
       maxCapacity?: number;
+      groupType?: "study_group" | "tutoring";
     },
     leaderId: string,
     externalManager?: EntityManager,
   ): Promise<GroupEntity> {
     const execute = async (manager: EntityManager) => {
       const inserted: { id: string }[] = await manager.query(
-        `INSERT INTO groups(name, description, benefits, requirements, course_code, leader_id, meeting_mode, meeting_shift, max_capacity)
-         VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `INSERT INTO groups(name, description, benefits, requirements, course_code, leader_id, meeting_mode, meeting_shift, max_capacity, group_type)
+         VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          RETURNING id`,
         [
           input.name,
@@ -269,6 +272,7 @@ export class GroupsRepository {
           input.meetingMode || "virtual",
           input.meetingShift || "manana",
           input.maxCapacity ?? 6,
+          input.groupType ?? "study_group",
         ],
       );
       const groupId = inserted[0].id;
@@ -287,6 +291,33 @@ export class GroupsRepository {
       return execute(externalManager);
     }
     return this.db.transaction(execute);
+  }
+
+  async createTutoringRoom(
+    tutorId: string,
+    requesterId: string,
+    name: string,
+    description?: string | null,
+  ): Promise<string> {
+    return this.db.transaction(async (manager) => {
+      const group = await this.createWithLeader(
+        {
+          name: name.slice(0, 100),
+          description: description ?? null,
+          maxCapacity: 2,
+          groupType: "tutoring",
+        },
+        tutorId,
+        manager,
+      );
+      await manager.query(
+        `INSERT INTO group_members(group_id, user_id, role, status)
+         VALUES($1, $2, 'member', 'active')
+         ON CONFLICT (group_id, user_id) DO UPDATE SET status='active', left_at=NULL`,
+        [group.id, requesterId],
+      );
+      return group.id;
+    });
   }
 
   /** Proyecta solicitantes solo para el líder; los correos nunca aparecen en el directorio. */
@@ -371,20 +402,45 @@ export class GroupsRepository {
     });
   }
 
-  /** Cambia el estado de pertenencia; nunca borra la fila histórica de un estudiante. */
+  /** Cambia el estado de pertenencia; si el líder es el último integrante y sale, elimina el grupo y sus posts vinculados. */
   async removeMember(
     groupId: string,
     actorId: string,
     targetId: string,
     status: "left" | "kicked",
-  ): Promise<void> {
-    await this.db.transaction(async (manager) => {
+  ): Promise<{ groupDeleted: boolean; deletedPostsCount: number }> {
+    return this.db.transaction(async (manager) => {
       const group = await this.lock(manager, groupId);
       await this.requireMember(groupId, actorId, manager);
-      if (targetId === group.leaderId)
+      if (targetId === group.leaderId) {
+        const activeRows: { total: string | number }[] = await manager.query(
+          "SELECT COUNT(*)::int AS total FROM group_members WHERE group_id = $1 AND status = 'active'",
+          [groupId],
+        );
+        const activeCount = Number(activeRows[0]?.total ?? 0);
+        if (status === "left" && actorId === targetId && activeCount === 1) {
+          await manager.query(
+            "UPDATE group_members SET status=$3,left_at=NOW() WHERE group_id=$1 AND user_id=$2",
+            [groupId, targetId, status],
+          );
+          await manager.query(
+            "UPDATE groups SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL",
+            [groupId],
+          );
+          await manager.query(
+            "UPDATE join_requests SET status = 'rejected' WHERE group_id = $1 AND status = 'pending'",
+            [groupId],
+          );
+          const deletedPosts: { id: string }[] = await manager.query(
+            "UPDATE publications SET deleted_at = NOW(), status = 'inactive', updated_at = NOW() WHERE group_id = $1 AND deleted_at IS NULL RETURNING id",
+            [groupId],
+          );
+          return { groupDeleted: true, deletedPostsCount: deletedPosts.length };
+        }
         throw new ConflictException(
           "El líder debe transferir el liderazgo antes de salir.",
         );
+      }
       if (status === "kicked" && group.leaderId !== actorId)
         throw new ForbiddenException(
           "Solo el líder puede expulsar integrantes.",
@@ -398,6 +454,7 @@ export class GroupsRepository {
         "UPDATE group_members SET status=$3,left_at=NOW() WHERE group_id=$1 AND user_id=$2",
         [groupId, targetId, status],
       );
+      return { groupDeleted: false, deletedPostsCount: 0 };
     });
   }
 

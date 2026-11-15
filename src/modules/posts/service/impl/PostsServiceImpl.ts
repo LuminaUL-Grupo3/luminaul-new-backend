@@ -21,7 +21,11 @@ import { PostFeedResponseDto } from '../../dto/post-feed-response.dto';
 import { MyPostHistoryResponseDto } from '../../dto/my-post-history-response.dto';
 import { DeletePostResponseDto } from '../../dto/delete-post-response.dto';
 import { PostEntity } from '../../entities/post.entity';
-import { POST_MESSAGES } from '../../posts.constants';
+import { POST_MESSAGES, POST_STATUS, POST_TYPES } from '../../posts.constants';
+import {
+  MyTutoringRequestDto,
+  TutoringRequestIncomingDto,
+} from '../../dto/tutoring-request.dto';
 
 const POSTS_FEED_CACHE_PREFIX = 'posts:feed:';
 const POSTS_FEED_CACHE_TTL_MS = 20_000;
@@ -152,6 +156,8 @@ export class PostsServiceImpl extends PostsService {
       requirements: post.requirements ?? null,
       maxCapacity: post.maxCapacity ?? 5,
       groupId: post.groupId,
+      groupCurrentMembers: post.groupCurrentMembers ?? null,
+      groupMaxCapacity: post.groupMaxCapacity ?? null,
       status: post.status,
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,
@@ -180,6 +186,8 @@ export class PostsServiceImpl extends PostsService {
       requirements: post.requirements ?? null,
       maxCapacity: post.maxCapacity ?? 5,
       groupId: post.groupId,
+      groupCurrentMembers: post.groupCurrentMembers ?? null,
+      groupMaxCapacity: post.groupMaxCapacity ?? null,
       status: post.status,
       createdAt: post.createdAt,
       author: {
@@ -207,6 +215,8 @@ export class PostsServiceImpl extends PostsService {
       requirements: post.requirements ?? null,
       maxCapacity: post.maxCapacity ?? 5,
       groupId: post.groupId,
+      groupCurrentMembers: post.groupCurrentMembers ?? null,
+      groupMaxCapacity: post.groupMaxCapacity ?? null,
       status: post.status,
       createdAt: post.createdAt,
       author: {
@@ -407,6 +417,125 @@ export class PostsServiceImpl extends PostsService {
       message: POST_MESSAGES.DELETED_SUCCESS,
       deletedId: postId,
       deletedAt: new Date(),
+    };
+  }
+
+  async createTutoringRequest(
+    postId: string,
+    requesterId: string,
+    message: string,
+  ): Promise<{ id: string; status: string; message: string }> {
+    const post = await this.postsRepository.getPostById(postId);
+    if (!post || post.status !== POST_STATUS.PUBLISHED) {
+      throw new PostException(POST_MESSAGES.POST_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+    if (post.type !== POST_TYPES.TUTORING) {
+      throw new PostException(
+        'Solo se pueden enviar solicitudes de asesoría a publicaciones de asesoría',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    if (post.userId === requesterId) {
+      throw new PostException(
+        'No puedes solicitar tu propia asesoría',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const existing =
+      await this.postsRepository.findTutoringRequestByPublicationAndRequester(
+        postId,
+        requesterId,
+      );
+    if (existing) {
+      throw new PostException(
+        existing.status === 'accepted'
+          ? 'Tu solicitud de asesoría ya fue aceptada'
+          : 'Ya tienes una solicitud pendiente para esta asesoría',
+        HttpStatus.CONFLICT,
+      );
+    }
+
+    const created = await this.postsRepository.createTutoringRequest(
+      postId,
+      post.userId,
+      requesterId,
+      message,
+    );
+    return {
+      id: created.id,
+      status: created.status,
+      message: 'Solicitud de asesoría enviada al tutor',
+    };
+  }
+
+  async listIncomingTutoringRequests(
+    tutorId: string,
+  ): Promise<TutoringRequestIncomingDto[]> {
+    return this.postsRepository.listIncomingTutoringRequests(tutorId);
+  }
+
+  async listMyTutoringRequests(
+    requesterId: string,
+  ): Promise<MyTutoringRequestDto[]> {
+    return this.postsRepository.listMyTutoringRequests(requesterId);
+  }
+
+  async decideTutoringRequest(
+    requestId: string,
+    tutorId: string,
+    status: 'accepted' | 'rejected',
+  ): Promise<{ id: string; status: string; groupId: string | null }> {
+    const existing = await this.postsRepository.findTutoringRequestById(requestId);
+    if (!existing) {
+      throw new PostException('Solicitud de asesoría no encontrada', HttpStatus.NOT_FOUND);
+    }
+    if (existing.tutorId !== tutorId) {
+      throw new PostException(
+        'No tienes permiso para responder esta solicitud de asesoría',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+    if (existing.status !== 'pending') {
+      throw new PostException(
+        'Esta solicitud de asesoría ya fue respondida',
+        HttpStatus.CONFLICT,
+      );
+    }
+
+    let createdGroupId: string | null = existing.groupId ?? null;
+    if (status === 'accepted' && !createdGroupId) {
+      const post = await this.postsRepository.getPostById(existing.publicationId);
+      const courseLabel = post?.course?.name || 'Asesoría Académica';
+      const requesterName =
+        (await this.postsRepository.findProfileNameByUserId?.(
+          existing.requesterId,
+        )) ?? null;
+      const rawRoomName = requesterName
+        ? `Asesoría · ${courseLabel} (${requesterName})`
+        : `Asesoría · ${courseLabel}`;
+      const roomName =
+        rawRoomName.length > 100
+          ? `${rawRoomName.slice(0, 97).trim()}...`
+          : rawRoomName;
+      createdGroupId =
+        (await this.groupMessagingClient?.createTutoringRoom(
+          existing.tutorId,
+          existing.requesterId,
+          roomName,
+          post?.description ?? null,
+        )) ?? null;
+    }
+
+    const updated = await this.postsRepository.decideTutoringRequest(
+      requestId,
+      status,
+      createdGroupId,
+    );
+    return {
+      id: updated?.id ?? requestId,
+      status: updated?.status ?? status,
+      groupId: updated?.groupId ?? createdGroupId,
     };
   }
 }

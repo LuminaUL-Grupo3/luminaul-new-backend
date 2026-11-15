@@ -10,6 +10,24 @@ import { POST_MESSAGES, POST_TYPES } from '../../posts.constants';
  * Creador Concreto para publicaciones de grupo de estudio ('study_group').
  * Orquesta la vinculación o creación automática del grupo colaborativo.
  */
+/** Genera un código corto legible de hasta 20 caracteres a partir del nombre del curso. */
+function toCourseCode(courseName: string): string {
+  const clean = courseName.trim().replace(/\s+/g, ' ');
+  if (clean.length <= 20) return clean.toUpperCase();
+  const abbreviated = clean
+    .replace(/\bIngenier[íi]a\b/gi, 'Ing.')
+    .replace(/\bProgramaci[óo]n\b/gi, 'Prog.')
+    .replace(/\bAdministraci[óo]n\b/gi, 'Adm.')
+    .replace(/\bArquitectura\b/gi, 'Arq.')
+    .replace(/\bEstad[íi]stica\b/gi, 'Est.')
+    .replace(/\bMatem[áa]tica\b/gi, 'Mat.')
+    .replace(/\bSistemas\b/gi, 'Sist.')
+    .replace(/\bDesarrollo\b/gi, 'Des.')
+    .replace(/\bGesti[óo]n\b/gi, 'Gest.')
+    .replace(/\bInvestigaci[óo]n\b/gi, 'Inv.');
+  return abbreviated.slice(0, 20).trim().toUpperCase();
+}
+
 @Injectable()
 export class StudyGroupPostCreator extends PostCreator {
   readonly type = POST_TYPES.STUDY_GROUP;
@@ -37,9 +55,11 @@ export class StudyGroupPostCreator extends PostCreator {
       finalGroupId = await this.groupMessagingClient.createAutoGroup(
         {
           name: `Grupo de ${course.name}`,
-          description: `Grupo de estudio creado automáticamente para coordinar ${course.name}.`,
-          benefits: dto.benefits ?? null,
-          requirements: dto.requirements ?? null,
+          description: `Grupo de estudio creado para coordinar ${course.name}.`,
+          courseCode: toCourseCode(course.name),
+          meetingMode: dto.meetingMode,
+          meetingShift: dto.meetingShift,
+          maxCapacity: dto.maxCapacity,
         },
         userId,
       );

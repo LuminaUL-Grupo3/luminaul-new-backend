@@ -21,9 +21,27 @@ export class GroupMessagingClientImpl extends GroupMessagingClient {
         description: input.description ?? null,
         benefits: input.benefits ?? null,
         requirements: input.requirements ?? null,
+        courseCode: input.courseCode,
+        meetingMode: input.meetingMode,
+        meetingShift: input.meetingShift,
+        maxCapacity: input.maxCapacity,
       },
       userId,
     );
     return group.id;
+  }
+
+  async createTutoringRoom(
+    tutorId: string,
+    requesterId: string,
+    name: string,
+    description?: string | null,
+  ): Promise<string> {
+    return this.groupsRepository.createTutoringRoom(
+      tutorId,
+      requesterId,
+      name,
+      description,
+    );
   }
 }

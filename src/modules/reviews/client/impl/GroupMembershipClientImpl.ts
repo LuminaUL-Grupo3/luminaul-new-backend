@@ -13,7 +13,7 @@ export class GroupMembershipClientImpl extends GroupMembershipClient {
   }
 
   async haveSharedGroup(userId: string, otherUserId: string): Promise<boolean> {
-    const row: { total: string } | undefined = await this.dataSource
+    const groupRow: { total: string } | undefined = await this.dataSource
       .createQueryBuilder()
       .select('COUNT(*)', 'total')
       .from('group_members', 'mine')
@@ -23,6 +23,20 @@ export class GroupMembershipClientImpl extends GroupMembershipClient {
       .andWhere('mine.joined_at <= COALESCE(theirs.left_at, NOW())')
       .andWhere('theirs.joined_at <= COALESCE(mine.left_at, NOW())')
       .getRawOne();
-    return Number(row?.total ?? 0) > 0;
+    if (Number(groupRow?.total ?? 0) > 0) {
+      return true;
+    }
+
+    const tutoringRow: { total: string } | undefined = await this.dataSource
+      .createQueryBuilder()
+      .select('COUNT(*)', 'total')
+      .from('tutoring_requests', 'tr')
+      .where('tr.status = :status', { status: 'accepted' })
+      .andWhere(
+        '((tr.tutor_id = :userId AND tr.requester_id = :otherUserId) OR (tr.tutor_id = :otherUserId AND tr.requester_id = :userId))',
+        { userId, otherUserId },
+      )
+      .getRawOne();
+    return Number(tutoringRow?.total ?? 0) > 0;
   }
 }

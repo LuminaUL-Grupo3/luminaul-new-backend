@@ -67,7 +67,7 @@ export class PostCreateDto {
     typeof value === 'string' ? value.trim() : value,
   )
   @Validate(IsNotBlankConstraint)
-  @MaxLength(1000, { message: 'description must not exceed 1000 characters' })
+  @MaxLength(500, { message: 'description must not exceed 500 characters' })
   description!: string;
 
   @ApiPropertyOptional({
@@ -76,7 +76,7 @@ export class PostCreateDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(500, { message: 'benefits must not exceed 500 characters' })
+  @MaxLength(100, { message: 'benefits must not exceed 100 characters' })
   benefits?: string;
 
   @ApiPropertyOptional({
@@ -85,7 +85,7 @@ export class PostCreateDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(500, { message: 'requirements must not exceed 500 characters' })
+  @MaxLength(100, { message: 'requirements must not exceed 100 characters' })
   requirements?: string;
 
   @ApiPropertyOptional({
@@ -106,4 +106,22 @@ export class PostCreateDto {
   @Min(1)
   @Max(50)
   maxCapacity?: number;
+
+  @ApiPropertyOptional({
+    description: 'Modalidad del grupo auto-creado',
+    enum: ['presencial', 'virtual', 'hibrido'],
+    default: 'virtual',
+  })
+  @IsOptional()
+  @IsIn(['presencial', 'virtual', 'hibrido'])
+  meetingMode?: 'presencial' | 'virtual' | 'hibrido';
+
+  @ApiPropertyOptional({
+    description: 'Turno preferido del grupo auto-creado',
+    enum: ['manana', 'tarde', 'noche'],
+    default: 'tarde',
+  })
+  @IsOptional()
+  @IsIn(['manana', 'tarde', 'noche'])
+  meetingShift?: 'manana' | 'tarde' | 'noche';
 }

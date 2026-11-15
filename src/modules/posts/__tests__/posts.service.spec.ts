@@ -96,7 +96,7 @@ describe('PostsModule Patterns (Unit Tests)', () => {
       expect(mockGroupMessagingClient.createAutoGroup).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'Grupo de Ingeniería de Software I',
-          benefits: 'Resúmenes',
+          courseCode: 'ING. DE SOFTWARE I',
         }),
         userId,
       );

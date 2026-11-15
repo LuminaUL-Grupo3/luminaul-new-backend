@@ -1,6 +1,11 @@
 import { CrudRepository } from './CrudRepository';
 import { PostEntity } from '../entities/post.entity';
+import { TutoringRequestEntity } from '../entities/tutoring-request.entity';
 import { PostUpdateDto } from '../dto/post-update.dto';
+import {
+  MyTutoringRequestDto,
+  TutoringRequestIncomingDto,
+} from '../dto/tutoring-request.dto';
 
 export interface PaginatedResult<T> {
   items: T[];
@@ -49,5 +54,38 @@ export abstract class PostsRepository extends CrudRepository<string, PostEntity>
 
   // Eliminación lógica (soft delete)
   abstract delete(postId: string): Promise<boolean>;
+
+  // Solicitudes de asesoría 1 a 1
+  abstract createTutoringRequest(
+    publicationId: string,
+    tutorId: string,
+    requesterId: string,
+    message: string,
+  ): Promise<TutoringRequestEntity>;
+
+  abstract findTutoringRequestById(
+    requestId: string,
+  ): Promise<TutoringRequestEntity | null>;
+
+  abstract findTutoringRequestByPublicationAndRequester(
+    publicationId: string,
+    requesterId: string,
+  ): Promise<TutoringRequestEntity | null>;
+
+  abstract listIncomingTutoringRequests(
+    tutorId: string,
+  ): Promise<TutoringRequestIncomingDto[]>;
+
+  abstract listMyTutoringRequests(
+    requesterId: string,
+  ): Promise<MyTutoringRequestDto[]>;
+
+  abstract decideTutoringRequest(
+    requestId: string,
+    status: 'accepted' | 'rejected',
+    groupId?: string | null,
+  ): Promise<TutoringRequestEntity | null>;
+
+  findProfileNameByUserId?(userId: string): Promise<string | null>;
 }
 

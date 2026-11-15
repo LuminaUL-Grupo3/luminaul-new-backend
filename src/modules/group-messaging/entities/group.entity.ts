@@ -21,6 +21,8 @@ export class GroupEntity {
   meetingShift!: string;
   @Column({ name: "max_capacity", type: "int", default: 6 })
   maxCapacity!: number;
+  @Column({ name: "group_type", type: "varchar", length: 20, default: "study_group" })
+  groupType!: string;
   @CreateDateColumn({ name: "created_at", type: "timestamptz" })
   createdAt!: Date;
   @Column({ name: "deleted_at", type: "timestamptz", nullable: true })
