@@ -431,13 +431,13 @@ export class PostsServiceImpl extends PostsService {
     }
     if (post.type !== POST_TYPES.TUTORING) {
       throw new PostException(
-        'Solo se pueden enviar solicitudes de asesoría a publicaciones de asesoría',
+        POST_MESSAGES.TUTORING_ONLY_REQUESTS,
         HttpStatus.BAD_REQUEST,
       );
     }
     if (post.userId === requesterId) {
       throw new PostException(
-        'No puedes solicitar tu propia asesoría',
+        POST_MESSAGES.TUTORING_SELF_REQUEST,
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -450,8 +450,8 @@ export class PostsServiceImpl extends PostsService {
     if (existing) {
       throw new PostException(
         existing.status === 'accepted'
-          ? 'Tu solicitud de asesoría ya fue aceptada'
-          : 'Ya tienes una solicitud pendiente para esta asesoría',
+          ? POST_MESSAGES.TUTORING_ALREADY_ACCEPTED
+          : POST_MESSAGES.TUTORING_ALREADY_PENDING,
         HttpStatus.CONFLICT,
       );
     }
@@ -465,7 +465,7 @@ export class PostsServiceImpl extends PostsService {
     return {
       id: created.id,
       status: created.status,
-      message: 'Solicitud de asesoría enviada al tutor',
+      message: POST_MESSAGES.TUTORING_REQUEST_SENT,
     };
   }
 
@@ -488,17 +488,20 @@ export class PostsServiceImpl extends PostsService {
   ): Promise<{ id: string; status: string; groupId: string | null }> {
     const existing = await this.postsRepository.findTutoringRequestById(requestId);
     if (!existing) {
-      throw new PostException('Solicitud de asesoría no encontrada', HttpStatus.NOT_FOUND);
+      throw new PostException(
+        POST_MESSAGES.TUTORING_REQUEST_NOT_FOUND,
+        HttpStatus.NOT_FOUND,
+      );
     }
     if (existing.tutorId !== tutorId) {
       throw new PostException(
-        'No tienes permiso para responder esta solicitud de asesoría',
+        POST_MESSAGES.TUTORING_REQUEST_FORBIDDEN,
         HttpStatus.FORBIDDEN,
       );
     }
     if (existing.status !== 'pending') {
       throw new PostException(
-        'Esta solicitud de asesoría ya fue respondida',
+        POST_MESSAGES.TUTORING_REQUEST_ALREADY_DECIDED,
         HttpStatus.CONFLICT,
       );
     }
