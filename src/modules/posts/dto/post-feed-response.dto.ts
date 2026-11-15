@@ -29,6 +29,12 @@ export class PostFeedResponseDto {
   @ApiPropertyOptional()
   groupId!: string | null;
 
+  @ApiPropertyOptional()
+  groupCurrentMembers?: number | null;
+
+  @ApiPropertyOptional()
+  groupMaxCapacity?: number | null;
+
   @ApiProperty()
   status!: string;
 

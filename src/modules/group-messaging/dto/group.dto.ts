@@ -19,12 +19,12 @@ export class CreateGroupDto {
     typeof value === "string" ? value.trim() : value,
   )
   @IsString()
-  @Length(2, 100)
+  @Length(2, 50)
   name!: string;
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ maxLength: 500 })
   @IsOptional()
   @IsString()
-  @MaxLength(2000)
+  @MaxLength(500)
   description?: string;
   @ApiProperty() @IsString() @Length(1, 20) courseCode!: string;
   @ApiPropertyOptional({ enum: ["presencial", "virtual", "hibrido"] })
@@ -35,11 +35,11 @@ export class CreateGroupDto {
   @IsOptional()
   @IsIn(["manana", "tarde", "noche"])
   meetingShift: "manana" | "tarde" | "noche" = "manana";
-  @ApiPropertyOptional({ minimum: 1, maximum: 50 })
+  @ApiPropertyOptional({ minimum: 1, maximum: 8 })
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(50)
+  @Max(8)
   maxCapacity = 6;
 }
 /** Acota el directorio para que una petición no descargue todos los grupos. */
