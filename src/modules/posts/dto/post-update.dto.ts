@@ -29,19 +29,19 @@ export class PostUpdateDto {
     typeof value === 'string' ? value.trim() : value,
   )
   @Validate(IsNotBlankConstraint)
-  @MaxLength(1000, { message: 'description must not exceed 1000 characters' })
+  @MaxLength(500, { message: 'description must not exceed 500 characters' })
   description?: string;
 
   @ApiPropertyOptional({ description: 'Beneficios del grupo o tutoría' })
   @IsOptional()
   @IsString()
-  @MaxLength(500, { message: 'benefits must not exceed 500 characters' })
+  @MaxLength(100, { message: 'benefits must not exceed 100 characters' })
   benefits?: string;
 
   @ApiPropertyOptional({ description: 'Requisitos para unirse' })
   @IsOptional()
   @IsString()
-  @MaxLength(500, { message: 'requirements must not exceed 500 characters' })
+  @MaxLength(100, { message: 'requirements must not exceed 100 characters' })
   requirements?: string;
 
   @ApiPropertyOptional({ description: 'Capacidad máxima de miembros (1 a 50)' })

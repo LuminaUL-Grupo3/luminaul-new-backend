@@ -33,6 +33,9 @@ export class PostEntity {
   @Column('uuid', { name: 'group_id', nullable: true })
   groupId!: string | null;
 
+  groupCurrentMembers?: number | null;
+  groupMaxCapacity?: number | null;
+
   @Index('ix_publications_course')
   @Column('uuid', { name: 'course_id', nullable: false })
   courseId!: string;

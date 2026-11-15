@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -27,6 +28,12 @@ import { PostResponseDto } from '../dto/post-response.dto';
 import { PostFeedResponseDto } from '../dto/post-feed-response.dto';
 import { MyPostHistoryResponseDto } from '../dto/my-post-history-response.dto';
 import { DeletePostResponseDto } from '../dto/delete-post-response.dto';
+import {
+  CreateTutoringRequestDto,
+  DecideTutoringRequestDto,
+  MyTutoringRequestDto,
+  TutoringRequestIncomingDto,
+} from '../dto/tutoring-request.dto';
 import { CurrentUser, CurrentUserRole } from '../../../common/decorators/current-user.decorator';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
@@ -129,6 +136,51 @@ export class PostsController {
     const offset = query.offset ?? 0;
 
     return this.postsService.listPostsByUser(userId, limit, offset);
+  }
+
+  @Get('tutoring-requests/incoming')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Solicitudes de asesoría pendientes recibidas' })
+  async getIncomingTutoringRequests(
+    @CurrentUser() userId: string,
+  ): Promise<TutoringRequestIncomingDto[]> {
+    return this.postsService.listIncomingTutoringRequests(userId);
+  }
+
+  @Get('tutoring-requests/mine')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Solicitudes de asesoría enviadas por el usuario' })
+  async getMyTutoringRequests(
+    @CurrentUser() userId: string,
+  ): Promise<MyTutoringRequestDto[]> {
+    return this.postsService.listMyTutoringRequests(userId);
+  }
+
+  @Post(':postId/tutoring-requests')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.STUDENT)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Enviar solicitud de asesoría 1 a 1' })
+  async createTutoringRequest(
+    @Param('postId', ParseUUIDPipe) postId: string,
+    @Body() payload: CreateTutoringRequestDto,
+    @CurrentUser() userId: string,
+  ): Promise<{ id: string; status: string; message: string }> {
+    return this.postsService.createTutoringRequest(postId, userId, payload.message);
+  }
+
+  @Patch('tutoring-requests/:requestId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Aceptar o rechazar una solicitud de asesoría' })
+  async decideTutoringRequest(
+    @Param('requestId', ParseUUIDPipe) requestId: string,
+    @Body() payload: DecideTutoringRequestDto,
+    @CurrentUser() userId: string,
+  ): Promise<{ id: string; status: string; groupId: string | null }> {
+    return this.postsService.decideTutoringRequest(requestId, userId, payload.status);
   }
 
   // H.U 1.2: GET /posts/:postId (Obtener publicación por ID para edición o consulta)

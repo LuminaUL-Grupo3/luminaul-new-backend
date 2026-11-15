@@ -3,6 +3,10 @@ export interface AutoGroupInput {
   description?: string | null;
   benefits?: string | null;
   requirements?: string | null;
+  courseCode?: string;
+  meetingMode?: 'presencial' | 'virtual' | 'hibrido';
+  meetingShift?: 'manana' | 'tarde' | 'noche';
+  maxCapacity?: number;
 }
 
 /**
@@ -12,5 +16,11 @@ export interface AutoGroupInput {
 export abstract class GroupMessagingClient {
   abstract findActiveById(groupId: string): Promise<{ id: string } | null>;
   abstract createAutoGroup(input: AutoGroupInput, userId: string): Promise<string>;
+  abstract createTutoringRoom(
+    tutorId: string,
+    requesterId: string,
+    name: string,
+    description?: string | null,
+  ): Promise<string>;
 }
 

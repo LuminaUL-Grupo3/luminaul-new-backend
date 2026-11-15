@@ -4,6 +4,10 @@ import { PostResponseDto } from '../dto/post-response.dto';
 import { PostFeedResponseDto } from '../dto/post-feed-response.dto';
 import { MyPostHistoryResponseDto } from '../dto/my-post-history-response.dto';
 import { DeletePostResponseDto } from '../dto/delete-post-response.dto';
+import {
+  MyTutoringRequestDto,
+  TutoringRequestIncomingDto,
+} from '../dto/tutoring-request.dto';
 
 // Casos de uso de SPEC-03 (Publicaciones y Convocatorias).
 // El controlador depende de esta abstracción y PostsModule entrega la implementación concreta (D de SOLID).
@@ -48,5 +52,26 @@ export abstract class PostsService {
     userId: string,
     userRole?: string,
   ): Promise<DeletePostResponseDto>;
+
+  // Solicitudes de asesoría 1 a 1
+  abstract createTutoringRequest(
+    postId: string,
+    requesterId: string,
+    message: string,
+  ): Promise<{ id: string; status: string; message: string }>;
+
+  abstract listIncomingTutoringRequests(
+    tutorId: string,
+  ): Promise<TutoringRequestIncomingDto[]>;
+
+  abstract listMyTutoringRequests(
+    requesterId: string,
+  ): Promise<MyTutoringRequestDto[]>;
+
+  abstract decideTutoringRequest(
+    requestId: string,
+    tutorId: string,
+    status: 'accepted' | 'rejected',
+  ): Promise<{ id: string; status: string; groupId: string | null }>;
 }
 

@@ -28,6 +28,7 @@ export interface GroupDetailDto {
   meetingMode: "presencial" | "virtual" | "hibrido";
   meetingShift: "manana" | "tarde" | "noche";
   maxCapacity: number;
+  groupType?: "study_group" | "tutoring";
   currentMembers: number;
   leader: { id: string; name: string; profilePhotoUrl: string | null };
   myRole: GroupRole | null;

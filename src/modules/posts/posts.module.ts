@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CommonCacheModule } from '../../common/cache/common-cache.module';
 import { PostEntity } from './entities/post.entity';
+import { TutoringRequestEntity } from './entities/tutoring-request.entity';
 import { PostsRepository } from './repository/PostsRepository';
 import { PostsRepositoryImpl } from './repository/impl/PostsRepositoryImpl';
 import { PostsService } from './service/PostsService';
@@ -28,7 +29,7 @@ import { POST_CREATORS } from './posts.constants';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([PostEntity]),
+    TypeOrmModule.forFeature([PostEntity, TutoringRequestEntity]),
     CommonCacheModule,
     CoursesModule,
     GroupMessagingModule,

@@ -3,7 +3,12 @@ import { DataSource, Repository, IsNull } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostsRepository, PaginatedResult } from '../PostsRepository';
 import { PostEntity } from '../../entities/post.entity';
+import { TutoringRequestEntity } from '../../entities/tutoring-request.entity';
 import { PostUpdateDto } from '../../dto/post-update.dto';
+import {
+  MyTutoringRequestDto,
+  TutoringRequestIncomingDto,
+} from '../../dto/tutoring-request.dto';
 
 interface PostJoinRow {
   id: string;
@@ -24,6 +29,8 @@ interface PostJoinRow {
   profilePhotoUrl: string | null;
   courseName: string | null;
   courseCycle: number | null;
+  groupCurrentMembers: number | null;
+  groupMaxCapacity: number | null;
 }
 
 const POST_SELECT_COLUMNS = `
@@ -44,13 +51,23 @@ const POST_SELECT_COLUMNS = `
   pr.name AS "authorName",
   pr.profile_photo_url AS "profilePhotoUrl",
   c.name AS "courseName",
-  c.cycle AS "courseCycle"
+  c.cycle AS "courseCycle",
+  g.max_capacity AS "groupMaxCapacity",
+  CASE
+    WHEN g.id IS NOT NULL THEN (
+      SELECT COUNT(*)::int
+      FROM group_members gm
+      WHERE gm.group_id = g.id AND gm.status = 'active'
+    )
+    ELSE NULL
+  END AS "groupCurrentMembers"
 `;
 
 const POST_JOIN_FROM = `
   FROM publications p
   LEFT JOIN profiles pr ON pr.user_id = p.user_id
   LEFT JOIN courses c ON c.id = p.course_id
+  LEFT JOIN groups g ON g.id = p.group_id AND g.deleted_at IS NULL
 `;
 
 // Implementación del repositorio de publicaciones con TypeORM y SQL desacoplado sobre PostgreSQL.
@@ -76,6 +93,14 @@ export class PostsRepositoryImpl extends PostsRepository {
       benefits: row.benefits,
       requirements: row.requirements,
       maxCapacity: row.maxCapacity,
+      groupCurrentMembers:
+        row.groupCurrentMembers !== null && row.groupCurrentMembers !== undefined
+          ? Number(row.groupCurrentMembers)
+          : null,
+      groupMaxCapacity:
+        row.groupMaxCapacity !== null && row.groupMaxCapacity !== undefined
+          ? Number(row.groupMaxCapacity)
+          : null,
       status: row.status,
       createdAt: new Date(row.createdAt),
       updatedAt: new Date(row.updatedAt),
@@ -296,5 +321,224 @@ export class PostsRepositoryImpl extends PostsRepository {
     post.status = 'hidden';
     await this.postRepo.save(post);
     return true;
+  }
+
+  async createTutoringRequest(
+    publicationId: string,
+    tutorId: string,
+    requesterId: string,
+    message: string,
+  ): Promise<TutoringRequestEntity> {
+    const rows = await this.dataSource.query<TutoringRequestEntity[]>(
+      `INSERT INTO tutoring_requests (publication_id, tutor_id, requester_id, message, status)
+       VALUES ($1, $2, $3, $4, 'pending')
+       RETURNING
+         id,
+         publication_id AS "publicationId",
+         tutor_id AS "tutorId",
+         requester_id AS "requesterId",
+         message,
+         status,
+         group_id AS "groupId",
+         responded_at AS "respondedAt",
+         created_at AS "createdAt"`,
+      [publicationId, tutorId, requesterId, message],
+    );
+    return rows[0];
+  }
+
+  async findProfileNameByUserId(userId: string): Promise<string | null> {
+    const rows = await this.dataSource.query<{ name: string }[]>(
+      'SELECT name FROM profiles WHERE user_id = $1 LIMIT 1',
+      [userId],
+    );
+    return rows[0]?.name?.trim() || null;
+  }
+
+  async findTutoringRequestById(
+    requestId: string,
+  ): Promise<TutoringRequestEntity | null> {
+    const rows = await this.dataSource.query<TutoringRequestEntity[]>(
+      `SELECT
+         id,
+         publication_id AS "publicationId",
+         tutor_id AS "tutorId",
+         requester_id AS "requesterId",
+         message,
+         status,
+         group_id AS "groupId",
+         responded_at AS "respondedAt",
+         created_at AS "createdAt"
+       FROM tutoring_requests
+       WHERE id = $1
+       LIMIT 1`,
+      [requestId],
+    );
+    return rows[0] ?? null;
+  }
+
+  async findTutoringRequestByPublicationAndRequester(
+    publicationId: string,
+    requesterId: string,
+  ): Promise<TutoringRequestEntity | null> {
+    const rows = await this.dataSource.query<TutoringRequestEntity[]>(
+      `SELECT
+         tr.id,
+         tr.publication_id AS "publicationId",
+         tr.tutor_id AS "tutorId",
+         tr.requester_id AS "requesterId",
+         tr.message,
+         tr.status,
+         tr.group_id AS "groupId",
+         tr.responded_at AS "respondedAt",
+         tr.created_at AS "createdAt"
+       FROM tutoring_requests tr
+       LEFT JOIN groups g ON g.id = tr.group_id AND g.deleted_at IS NULL
+       LEFT JOIN group_members gm ON gm.group_id = g.id AND gm.user_id = tr.requester_id AND gm.status = 'active'
+       WHERE tr.publication_id = $1
+         AND tr.requester_id = $2
+         AND (
+           tr.status = 'pending'
+           OR (tr.status = 'accepted' AND g.id IS NOT NULL AND gm.id IS NOT NULL)
+         )
+       ORDER BY tr.created_at DESC
+       LIMIT 1`,
+      [publicationId, requesterId],
+    );
+    return rows[0] ?? null;
+  }
+
+  async listIncomingTutoringRequests(
+    tutorId: string,
+  ): Promise<TutoringRequestIncomingDto[]> {
+    interface IncomingRow {
+      id: string;
+      publicationId: string;
+      tutorId: string;
+      requesterId: string;
+      message: string;
+      status: string;
+      createdAt: Date | string;
+      courseName: string | null;
+      publicationDescription: string | null;
+      applicantName: string | null;
+      applicantEmail: string | null;
+      applicantPhoto: string | null;
+    }
+
+    const rows = await this.dataSource.query<IncomingRow[]>(
+      `SELECT
+         tr.id,
+         tr.publication_id AS "publicationId",
+         tr.tutor_id AS "tutorId",
+         tr.requester_id AS "requesterId",
+         tr.message,
+         tr.status,
+         tr.created_at AS "createdAt",
+         c.name AS "courseName",
+         p.description AS "publicationDescription",
+         u.name AS "applicantName",
+         u.email AS "applicantEmail",
+         pr.profile_photo_url AS "applicantPhoto"
+       FROM tutoring_requests tr
+       INNER JOIN publications p ON p.id = tr.publication_id
+       LEFT JOIN courses c ON c.id = p.course_id
+       INNER JOIN users u ON u.id = tr.requester_id
+       LEFT JOIN profiles pr ON pr.user_id = tr.requester_id
+       WHERE tr.tutor_id = $1
+         AND tr.status = 'pending'
+         AND p.deleted_at IS NULL
+       ORDER BY tr.created_at DESC`,
+      [tutorId],
+    );
+
+    return rows.map((row) => ({
+      id: row.id,
+      publicationId: row.publicationId,
+      tutorId: row.tutorId,
+      requesterId: row.requesterId,
+      message: row.message,
+      status: row.status,
+      createdAt:
+        row.createdAt instanceof Date
+          ? row.createdAt.toISOString()
+          : String(row.createdAt),
+      courseName: row.courseName ?? 'Curso',
+      publicationDescription: row.publicationDescription ?? '',
+      applicant: {
+        id: row.requesterId,
+        name: row.applicantName ?? 'Alumno',
+        email: row.applicantEmail ?? '',
+        profilePhotoUrl: row.applicantPhoto ?? null,
+      },
+    }));
+  }
+
+  async listMyTutoringRequests(
+    requesterId: string,
+  ): Promise<MyTutoringRequestDto[]> {
+    const rows = await this.dataSource.query<
+      Array<{
+        id: string;
+        publicationId: string;
+        status: string;
+        groupId: string | null;
+        createdAt: Date | string;
+      }>
+    >(
+      `SELECT DISTINCT ON (tr.publication_id)
+         tr.id,
+         tr.publication_id AS "publicationId",
+         CASE
+           WHEN tr.status = 'accepted' AND (g.id IS NULL OR gm.id IS NULL) THEN 'rejected'
+           ELSE tr.status
+         END AS status,
+         CASE
+           WHEN tr.status = 'accepted' AND (g.id IS NULL OR gm.id IS NULL) THEN NULL
+           ELSE tr.group_id
+         END AS "groupId",
+         tr.created_at AS "createdAt"
+       FROM tutoring_requests tr
+       LEFT JOIN groups g ON g.id = tr.group_id AND g.deleted_at IS NULL
+       LEFT JOIN group_members gm ON gm.group_id = g.id AND gm.user_id = tr.requester_id AND gm.status = 'active'
+       WHERE tr.requester_id = $1
+       ORDER BY tr.publication_id, tr.created_at DESC`,
+      [requesterId],
+    );
+
+    return rows.map((row) => ({
+      id: row.id,
+      publicationId: row.publicationId,
+      status: row.status,
+      groupId: row.groupId ?? null,
+      createdAt:
+        row.createdAt instanceof Date
+          ? row.createdAt.toISOString()
+          : String(row.createdAt),
+    }));
+  }
+
+  async decideTutoringRequest(
+    requestId: string,
+    status: 'accepted' | 'rejected',
+    groupId?: string | null,
+  ): Promise<TutoringRequestEntity | null> {
+    const rows = await this.dataSource.query<TutoringRequestEntity[]>(
+      `UPDATE tutoring_requests
+       SET status = $2, group_id = COALESCE($3, group_id), responded_at = NOW()
+       WHERE id = $1
+       RETURNING
+         id,
+         publication_id AS "publicationId",
+         tutor_id AS "tutorId",
+         requester_id AS "requesterId",
+         message,
+         status,
+         group_id AS "groupId",
+         responded_at AS "respondedAt",
+         created_at AS "createdAt"`,
+      [requestId, status, groupId ?? null],
+    );
+    return rows[0] ?? null;
   }
 }
