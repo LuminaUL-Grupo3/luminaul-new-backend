@@ -402,7 +402,7 @@ CREATE INDEX ix_audit_logs_target ON audit_logs (target_entity, target_id);
 -- 8. SEMILLAS (SEEDS) Y GOLDEN MOCKS OFICIALES
 -- ============================================================
 
--- A. Usuarios Golden según SPECS.md (2 Alumnos y 2 Administradores)
+-- A. Usuarios Golden según SPECS.md + 5 Alumnos de Prueba uniformes
 -- Hash Bcrypt para 'PasswordSegura2026!':
 -- $2b$10$FIYIvMY.n1KBFCOZPUX80OfDtX95lk6p0rVw/cIXvp7g.RYFf5u7e
 
@@ -410,34 +410,65 @@ INSERT INTO users (id, email, password_hash, name, role, status, is_verified, cr
 VALUES 
   ('d290f1ee-6c54-4b01-90e6-d701748f0851', '20210001@aloe.ulima.edu.pe', '$2b$10$FIYIvMY.n1KBFCOZPUX80OfDtX95lk6p0rVw/cIXvp7g.RYFf5u7e', 'Martín Vizcarra', 'student', 'active', true, NOW(), NOW()),
   ('a1b2c3d4-e5f6-47a8-b9c0-123456789abc', '20210002@aloe.ulima.edu.pe', '$2b$10$FIYIvMY.n1KBFCOZPUX80OfDtX95lk6p0rVw/cIXvp7g.RYFf5u7e', 'Carlos Mendoza', 'student', 'active', true, NOW(), NOW()),
+  ('11111111-1111-4111-8111-111111111101', '20210003@aloe.ulima.edu.pe', '$2b$10$FIYIvMY.n1KBFCOZPUX80OfDtX95lk6p0rVw/cIXvp7g.RYFf5u7e', 'Lucía Paredes', 'student', 'active', true, NOW(), NOW()),
+  ('11111111-1111-4111-8111-111111111102', '20210004@aloe.ulima.edu.pe', '$2b$10$FIYIvMY.n1KBFCOZPUX80OfDtX95lk6p0rVw/cIXvp7g.RYFf5u7e', 'Diego Quispe', 'student', 'active', true, NOW(), NOW()),
+  ('11111111-1111-4111-8111-111111111103', '20210005@aloe.ulima.edu.pe', '$2b$10$FIYIvMY.n1KBFCOZPUX80OfDtX95lk6p0rVw/cIXvp7g.RYFf5u7e', 'Valeria Torres', 'student', 'active', true, NOW(), NOW()),
+  ('11111111-1111-4111-8111-111111111104', '20210006@aloe.ulima.edu.pe', '$2b$10$FIYIvMY.n1KBFCOZPUX80OfDtX95lk6p0rVw/cIXvp7g.RYFf5u7e', 'Sebastián Rojas', 'student', 'active', true, NOW(), NOW()),
+  ('11111111-1111-4111-8111-111111111105', '20210007@aloe.ulima.edu.pe', '$2b$10$FIYIvMY.n1KBFCOZPUX80OfDtX95lk6p0rVw/cIXvp7g.RYFf5u7e', 'Camila Flores', 'student', 'active', true, NOW(), NOW()),
   ('99887766-5544-4322-8100-aabbccddeeff', 'admin@aloe.ulima.edu.pe', '$2b$10$FIYIvMY.n1KBFCOZPUX80OfDtX95lk6p0rVw/cIXvp7g.RYFf5u7e', 'Administrador General', 'admin', 'active', true, NOW(), NOW()),
   ('00000099-0000-4000-8000-000000000099', 'admin2@aloe.ulima.edu.pe', '$2b$10$FIYIvMY.n1KBFCOZPUX80OfDtX95lk6p0rVw/cIXvp7g.RYFf5u7e', 'Administrador Secundario', 'admin', 'active', true, NOW(), NOW())
 ON CONFLICT (id) DO NOTHING;
 
--- B. Perfiles Demo
+-- B. Perfiles Demo (7 Alumnos y 2 Administradores)
 INSERT INTO profiles (user_id, name, bio, major, academic_cycle, profile_photo_url, updated_at)
 VALUES 
   ('d290f1ee-6c54-4b01-90e6-d701748f0851', 'Martín Vizcarra', 'Estudiante de 5to ciclo de Ing. de Sistemas', 'Ingeniería de Sistemas', '5', NULL, NOW()),
   ('a1b2c3d4-e5f6-47a8-b9c0-123456789abc', 'Carlos Mendoza', 'Estudiante de 4to ciclo enfocado en algoritmos y estructuras de datos', 'Ingeniería de Sistemas', '4', NULL, NOW()),
+  ('11111111-1111-4111-8111-111111111101', 'Lucía Paredes', 'Apasionada por desarrollo frontend con React y UX.', 'Ingeniería de Sistemas', '6', NULL, NOW()),
+  ('11111111-1111-4111-8111-111111111102', 'Diego Quispe', 'Enfocado en base de datos, SQL y analítica de operaciones.', 'Ingeniería Industrial', '5', NULL, NOW()),
+  ('11111111-1111-4111-8111-111111111103', 'Valeria Torres', 'Tutora par de Cálculo y Machine Learning.', 'Ingeniería de Sistemas', '7', NULL, NOW()),
+  ('11111111-1111-4111-8111-111111111104', 'Sebastián Rojas', 'Buscando grupos de programación y estructuras discretas.', 'Ingeniería de Sistemas', '3', NULL, NOW()),
+  ('11111111-1111-4111-8111-111111111105', 'Camila Flores', 'Proyectos de arquitectura cloud y DevOps.', 'Ingeniería de Sistemas', '8', NULL, NOW()),
   ('99887766-5544-4322-8100-aabbccddeeff', 'Administrador General', 'Gestión de Comunidad y Moderación LuminaUL', 'Administración', '10', NULL, NOW()),
   ('00000099-0000-4000-8000-000000000099', 'Administrador Secundario', 'Gestión de Soporte y Operaciones LuminaUL', 'Administración', '10', NULL, NOW())
 ON CONFLICT (user_id) DO NOTHING;
 
--- C. Habilidades e Intereses
+-- C. Habilidades, Intereses y Disponibilidad Horaria (uniforme para los 7 alumnos)
 INSERT INTO profile_skills (user_id, skill_name)
 VALUES 
   ('d290f1ee-6c54-4b01-90e6-d701748f0851', 'TypeScript'),
   ('d290f1ee-6c54-4b01-90e6-d701748f0851', 'NestJS'),
   ('a1b2c3d4-e5f6-47a8-b9c0-123456789abc', 'Java'),
-  ('a1b2c3d4-e5f6-47a8-b9c0-123456789abc', 'Algoritmos')
+  ('a1b2c3d4-e5f6-47a8-b9c0-123456789abc', 'Algoritmos'),
+  ('11111111-1111-4111-8111-111111111101', 'React'),
+  ('11111111-1111-4111-8111-111111111102', 'PostgreSQL'),
+  ('11111111-1111-4111-8111-111111111103', 'Python'),
+  ('11111111-1111-4111-8111-111111111104', 'C++'),
+  ('11111111-1111-4111-8111-111111111105', 'Docker')
 ON CONFLICT (user_id, skill_name) DO NOTHING;
 
 INSERT INTO profile_interests (user_id, interest_name)
 VALUES 
   ('d290f1ee-6c54-4b01-90e6-d701748f0851', 'Desarrollo Web'),
   ('d290f1ee-6c54-4b01-90e6-d701748f0851', 'Arquitectura de Software'),
-  ('a1b2c3d4-e5f6-47a8-b9c0-123456789abc', 'Cálculo Avanzado')
+  ('a1b2c3d4-e5f6-47a8-b9c0-123456789abc', 'Cálculo Avanzado'),
+  ('11111111-1111-4111-8111-111111111101', 'Diseño UI/UX'),
+  ('11111111-1111-4111-8111-111111111102', 'Modelamiento de Datos'),
+  ('11111111-1111-4111-8111-111111111103', 'Ciencia de Datos'),
+  ('11111111-1111-4111-8111-111111111104', 'Programación Competitiva'),
+  ('11111111-1111-4111-8111-111111111105', 'Cloud Computing')
 ON CONFLICT (user_id, interest_name) DO NOTHING;
+
+INSERT INTO availabilities (id, user_id, day_of_week, start_time, end_time, created_at)
+VALUES
+  ('22222222-2222-4222-8222-222222222200', 'd290f1ee-6c54-4b01-90e6-d701748f0851', 'lunes', '14:00', '16:00', NOW()),
+  ('22222222-2222-4222-8222-222222222209', 'a1b2c3d4-e5f6-47a8-b9c0-123456789abc', 'miercoles', '10:00', '12:00', NOW()),
+  ('22222222-2222-4222-8222-222222222201', '11111111-1111-4111-8111-111111111101', 'lunes', '10:00', '12:00', NOW()),
+  ('22222222-2222-4222-8222-222222222202', '11111111-1111-4111-8111-111111111102', 'martes', '14:00', '16:00', NOW()),
+  ('22222222-2222-4222-8222-222222222203', '11111111-1111-4111-8111-111111111103', 'miercoles', '16:00', '18:00', NOW()),
+  ('22222222-2222-4222-8222-222222222204', '11111111-1111-4111-8111-111111111104', 'jueves', '09:00', '11:00', NOW()),
+  ('22222222-2222-4222-8222-222222222205', '11111111-1111-4111-8111-111111111105', 'viernes', '18:00', '20:00', NOW())
+ON CONFLICT (id) DO NOTHING;
 
 -- D. Catálogo de Palabras Prohibidas (Motor Léxico - SPEC-06)
 -- Todas las infracciones se unifican bajo severidad máxima ('high') conforme a la política de tolerancia cero
@@ -695,75 +726,90 @@ VALUES
   ('891bec4e-f686-4672-aa24-14dd38165fda', 'TÓPICOS AVANZADOS EN CIBERSEGURIDAD', 11)
 ON CONFLICT (name) DO NOTHING;
 
--- F. Grupo de Estudio Demo
-INSERT INTO groups (id, name, description, benefits, requirements, course_code, leader_id, meeting_mode, meeting_shift, max_capacity, created_at)
-VALUES (
-  '7b134111-9a22-48df-9fa0-cd8213aa0981',
-  'Grupo de Cálculo Integral Avanzado',
-  'Repaso de integrales dobles y triples',
-  'Exámenes resueltos y asesorías',
-  'Haber aprobado Cálculo I',
-  'CS101',
-  'd290f1ee-6c54-4b01-90e6-d701748f0851',
-  'virtual',
-  'tarde',
-  6,
-  NOW()
-)
+-- F. Grupos de Estudio y Asesoría (Golden + 5 de prueba)
+INSERT INTO groups (id, name, description, benefits, requirements, course_code, leader_id, meeting_mode, meeting_shift, max_capacity, group_type, created_at)
+VALUES
+  ('7b134111-9a22-48df-9fa0-cd8213aa0981', 'Grupo de Cálculo Integral Avanzado', 'Repaso de integrales dobles y triples', 'Exámenes resueltos y asesorías', 'Haber aprobado Cálculo I', 'ING. DE SOFTWARE I', 'd290f1ee-6c54-4b01-90e6-d701748f0851', 'virtual', 'tarde', 6, 'study_group', NOW()),
+  ('33333333-3333-4333-8333-333333333301', 'Sprint Programación Web', 'Repaso de React, hooks y consumo de APIs REST.', 'Guías prácticas y código base', 'Conocimientos básicos de HTML/JS', 'PROGRAMACIÓN WEB', '11111111-1111-4111-8111-111111111101', 'virtual', 'noche', 6, 'study_group', NOW()),
+  ('33333333-3333-4333-8333-333333333302', 'Laboratorio SQL & Modelamiento', 'Normalización, índices y consultas complejas en PostgreSQL.', 'Casos de examen pasados', 'Tener pgAdmin o Docker', 'MODELAMIENTO DE BD', '11111111-1111-4111-8111-111111111102', 'presencial', 'tarde', 5, 'study_group', NOW()),
+  ('33333333-3333-4333-8333-333333333303', 'Círculo Machine Learning', 'Práctica de regresión, clasificación y validación cruzada.', 'Notebooks comentados', 'Python básico', 'MACHINE LEARNING', '11111111-1111-4111-8111-111111111103', 'hibrido', 'tarde', 4, 'study_group', NOW()),
+  ('33333333-3333-4333-8333-333333333304', 'Estructuras Discretas desde Cero', 'Lógica proposicional, grafos e inducción matemática.', 'Resolución de listas', 'Ninguno', 'ESTRUCTURAS DISCRET', '11111111-1111-4111-8111-111111111104', 'presencial', 'manana', 8, 'study_group', NOW()),
+  ('33333333-3333-4333-8333-333333333305', 'Asesoría · CÁLCULO II (Sebastián Rojas)', 'Sesión individual de asesoría 1 a 1.', NULL, NULL, 'TUTORING', '11111111-1111-4111-8111-111111111103', 'virtual', 'tarde', 2, 'tutoring', NOW())
 ON CONFLICT (id) DO NOTHING;
 
--- G. Membresías en Grupo (Roles estrictos 'leader' y 'member' de AGENTS.md)
+-- G. Membresías en Grupos (Roles estrictos 'leader' y 'member' de AGENTS.md)
 INSERT INTO group_members (id, group_id, user_id, role, status, joined_at)
 VALUES 
   (gen_random_uuid(), '7b134111-9a22-48df-9fa0-cd8213aa0981', 'd290f1ee-6c54-4b01-90e6-d701748f0851', 'leader', 'active', NOW()),
-  (gen_random_uuid(), '7b134111-9a22-48df-9fa0-cd8213aa0981', 'a1b2c3d4-e5f6-47a8-b9c0-123456789abc', 'member', 'active', NOW())
+  (gen_random_uuid(), '7b134111-9a22-48df-9fa0-cd8213aa0981', 'a1b2c3d4-e5f6-47a8-b9c0-123456789abc', 'member', 'active', NOW()),
+  (gen_random_uuid(), '33333333-3333-4333-8333-333333333301', '11111111-1111-4111-8111-111111111101', 'leader', 'active', NOW()),
+  (gen_random_uuid(), '33333333-3333-4333-8333-333333333301', '11111111-1111-4111-8111-111111111102', 'member', 'active', NOW()),
+  (gen_random_uuid(), '33333333-3333-4333-8333-333333333301', '11111111-1111-4111-8111-111111111105', 'member', 'active', NOW()),
+  (gen_random_uuid(), '33333333-3333-4333-8333-333333333302', '11111111-1111-4111-8111-111111111102', 'leader', 'active', NOW()),
+  (gen_random_uuid(), '33333333-3333-4333-8333-333333333302', '11111111-1111-4111-8111-111111111104', 'member', 'active', NOW()),
+  (gen_random_uuid(), '33333333-3333-4333-8333-333333333303', '11111111-1111-4111-8111-111111111103', 'leader', 'active', NOW()),
+  (gen_random_uuid(), '33333333-3333-4333-8333-333333333303', '11111111-1111-4111-8111-111111111101', 'member', 'active', NOW()),
+  (gen_random_uuid(), '33333333-3333-4333-8333-333333333304', '11111111-1111-4111-8111-111111111104', 'leader', 'active', NOW()),
+  (gen_random_uuid(), '33333333-3333-4333-8333-333333333305', '11111111-1111-4111-8111-111111111103', 'leader', 'active', NOW()),
+  (gen_random_uuid(), '33333333-3333-4333-8333-333333333305', '11111111-1111-4111-8111-111111111104', 'member', 'active', NOW())
 ON CONFLICT (group_id, user_id) DO NOTHING;
 
--- H. Publicación Demo (asociada al curso y grupo)
+-- H. Solicitudes de Unión a Grupos (5 solicitudes de prueba)
+INSERT INTO join_requests (id, group_id, user_id, message, status, reviewed_by, reviewed_at, responded_at, created_at)
+VALUES
+  ('44444444-4444-4444-8444-444444444401', '33333333-3333-4333-8333-333333333301', '11111111-1111-4111-8111-111111111104', 'Hola, quiero reforzar React antes de la PC2.', 'pending', NULL, NULL, NULL, NOW()),
+  ('44444444-4444-4444-8444-444444444402', '33333333-3333-4333-8333-333333333302', '11111111-1111-4111-8111-111111111101', 'Me interesa practicar queries de PostgreSQL.', 'pending', NULL, NULL, NULL, NOW()),
+  ('44444444-4444-4444-8444-444444444403', '33333333-3333-4333-8333-333333333303', '11111111-1111-4111-8111-111111111105', 'Trabajo con scikit-learn y quiero sumarme.', 'pending', NULL, NULL, NULL, NOW()),
+  ('44444444-4444-4444-8444-444444444404', '33333333-3333-4333-8333-333333333304', '11111111-1111-4111-8111-111111111102', 'Puedo ayudar con teoría de grafos.', 'accepted', '11111111-1111-4111-8111-111111111104', NOW(), NOW(), NOW()),
+  ('44444444-4444-4444-8444-444444444405', '33333333-3333-4333-8333-333333333302', '11111111-1111-4111-8111-111111111103', 'Solo puedo en turno noche.', 'rejected', '11111111-1111-4111-8111-111111111102', NOW(), NOW(), NOW())
+ON CONFLICT (id) DO NOTHING;
+
+-- I. Publicaciones (Golden + 6 de prueba: study_group y tutoring)
 INSERT INTO publications (id, user_id, group_id, course_id, type, description, benefits, requirements, max_capacity, status, created_at, updated_at)
-VALUES (
-  '18938a12-6f2b-4d43-9801-bca908234fed',
-  'd290f1ee-6c54-4b01-90e6-d701748f0851',
-  '7b134111-9a22-48df-9fa0-cd8213aa0981',
-  '8c537243-ea7d-411a-8bb7-fce5230bfdf2',
-  'study_group',
-  'Buscamos 2 personas para repasar antes de la PC1 en biblioteca.',
-  'Material de estudio y exámenes pasados',
-  'Ganas de aprender y colaborar',
-  5,
-  'published',
-  NOW(),
-  NOW()
-)
+VALUES
+  ('18938a12-6f2b-4d43-9801-bca908234fed', 'd290f1ee-6c54-4b01-90e6-d701748f0851', '7b134111-9a22-48df-9fa0-cd8213aa0981', '8c537243-ea7d-411a-8bb7-fce5230bfdf2', 'study_group', 'Buscamos 2 personas para repasar antes de la PC1 en biblioteca.', 'Material de estudio y exámenes pasados', 'Ganas de aprender y colaborar', 5, 'published', NOW(), NOW()),
+  ('55555555-5555-4555-8555-555555555501', '11111111-1111-4111-8111-111111111101', '33333333-3333-4333-8333-333333333301', 'c51838fd-9ae6-46cb-a07e-561c0e8a0f2b', 'study_group', 'Grupo de Programación Web para avanzar el proyecto final con React y TypeScript.', 'Plantillas y revisión de PRs', 'Manejo básico de JS', 6, 'published', NOW(), NOW()),
+  ('55555555-5555-4555-8555-555555555502', '11111111-1111-4111-8111-111111111102', '33333333-3333-4333-8333-333333333302', 'ded7abed-17a3-4054-a29c-0f08314ed4b0', 'study_group', 'Practicamos modelamiento entidad-relación y SQL avanzado los martes por la tarde.', 'Bancos de preguntas', 'Laptop con PostgreSQL', 5, 'published', NOW(), NOW()),
+  ('55555555-5555-4555-8555-555555555503', '11111111-1111-4111-8111-111111111103', '33333333-3333-4333-8333-333333333303', '9b784e01-60c9-44ee-a9c6-4db8bf6cfbd7', 'study_group', 'Estudio grupal de Machine Learning: árboles de decisión, métricas y pipelines.', 'Datasets limpios', 'Python básico', 4, 'published', NOW(), NOW()),
+  ('55555555-5555-4555-8555-555555555504', '11111111-1111-4111-8111-111111111103', NULL, 'f3706dc4-b289-490c-ae28-463f434c1f9d', 'tutoring', 'Ofrezco asesoría 1 a 1 en Cálculo II: técnicas de integración y series.', 'Ejercicios resueltos paso a paso', 'Traer dudas puntuales', 2, 'published', NOW(), NOW()),
+  ('55555555-5555-4555-8555-555555555505', '11111111-1111-4111-8111-111111111105', NULL, '64a3f15c-a629-49e4-a0b1-2249da71e241', 'tutoring', 'Asesoría personalizada en Computación en la Nube: contenedores, AWS y CI/CD.', 'Guía de despliegue real', 'Cuenta educativa activa', 2, 'published', NOW(), NOW()),
+  ('55555555-5555-4555-8555-555555555506', '11111111-1111-4111-8111-111111111101', NULL, 'bd94211e-8c78-484e-a6be-c7ad38f08556', 'tutoring', 'Asesoría de Ingeniería de Software II: arquitectura NestJS y pruebas unitarias.', 'Revisión de diagrama de clases', 'Repositorio del proyecto', 2, 'published', NOW(), NOW())
 ON CONFLICT (id) DO NOTHING;
 
--- I. Mensaje Grupal de Prueba
+-- J. Solicitudes de Asesoría 1-a-1 (5 solicitudes de prueba)
+INSERT INTO tutoring_requests (id, publication_id, tutor_id, requester_id, message, status, group_id, responded_at, created_at)
+VALUES
+  ('66666666-6666-4666-8666-666666666601', '55555555-5555-4555-8555-555555555504', '11111111-1111-4111-8111-111111111103', '11111111-1111-4111-8111-111111111104', 'Necesito ayuda con integración por partes antes del parcial.', 'accepted', '33333333-3333-4333-8333-333333333305', NOW(), NOW()),
+  ('66666666-6666-4666-8666-666666666602', '55555555-5555-4555-8555-555555555504', '11111111-1111-4111-8111-111111111103', '11111111-1111-4111-8111-111111111102', 'Quisiera repasar series de Taylor esta semana.', 'pending', NULL, NULL, NOW()),
+  ('66666666-6666-4666-8666-666666666603', '55555555-5555-4555-8555-555555555505', '11111111-1111-4111-8111-111111111105', '11111111-1111-4111-8111-111111111101', 'Quiero aprender a dockerizar un backend NestJS.', 'pending', NULL, NULL, NOW()),
+  ('66666666-6666-4666-8666-666666666604', '55555555-5555-4555-8555-555555555506', '11111111-1111-4111-8111-111111111101', '11111111-1111-4111-8111-111111111104', 'Tengo dudas con el patrón Strategy en NestJS.', 'pending', NULL, NULL, NOW()),
+  ('66666666-6666-4666-8666-666666666605', '55555555-5555-4555-8555-555555555505', '11111111-1111-4111-8111-111111111105', '11111111-1111-4111-8111-111111111102', '¿Podemos revisar Terraform mañana a las 7am?', 'rejected', NULL, NOW(), NOW())
+ON CONFLICT (id) DO NOTHING;
+
+-- K. Mensajes Grupales de Prueba (Golden + 6 mensajes)
 INSERT INTO group_messages (id, group_id, sender_id, content, status, created_at)
-VALUES (
-  'f8a91012-3456-4890-a1cd-ef0123456789',
-  '7b134111-9a22-48df-9fa0-cd8213aa0981',
-  'd290f1ee-6c54-4b01-90e6-d701748f0851',
-  '¡Bienvenidos al grupo de estudio oficial de LuminaUL!',
-  'published',
-  NOW()
-)
+VALUES
+  ('f8a91012-3456-4890-a1cd-ef0123456789', '7b134111-9a22-48df-9fa0-cd8213aa0981', 'd290f1ee-6c54-4b01-90e6-d701748f0851', '¡Bienvenidos al grupo de estudio oficial de LuminaUL!', 'published', NOW()),
+  ('77777777-7777-4777-8777-777777777701', '33333333-3333-4333-8333-333333333301', '11111111-1111-4111-8111-111111111101', '¡Bienvenidos! Hoy revisamos React Query y rutas protegidas.', 'published', NOW()),
+  ('77777777-7777-4777-8777-777777777702', '33333333-3333-4333-8333-333333333301', '11111111-1111-4111-8111-111111111102', 'Perfecto, ya tengo levantado el backend local.', 'published', NOW()),
+  ('77777777-7777-4777-8777-777777777703', '33333333-3333-4333-8333-333333333302', '11111111-1111-4111-8111-111111111102', 'Subí el diagrama ER de práctica para la sesión de hoy.', 'published', NOW()),
+  ('77777777-7777-4777-8777-777777777704', '33333333-3333-4333-8333-333333333303', '11111111-1111-4111-8111-111111111103', 'No olviden instalar scikit-learn antes de conectarse.', 'published', NOW()),
+  ('77777777-7777-4777-8777-777777777705', '33333333-3333-4333-8333-333333333305', '11111111-1111-4111-8111-111111111103', 'Hola Sebastián, dime qué ejercicios de integrales quieres ver primero.', 'published', NOW()),
+  ('77777777-7777-4777-8777-777777777706', '33333333-3333-4333-8333-333333333305', '11111111-1111-4111-8111-111111111104', 'Gracias Valeria, los de sustitución trigonométrica por favor.', 'published', NOW())
 ON CONFLICT (id) DO NOTHING;
 
--- J. Reseña de Prueba (Carlos califica a Martín tras coincidir en grupo)
+-- L. Reseñas de Prueba (Golden + 5 reseñas)
 INSERT INTO reviews (id, reviewer_id, reviewed_user_id, rating, comment, status, created_at, updated_at)
-VALUES (
-  gen_random_uuid(),
-  'a1b2c3d4-e5f6-47a8-b9c0-123456789abc',
-  'd290f1ee-6c54-4b01-90e6-d701748f0851',
-  5,
-  'Excelente compañero de estudio, muy responsable y claro explicando temas complejos.',
-  'published',
-  NOW(),
-  NOW()
-)
+VALUES
+  ('88888888-8888-4888-8888-888888888800', 'a1b2c3d4-e5f6-47a8-b9c0-123456789abc', 'd290f1ee-6c54-4b01-90e6-d701748f0851', 5, 'Excelente compañero de estudio, muy responsable y claro explicando temas complejos.', 'published', NOW(), NOW()),
+  ('88888888-8888-4888-8888-888888888801', '11111111-1111-4111-8111-111111111102', '11111111-1111-4111-8111-111111111101', 5, 'Excelente liderazgo en el grupo de Programación Web.', 'published', NOW(), NOW()),
+  ('88888888-8888-4888-8888-888888888802', '11111111-1111-4111-8111-111111111105', '11111111-1111-4111-8111-111111111101', 5, 'Muy ordenada con los horarios y el material compartido.', 'published', NOW(), NOW()),
+  ('88888888-8888-4888-8888-888888888803', '11111111-1111-4111-8111-111111111101', '11111111-1111-4111-8111-111111111103', 5, 'Explica Machine Learning de forma muy clara y práctica.', 'published', NOW(), NOW()),
+  ('88888888-8888-4888-8888-888888888804', '11111111-1111-4111-8111-111111111104', '11111111-1111-4111-8111-111111111103', 5, 'La asesoría de Cálculo II me ayudó muchísimo para el examen.', 'published', NOW(), NOW()),
+  ('88888888-8888-4888-8888-888888888805', '11111111-1111-4111-8111-111111111104', '11111111-1111-4111-8111-111111111102', 4, 'Muy buen apoyo con los casos de normalización SQL.', 'published', NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
--- K. Reporte y Moderación Desacoplada (SPEC-06)
+-- M. Reporte y Moderación Desacoplada (SPEC-06)
 INSERT INTO reports (id, reporter_id, target_type, target_id, reason, status, created_at)
 VALUES (
   'd5a19022-77aa-4899-b1c2-349801289fed',
@@ -799,20 +845,17 @@ VALUES (
 )
 ON CONFLICT (id) DO NOTHING;
 
--- L. Notificación de Muestra (SPEC-07)
+-- N. Notificaciones y Auditoría de Muestra (SPEC-07)
 INSERT INTO notifications (id, user_id, title, message, type, is_read, created_at)
-VALUES (
-  gen_random_uuid(),
-  'd290f1ee-6c54-4b01-90e6-d701748f0851',
-  'Bienvenido a LuminaUL',
-  'Tu cuenta institucional ha sido verificada. Ya puedes unirte y crear grupos de estudio.',
-  'SYSTEM',
-  false,
-  NOW()
-)
-ON CONFLICT DO NOTHING;
+VALUES
+  ('99999999-9999-4999-8999-999999999900', 'd290f1ee-6c54-4b01-90e6-d701748f0851', 'Bienvenido a LuminaUL', 'Tu cuenta institucional ha sido verificada. Ya puedes unirte y crear grupos de estudio.', 'SYSTEM', false, NOW()),
+  ('99999999-9999-4999-8999-999999999901', '11111111-1111-4111-8111-111111111101', 'Nueva solicitud de unión', 'Sebastián Rojas solicitó unirse a Sprint Programación Web.', 'GROUP', false, NOW()),
+  ('99999999-9999-4999-8999-999999999902', '11111111-1111-4111-8111-111111111102', 'Nueva solicitud de unión', 'Lucía Paredes solicitó unirse a Laboratorio SQL & Modelamiento.', 'GROUP', false, NOW()),
+  ('99999999-9999-4999-8999-999999999903', '11111111-1111-4111-8111-111111111103', 'Solicitud de asesoría recibida', 'Diego Quispe solicitó asesoría en Cálculo II.', 'SYSTEM', false, NOW()),
+  ('99999999-9999-4999-8999-999999999904', '11111111-1111-4111-8111-111111111104', 'Asesoría aceptada', 'Valeria Torres aceptó tu solicitud de asesoría de Cálculo II.', 'GROUP', false, NOW()),
+  ('99999999-9999-4999-8999-999999999905', '11111111-1111-4111-8111-111111111105', 'Nueva reseña recibida', 'Tienes actividad reciente en Sprint Programación Web.', 'SYSTEM', true, NOW())
+ON CONFLICT (id) DO NOTHING;
 
--- M. Auditoría de Muestra (SPEC-07)
 INSERT INTO audit_logs (id, admin_id, action, target_entity, target_id, details, created_at)
 VALUES (
   gen_random_uuid(),
