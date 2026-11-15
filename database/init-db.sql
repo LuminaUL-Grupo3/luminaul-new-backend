@@ -401,9 +401,9 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO profiles (user_id, name, bio, major, academic_cycle, profile_photo_url, updated_at)
 VALUES 
   ('d290f1ee-6c54-4b01-90e6-d701748f0851', 'Martín Vizcarra', 'Estudiante de 5to ciclo de Ing. de Sistemas', 'Ingeniería de Sistemas', '5', NULL, NOW()),
-  ('a1b2c3d4-e5f6-47a8-b9c0-123456789abc', 'Carlos Mendoza', 'Estudiante de 4to ciclo enfocado en algoritmos y estructuras de datos', 'Ingeniería de Sistemas', '4', 'https://avatar.test/carlos.png', NOW()),
-  ('99887766-5544-4322-8100-aabbccddeeff', 'Administrador General', 'Gestión de Comunidad y Moderación LuminaUL', 'Administración', '10', 'https://avatar.test/admin.png', NOW()),
-  ('00000099-0000-4000-8000-000000000099', 'Administrador Secundario', 'Gestión de Soporte y Operaciones LuminaUL', 'Administración', '10', 'https://avatar.test/admin2.png', NOW())
+  ('a1b2c3d4-e5f6-47a8-b9c0-123456789abc', 'Carlos Mendoza', 'Estudiante de 4to ciclo enfocado en algoritmos y estructuras de datos', 'Ingeniería de Sistemas', '4', NULL, NOW()),
+  ('99887766-5544-4322-8100-aabbccddeeff', 'Administrador General', 'Gestión de Comunidad y Moderación LuminaUL', 'Administración', '10', NULL, NOW()),
+  ('00000099-0000-4000-8000-000000000099', 'Administrador Secundario', 'Gestión de Soporte y Operaciones LuminaUL', 'Administración', '10', NULL, NOW())
 ON CONFLICT (user_id) DO NOTHING;
 
 -- C. Habilidades e Intereses
