@@ -12,16 +12,16 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { UserProfileService } from './user-profile.service';
-import { UpdateProfileDto } from './dto/update-profile.dto';
-import { CreateAvailabilityDto, UpdateAvailabilityDto } from './dto/availability.dto';
+import { JwtAuthGuard } from '../../auth-security/guard/JwtAuthGuard';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { UserProfileService } from '../service/UserProfileService';
+import { UpdateProfileDto } from '../dto/update-profile.dto';
+import { CreateAvailabilityDto, UpdateAvailabilityDto } from '../dto/availability.dto';
 import {
   AvailabilityActionResponseDto,
   DeleteAvailabilityResponseDto,
   StudentProfileDto,
-} from './dto/profile-response.dto';
+} from '../dto/profile-response.dto';
 
 @ApiTags('Profiles')
 @ApiBearerAuth()

@@ -1,13 +1,13 @@
 import { NotFoundException, BadRequestException, ValidationPipe } from '@nestjs/common';
 import { type Mocked } from 'vitest';
-import { UserProfileService } from '../user-profile.service';
-import { UserProfileRepository, UserAccount } from '../user-profile.repository';
+import { UserProfileServiceImpl } from '../service/impl/UserProfileServiceImpl';
+import { UserProfileRepository, UserAccount } from '../repository/UserProfileRepository';
 import { ProfileEntity } from '../entities/profile.entity';
 import { AvailabilityEntity } from '../entities/availability.entity';
 import { UpdateProfileDto } from '../dto/update-profile.dto';
 
 describe('UserProfileService (Unit)', () => {
-  let service: UserProfileService;
+  let service: UserProfileServiceImpl;
   let mockRepo: Mocked<UserProfileRepository>;
 
   const userId = 'user-uuid-profile-1';
@@ -27,7 +27,7 @@ describe('UserProfileService (Unit)', () => {
       deleteAvailability: vi.fn(),
     } as unknown as Mocked<UserProfileRepository>;
 
-    service = new UserProfileService(mockRepo);
+    service = new UserProfileServiceImpl(mockRepo);
   });
 
   describe('getProfile', () => {

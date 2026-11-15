@@ -1,18 +1,19 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { UpdateProfileDto } from './dto/update-profile.dto';
-import { CreateAvailabilityDto, UpdateAvailabilityDto } from './dto/availability.dto';
+import { UserProfileService } from '../UserProfileService';
+import { UpdateProfileDto } from '../../dto/update-profile.dto';
+import { CreateAvailabilityDto, UpdateAvailabilityDto } from '../../dto/availability.dto';
 import {
   AvailabilityActionResponseDto,
   AvailabilitySlotDto,
   DeleteAvailabilityResponseDto,
   StudentProfileDto,
-} from './dto/profile-response.dto';
-import { AvailabilityEntity } from './entities/availability.entity';
+} from '../../dto/profile-response.dto';
+import { AvailabilityEntity } from '../../entities/availability.entity';
 import {
   AvailabilityValues,
   ProfileChanges,
   UserProfileRepository,
-} from './user-profile.repository';
+} from '../../repository/UserProfileRepository';
 
 const LATEST_END_TIME = '22:00';
 
@@ -32,8 +33,10 @@ const toSlotDto = (slot: AvailabilityEntity): AvailabilitySlotDto => ({
 });
 
 @Injectable()
-export class UserProfileService {
-  constructor(private readonly repository: UserProfileRepository) {}
+export class UserProfileServiceImpl extends UserProfileService {
+  constructor(private readonly repository: UserProfileRepository) {
+    super();
+  }
 
   async getProfile(userId: string): Promise<StudentProfileDto> {
     const [account, profile] = await Promise.all([
