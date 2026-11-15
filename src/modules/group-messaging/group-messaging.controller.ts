@@ -89,7 +89,7 @@ export class GroupMessagingController {
     @Param("groupId", new ParseUUIDPipe({ version: "4" })) groupId: string,
     @GroupActor() user: ChatIdentity,
   ) {
-    return this.service.members(groupId, user.id);
+    return this.service.members(groupId, user.id, user.role);
   }
 
   /** Consulta el historial cronológico de una conversación autorizada. */

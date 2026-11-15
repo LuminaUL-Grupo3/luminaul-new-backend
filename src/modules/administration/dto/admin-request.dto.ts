@@ -79,11 +79,11 @@ export class ResolveReportDto {
   @IsEnum(ReportAction, { message: 'La acción debe ser delete_content o none' })
   action?: ReportAction;
 
-  @ApiPropertyOptional({ maxLength: 1000 })
+  @ApiPropertyOptional({ maxLength: 100 })
   @IsOptional()
   @Transform(trim)
   @IsString()
-  @MaxLength(1000, { message: 'Las notas no pueden superar los 1000 caracteres' })
+  @MaxLength(100, { message: 'Las notas no pueden superar los 100 caracteres' })
   notes?: string;
 }
 

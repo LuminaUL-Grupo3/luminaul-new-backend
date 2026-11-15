@@ -19,6 +19,7 @@ import {
   AdminReportListResponseDto,
   AdminStatsDto,
   AdminUserListResponseDto,
+  AdminUserModerationStatsDto,
   ChangeUserStatusResponseDto,
   ResolveAppealResponseDto,
   ResolveReportResponseDto,
@@ -103,5 +104,15 @@ export class AdminController {
   @ApiResponse({ status: 200, type: AdminStatsDto })
   getStats(): Promise<AdminStatsDto> {
     return this.service.getStats();
+  }
+
+  @Get('users/:userId/moderation-stats')
+  @ApiOperation({ summary: 'Estadísticas de moderación de un usuario para administradores' })
+  @ApiResponse({ status: 200, type: AdminUserModerationStatsDto })
+  @ApiResponse({ status: 404, description: 'Usuario inexistente' })
+  getUserModerationStats(
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ): Promise<AdminUserModerationStatsDto> {
+    return this.service.getUserModerationStats(userId);
   }
 }

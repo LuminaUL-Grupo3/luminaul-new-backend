@@ -34,9 +34,9 @@ export class GroupMessagingService {
     return this.groups.detail(groupId, userId);
   }
 
-  /** Devuelve miembros activos exclusivamente a integrantes del grupo. */
-  members(groupId: string, userId: string) {
-    return this.groups.members(groupId, userId);
+  /** Devuelve miembros activos a integrantes del grupo o a administradores. */
+  members(groupId: string, userId: string, actorRole?: string) {
+    return this.groups.members(groupId, userId, actorRole);
   }
 
   /** Crea el grupo y luego proyecta su contrato de respuesta. */

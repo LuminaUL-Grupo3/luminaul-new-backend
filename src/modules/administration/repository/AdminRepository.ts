@@ -89,6 +89,12 @@ export interface StatsRow {
   pending_appeals: string;
 }
 
+export interface UserModerationStatsRow {
+  reports_received: string;
+  removed_content: string;
+  suspensions: string;
+}
+
 export interface Page<T> {
   total: number;
   rows: T[];
@@ -168,4 +174,5 @@ export abstract class AdminRepository {
 
   // ---------- Métricas del panel ----------
   abstract getStats(): Promise<StatsRow>;
+  abstract getUserModerationStats(userId: string): Promise<UserModerationStatsRow>;
 }

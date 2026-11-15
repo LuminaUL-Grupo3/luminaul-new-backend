@@ -55,6 +55,7 @@ export const AUTH_VALIDATION_MESSAGES = {
   NEW_PASSWORD_REQUIRED: 'Debes ingresar tu nueva contraseña',
   CURRENT_PASSWORD_REQUIRED: 'Debes ingresar tu contraseña actual',
   NAME_REQUIRED: 'El nombre no puede estar vacío',
+  NAME_FULL: 'Debes ingresar tu nombre y apellido',
   NAME_MAX_LENGTH: 'El nombre no puede superar los 150 caracteres',
   OTP_LENGTH: 'El código de verificación debe contener 6 dígitos',
   OTP_DIGITS: 'El código de verificación solo puede contener números',
@@ -62,6 +63,7 @@ export const AUTH_VALIDATION_MESSAGES = {
 
 export const AUTH_PATTERNS = {
   INSTITUTIONAL_EMAIL: /^[a-zA-Z0-9._%+-]+@aloe\.ulima\.edu\.pe$/,
+  FULL_NAME: /\S+\s+\S+/,
   OTP_DIGITS: /^\d+$/,
 } as const;
 

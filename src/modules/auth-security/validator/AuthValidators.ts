@@ -1,6 +1,6 @@
 import { TransformFnParams } from 'class-transformer';
 import { ValidateBy, ValidationArguments } from 'class-validator';
-import { AUTH_LIMITS, AUTH_VALIDATION_MESSAGES } from '../auth.constants';
+import { AUTH_LIMITS, AUTH_PATTERNS, AUTH_VALIDATION_MESSAGES } from '../auth.constants';
 
 // Normaliza el correo antes de validar para que "Ana@Aloe.Ulima.edu.pe" sea aceptado
 export const normalizeEmail = ({ value }: TransformFnParams): unknown =>
@@ -45,6 +45,31 @@ export function IsRequiredText(message: string): PropertyDecorator {
     validator: {
       validate: (value: unknown) => typeof value === 'string' && value.length > 0,
       defaultMessage: () => message,
+    },
+  });
+}
+
+function fullNameError(value: unknown): string | null {
+  if (typeof value !== 'string' || value.length === 0) {
+    return AUTH_VALIDATION_MESSAGES.NAME_REQUIRED;
+  }
+  if (value.length > AUTH_LIMITS.NAME_MAX_LENGTH) {
+    return AUTH_VALIDATION_MESSAGES.NAME_MAX_LENGTH;
+  }
+  if (!AUTH_PATTERNS.FULL_NAME.test(value)) {
+    return AUTH_VALIDATION_MESSAGES.NAME_FULL;
+  }
+  return null;
+}
+
+// Exige nombre y apellido (al menos dos palabras separadas por espacio tras trim)
+export function IsFullName(): PropertyDecorator {
+  return ValidateBy({
+    name: 'isFullName',
+    validator: {
+      validate: (value: unknown) => fullNameError(value) === null,
+      defaultMessage: (args?: ValidationArguments) =>
+        fullNameError(args?.value) ?? AUTH_VALIDATION_MESSAGES.NAME_FULL,
     },
   });
 }

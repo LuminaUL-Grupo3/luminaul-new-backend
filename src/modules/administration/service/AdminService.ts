@@ -11,6 +11,7 @@ import {
   AdminReportListResponseDto,
   AdminStatsDto,
   AdminUserListResponseDto,
+  AdminUserModerationStatsDto,
   ChangeUserStatusResponseDto,
   ResolveAppealResponseDto,
   ResolveReportResponseDto,
@@ -56,4 +57,7 @@ export abstract class AdminService {
 
   // Métricas del panel
   abstract getStats(): Promise<AdminStatsDto>;
+
+  // Estadísticas de moderación de un usuario específico
+  abstract getUserModerationStats(userId: string): Promise<AdminUserModerationStatsDto>;
 }

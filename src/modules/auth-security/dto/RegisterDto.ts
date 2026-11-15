@@ -1,9 +1,9 @@
-import { IsEmail, MaxLength, Matches } from 'class-validator';
+import { IsEmail, Matches } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  IsFullName,
   IsNewPassword,
-  IsRequiredText,
   normalizeEmail,
   trimString,
 } from '../validator/AuthValidators';
@@ -28,7 +28,6 @@ export class RegisterDto {
 
   @ApiProperty({ example: 'Martín Vizcarra', maxLength: AUTH_LIMITS.NAME_MAX_LENGTH })
   @Transform(trimString)
-  @IsRequiredText(AUTH_VALIDATION_MESSAGES.NAME_REQUIRED)
-  @MaxLength(AUTH_LIMITS.NAME_MAX_LENGTH, { message: AUTH_VALIDATION_MESSAGES.NAME_MAX_LENGTH })
+  @IsFullName()
   name!: string;
 }

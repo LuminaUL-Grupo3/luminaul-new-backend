@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { DataSource, EntityManager, IsNull } from "typeorm";
+import { UserRole } from "../../auth-security/enums/UserRole";
 import { GroupEntity } from "../entities/group.entity";
 import { CreateGroupDto, GroupFilterDto } from "../dto/group.dto";
 import {
@@ -142,10 +143,26 @@ export class GroupsRepository {
   }
 
   /** Cuenta únicamente miembros activos, sin perder las filas históricas de salidas/expulsiones. */
-  async members(groupId: string, actorId: string): Promise<GroupMemberDto[]> {
-    await this.requireMember(groupId, actorId);
+  async members(
+    groupId: string,
+    actorId: string,
+    actorRole?: string,
+  ): Promise<GroupMemberDto[]> {
+    if (actorRole !== UserRole.ADMIN) {
+      await this.requireMember(groupId, actorId);
+    } else {
+      const exists: { id: string }[] = await this.db.query(
+        "SELECT id FROM groups WHERE id=$1 AND deleted_at IS NULL",
+        [groupId],
+      );
+      if (!exists.length) {
+        throw new NotFoundException(
+          "El grupo no existe o ya no está disponible.",
+        );
+      }
+    }
     const rows: MemberRow[] = await this.db.query(
-      `SELECT gm.user_id AS "userId",COALESCE(p.name,u.name) AS name,
+      `SELECT gm.user_id AS "userId",COALESCE(p.name,u.name) AS name,u.email,
       CASE WHEN gm.user_id=g.leader_id THEN 'leader' ELSE 'member' END AS role,gm.status,
       p.profile_photo_url AS "profilePhotoUrl",gm.joined_at AS "joinedAt"
       FROM group_members gm JOIN groups g ON g.id=gm.group_id JOIN users u ON u.id=gm.user_id LEFT JOIN profiles p ON p.user_id=u.id

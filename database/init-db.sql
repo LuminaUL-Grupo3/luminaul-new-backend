@@ -19,6 +19,7 @@ DROP TABLE IF EXISTS reviews CASCADE;
 DROP TABLE IF EXISTS message_reactions CASCADE;
 DROP TABLE IF EXISTS group_read_markers CASCADE;
 DROP TABLE IF EXISTS group_messages CASCADE;
+DROP TABLE IF EXISTS tutoring_requests CASCADE;
 DROP TABLE IF EXISTS join_requests CASCADE;
 DROP TABLE IF EXISTS group_members CASCADE;
 DROP TABLE IF EXISTS publications CASCADE;
@@ -633,7 +634,67 @@ VALUES
   (gen_random_uuid(), 'carajo', 'high'),
   (gen_random_uuid(), 'verga', 'high'),
   (gen_random_uuid(), 'insulto', 'high'),
-  (gen_random_uuid(), 'spam', 'high')
+  (gen_random_uuid(), 'spam', 'high'),
+
+  -- 9. Términos en Inglés (Fraude, Violencia, Drogas, Odio e Insultos) (High)
+  (gen_random_uuid(), 'plagiarism', 'high'),
+  (gen_random_uuid(), 'buy_exam', 'high'),
+  (gen_random_uuid(), 'sell_exam', 'high'),
+  (gen_random_uuid(), 'buy_grades', 'high'),
+  (gen_random_uuid(), 'sell_thesis', 'high'),
+  (gen_random_uuid(), 'leak_exam', 'high'),
+  (gen_random_uuid(), 'bribe', 'high'),
+  (gen_random_uuid(), 'kill', 'high'),
+  (gen_random_uuid(), 'kill_you', 'high'),
+  (gen_random_uuid(), 'kill_yourself', 'high'),
+  (gen_random_uuid(), 'kys', 'high'),
+  (gen_random_uuid(), 'murder', 'high'),
+  (gen_random_uuid(), 'stab', 'high'),
+  (gen_random_uuid(), 'kidnap', 'high'),
+  (gen_random_uuid(), 'rape', 'high'),
+  (gen_random_uuid(), 'bomb', 'high'),
+  (gen_random_uuid(), 'terrorism', 'high'),
+  (gen_random_uuid(), 'suicide', 'high'),
+  (gen_random_uuid(), 'self_harm', 'high'),
+  (gen_random_uuid(), 'cocaine', 'high'),
+  (gen_random_uuid(), 'marijuana', 'high'),
+  (gen_random_uuid(), 'weed', 'high'),
+  (gen_random_uuid(), 'drugs', 'high'),
+  (gen_random_uuid(), 'fentanyl', 'high'),
+  (gen_random_uuid(), 'heroin', 'high'),
+  (gen_random_uuid(), 'meth', 'high'),
+  (gen_random_uuid(), 'pedophilia', 'high'),
+  (gen_random_uuid(), 'porn', 'high'),
+  (gen_random_uuid(), 'pornography', 'high'),
+  (gen_random_uuid(), 'fuck', 'high'),
+  (gen_random_uuid(), 'fucking', 'high'),
+  (gen_random_uuid(), 'fucker', 'high'),
+  (gen_random_uuid(), 'motherfucker', 'high'),
+  (gen_random_uuid(), 'shit', 'high'),
+  (gen_random_uuid(), 'bullshit', 'high'),
+  (gen_random_uuid(), 'bitch', 'high'),
+  (gen_random_uuid(), 'son_of_a_bitch', 'high'),
+  (gen_random_uuid(), 'bastard', 'high'),
+  (gen_random_uuid(), 'asshole', 'high'),
+  (gen_random_uuid(), 'dick', 'high'),
+  (gen_random_uuid(), 'dickhead', 'high'),
+  (gen_random_uuid(), 'cock', 'high'),
+  (gen_random_uuid(), 'pussy', 'high'),
+  (gen_random_uuid(), 'cunt', 'high'),
+  (gen_random_uuid(), 'whore', 'high'),
+  (gen_random_uuid(), 'slut', 'high'),
+  (gen_random_uuid(), 'faggot', 'high'),
+  (gen_random_uuid(), 'fag', 'high'),
+  (gen_random_uuid(), 'nigger', 'high'),
+  (gen_random_uuid(), 'nigga', 'high'),
+  (gen_random_uuid(), 'retard', 'high'),
+  (gen_random_uuid(), 'retarded', 'high'),
+  (gen_random_uuid(), 'idiot', 'high'),
+  (gen_random_uuid(), 'moron', 'high'),
+  (gen_random_uuid(), 'stupid', 'high'),
+  (gen_random_uuid(), 'dumbass', 'high'),
+  (gen_random_uuid(), 'jackass', 'high'),
+  (gen_random_uuid(), 'stfu', 'high')
 ON CONFLICT (word) DO NOTHING;
 
 -- E. Catálogo de Cursos de la Universidad de Lima (74 cursos oficiales: 52 obligatorios y 22 electivos)

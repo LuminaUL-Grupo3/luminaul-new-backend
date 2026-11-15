@@ -21,6 +21,7 @@ import {
   AdminStatsDto,
   AdminUserListItemDto,
   AdminUserListResponseDto,
+  AdminUserModerationStatsDto,
   ChangeUserStatusResponseDto,
   ResolveAppealResponseDto,
   ResolveReportResponseDto,
@@ -125,10 +126,11 @@ export class AdminServiceImpl extends AdminService {
     }
 
     if (authorId) {
+      const reasonSuffix = dto.notes?.trim() ? ` Motivo: ${dto.notes.trim()}` : '';
       this.notificationClient.notify({
         userId: authorId,
         title: 'Contenido eliminado',
-        message: target.removedNotice,
+        message: `${target.removedNotice}${reasonSuffix}`,
         type: NotificationType.MODERATION,
       });
     }
@@ -220,6 +222,15 @@ export class AdminServiceImpl extends AdminService {
 
   async getStats(): Promise<AdminStatsDto> {
     return AdminStatsDto.fromRow(await this.repository.getStats());
+  }
+
+  async getUserModerationStats(userId: string): Promise<AdminUserModerationStatsDto> {
+    const user = await this.repository.findUserById(userId);
+    if (!user || user.status === UserAccountStatus.DELETED) {
+      throw new AdminException(ADMIN_MESSAGES.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+    const row = await this.repository.getUserModerationStats(userId);
+    return AdminUserModerationStatsDto.fromRow(userId, row);
   }
 
   // Reglas comunes a cualquier cambio de estado de cuenta (HU 7.1). Si alguna no se cumple,

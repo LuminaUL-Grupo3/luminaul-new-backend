@@ -16,6 +16,7 @@ import {
   ResolveAppealCommand,
   ResolveReportCommand,
   StatsRow,
+  UserModerationStatsRow,
   UserRecord,
   UserRow,
 } from '../AdminRepository';
@@ -239,6 +240,33 @@ export class AdminRepositoryImpl extends AdminRepository {
          (SELECT COUNT(*) FROM publications WHERE status = 'published' AND deleted_at IS NULL) AS total_posts,
          (SELECT COUNT(*) FROM reports WHERE status = 'pending') AS pending_reports,
          (SELECT COUNT(*) FROM appeals WHERE status = 'pending') AS pending_appeals`,
+    );
+    return rows[0];
+  }
+
+  async getUserModerationStats(userId: string): Promise<UserModerationStatsRow> {
+    const rows: UserModerationStatsRow[] = await this.dataSource.query(
+      `SELECT
+         (SELECT COUNT(*)
+          FROM reports r
+          ${contentJoins('r.target_type', 'r.target_id')}
+          WHERE ${coalesceColumn((target) => target.authorColumn)} = $1) AS reports_received,
+         (SELECT COUNT(*)
+          FROM (
+            SELECT DISTINCT a.details->>'targetType' AS target_type, (a.details->>'targetId')::uuid AS target_id
+            FROM audit_logs a
+            WHERE a.action = 'REPORT_RESOLVED'
+              AND COALESCE((a.details->>'contentDeleted')::boolean, false) = true
+              AND a.details->>'targetId' ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+          ) deleted_targets
+          ${contentJoins('deleted_targets.target_type', 'deleted_targets.target_id')}
+          WHERE ${coalesceColumn((target) => target.authorColumn)} = $1) AS removed_content,
+         (SELECT COUNT(*)
+          FROM audit_logs
+          WHERE target_entity = 'user'
+            AND target_id = $1
+            AND action = 'USER_SUSPENDED') AS suspensions`,
+      [userId],
     );
     return rows[0];
   }

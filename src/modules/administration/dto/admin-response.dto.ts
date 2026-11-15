@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import type { AppealRow, ReportRow, StatsRow, UserRow } from '../repository/AdminRepository';
+import type {
+  AppealRow,
+  ReportRow,
+  StatsRow,
+  UserModerationStatsRow,
+  UserRow,
+} from '../repository/AdminRepository';
 import type { NotificationEntity } from '../entities/notification.entity';
 
 const iso = (date: Date | null): string | null => (date ? date.toISOString() : null);
@@ -182,6 +188,22 @@ export class AdminStatsDto {
       totalPosts: Number(row.total_posts),
       pendingReports: Number(row.pending_reports),
       pendingAppeals: Number(row.pending_appeals),
+    };
+  }
+}
+
+export class AdminUserModerationStatsDto {
+  @ApiProperty() userId!: string;
+  @ApiProperty() reportsReceivedCount!: number;
+  @ApiProperty() removedContentCount!: number;
+  @ApiProperty() suspensionsCount!: number;
+
+  static fromRow(userId: string, row: UserModerationStatsRow): AdminUserModerationStatsDto {
+    return {
+      userId,
+      reportsReceivedCount: Number(row.reports_received),
+      removedContentCount: Number(row.removed_content),
+      suspensionsCount: Number(row.suspensions),
     };
   }
 }

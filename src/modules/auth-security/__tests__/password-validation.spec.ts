@@ -73,13 +73,24 @@ describe('mensajes en español en los demás DTOs de auth', () => {
   });
 
   it('registro y reset aplican la misma política que el cambio de contraseña', async () => {
-    const base = { email: '20210001@aloe.ulima.edu.pe', name: 'Martín' };
+    const base = { email: '20210001@aloe.ulima.edu.pe', name: 'Martín Vizcarra' };
     expect(await validationMessages(RegisterDto, { ...base, password: ' '.repeat(12) })).toEqual([
       'La contraseña no puede estar formada solo por espacios',
     ]);
     expect(
       await validationMessages(ResetPasswordDto, { email: base.email, token: '123456', newPassword: 'x'.repeat(73) }),
     ).toEqual(['La contraseña no puede superar los 72 caracteres (las letras con tilde y la ñ cuentan como dos)']);
+  });
+
+  it('registro exige nombre y apellido (al menos un espacio entre palabras)', async () => {
+    const base = { email: '20210001@aloe.ulima.edu.pe', password: 'PasswordSegura123!' };
+    expect(await validationMessages(RegisterDto, { ...base, name: 'Martín' })).toEqual([
+      'Debes ingresar tu nombre y apellido',
+    ]);
+    expect(await validationMessages(RegisterDto, { ...base, name: '  Martín  ' })).toEqual([
+      'Debes ingresar tu nombre y apellido',
+    ]);
+    expect(await validationMessages(RegisterDto, { ...base, name: 'Martín Vizcarra' })).toEqual([]);
   });
 
   it('el login no aplica la política nueva (acepta contraseñas ya guardadas)', async () => {
