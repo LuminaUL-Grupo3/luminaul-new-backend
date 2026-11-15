@@ -9,6 +9,7 @@ import {
   IsInt,
   Min,
   Max,
+  MaxLength,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
@@ -28,16 +29,19 @@ export class PostUpdateDto {
     typeof value === 'string' ? value.trim() : value,
   )
   @Validate(IsNotBlankConstraint)
+  @MaxLength(1000, { message: 'description must not exceed 1000 characters' })
   description?: string;
 
   @ApiPropertyOptional({ description: 'Beneficios del grupo o tutoría' })
   @IsOptional()
   @IsString()
+  @MaxLength(500, { message: 'benefits must not exceed 500 characters' })
   benefits?: string;
 
   @ApiPropertyOptional({ description: 'Requisitos para unirse' })
   @IsOptional()
   @IsString()
+  @MaxLength(500, { message: 'requirements must not exceed 500 characters' })
   requirements?: string;
 
   @ApiPropertyOptional({ description: 'Capacidad máxima de miembros (1 a 50)' })

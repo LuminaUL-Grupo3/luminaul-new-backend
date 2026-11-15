@@ -67,6 +67,7 @@ export class PostCreateDto {
     typeof value === 'string' ? value.trim() : value,
   )
   @Validate(IsNotBlankConstraint)
+  @MaxLength(1000, { message: 'description must not exceed 1000 characters' })
   description!: string;
 
   @ApiPropertyOptional({
@@ -75,6 +76,7 @@ export class PostCreateDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(500, { message: 'benefits must not exceed 500 characters' })
   benefits?: string;
 
   @ApiPropertyOptional({
@@ -83,6 +85,7 @@ export class PostCreateDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(500, { message: 'requirements must not exceed 500 characters' })
   requirements?: string;
 
   @ApiPropertyOptional({
