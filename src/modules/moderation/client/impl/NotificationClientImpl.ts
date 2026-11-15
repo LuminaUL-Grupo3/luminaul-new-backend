@@ -1,9 +1,11 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
+  CHAT_MESSAGE_HIDDEN_EVENT,
   NOTIFICATION_ADMINISTRATORS_EVENT,
   NOTIFICATION_SEND_EVENT,
 } from '../../moderation.constants';
+import { ChatMessageHiddenEvent } from '../../events/content-created.event';
 import {
   ModerationAdminNotice,
   ModerationUserNotice,
@@ -23,6 +25,10 @@ export class NotificationClientImpl extends NotificationClient {
 
   notifyAdministrators(notice: ModerationAdminNotice): void {
     this.eventEmitter?.emit(NOTIFICATION_ADMINISTRATORS_EVENT, notice);
+  }
+
+  emitChatMessageHidden(event: ChatMessageHiddenEvent): void {
+    this.eventEmitter?.emit(CHAT_MESSAGE_HIDDEN_EVENT, event);
   }
 }
 

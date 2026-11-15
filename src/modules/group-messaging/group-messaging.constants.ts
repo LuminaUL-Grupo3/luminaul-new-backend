@@ -29,3 +29,8 @@ export const GROUP_NOTICES = {
   },
 } as const;
 
+export const GROUP_MESSAGES = {
+  ADMIN_CANNOT_CREATE_GROUP: 'Los administradores no pueden crear grupos de estudio.',
+  ADMIN_CANNOT_JOIN_GROUP: 'Los administradores no pueden solicitar ingreso a grupos de estudio.',
+} as const;
+

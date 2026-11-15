@@ -1,11 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
+export const DEFAULT_MODERATION_BLOCK_THRESHOLD = 0.35;
+
 export const BLOCKED_CATEGORIES = [
   'harassment',
   'harassment/threatening',
   'hate',
   'hate/threatening',
+  'self-harm',
+  'self-harm/intent',
+  'self-harm/instructions',
+  'sexual',
+  'sexual/minors',
+  'violence',
+  'violence/graphic',
 ] as const;
 
 export interface OpenAiCheckResult {
@@ -31,9 +40,17 @@ export class OpenAiModerationException extends Error {
 export class OpenAiModerationService {
   private readonly logger = new Logger(OpenAiModerationService.name);
   private readonly apiKey?: string;
+  private readonly blockThreshold: number;
 
   constructor(private readonly config: ConfigService) {
     this.apiKey = this.config.get<string>('OPENAI_API_KEY');
+    const configured = this.config.get<number | string>('MODERATION_BLOCK_THRESHOLD');
+    const parsed =
+      configured === undefined || configured === '' ? DEFAULT_MODERATION_BLOCK_THRESHOLD : Number(configured);
+    this.blockThreshold =
+      Number.isFinite(parsed) && parsed >= 0 && parsed <= 1
+        ? parsed
+        : DEFAULT_MODERATION_BLOCK_THRESHOLD;
   }
 
   async moderateText(text: string): Promise<OpenAiCheckResult> {
@@ -78,9 +95,14 @@ export class OpenAiModerationService {
         throw new OpenAiModerationException('Formato de respuesta inesperado de OpenAI', false);
       }
 
-      const detectedCategories = BLOCKED_CATEGORIES.filter(
-        (category) => firstResult.categories[category] === true,
-      );
+      const categoryScores = (firstResult.category_scores ?? {}) as Record<string, number | undefined>;
+      const detectedCategories = BLOCKED_CATEGORIES.filter((category) => {
+        const score = categoryScores[category];
+        if (typeof score === 'number') {
+          return score >= this.blockThreshold;
+        }
+        return firstResult.categories[category] === true;
+      });
 
       const flagged = detectedCategories.length > 0;
 

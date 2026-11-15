@@ -1,14 +1,13 @@
 import {
   Injectable,
-  BadRequestException,
-  NotFoundException,
-  ForbiddenException,
-  UnprocessableEntityException,
+  HttpStatus,
   Optional,
 } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { InMemoryTtlCache } from '../../../../common/cache/in-memory-ttl.cache';
 import { DOMAIN_EVENTS } from '../../../../common/events/domain-events';
+import { UserRole } from '../../../auth-security/enums/UserRole';
+import { PostException } from '../../exception/PostException';
 import { PostsService } from '../PostsService';
 import { PostsRepository } from '../../repository/PostsRepository';
 import { CoursesClient } from '../../client/CoursesClient';
@@ -229,19 +228,19 @@ export class PostsServiceImpl extends PostsService {
     userId: string,
   ): Promise<PostResponseDto> {
     if (!postDto.description || postDto.description.trim().length === 0) {
-      throw new BadRequestException('description cannot be empty');
+      throw new PostException(POST_MESSAGES.EMPTY_DESCRIPTION, HttpStatus.BAD_REQUEST);
     }
 
     if (
       postDto.maxCapacity !== undefined &&
       (postDto.maxCapacity < 1 || postDto.maxCapacity > 50)
     ) {
-      throw new BadRequestException('maxCapacity must be between 1 and 50');
+      throw new PostException(POST_MESSAGES.INVALID_MAX_CAPACITY, HttpStatus.BAD_REQUEST);
     }
 
     const course = await this.coursesClient.findById(postDto.courseId);
     if (!course) {
-      throw new UnprocessableEntityException(POST_MESSAGES.COURSE_NOT_FOUND);
+      throw new PostException(POST_MESSAGES.COURSE_NOT_FOUND, HttpStatus.UNPROCESSABLE_ENTITY);
     }
 
     // 1. Resolver el creador correspondiente según el tipo (Factory Method)
@@ -331,7 +330,7 @@ export class PostsServiceImpl extends PostsService {
   async getPostById(postId: string): Promise<PostResponseDto> {
     const post = await this.postsRepository.getPostById(postId);
     if (!post) {
-      throw new NotFoundException(POST_MESSAGES.POST_NOT_FOUND);
+      throw new PostException(POST_MESSAGES.POST_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
     return this.mapToPostResponseDto(post);
   }
@@ -345,12 +344,12 @@ export class PostsServiceImpl extends PostsService {
   ): Promise<PostResponseDto> {
     const existingPost = await this.postsRepository.getPostById(postId);
     if (!existingPost) {
-      throw new NotFoundException(POST_MESSAGES.POST_NOT_FOUND);
+      throw new PostException(POST_MESSAGES.POST_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
 
-    // Validar propiedad o rol administrador (SPEC Regla 1)
-    if (existingPost.userId !== userId && userRole !== 'admin') {
-      throw new ForbiddenException(POST_MESSAGES.FORBIDDEN_EDIT);
+    // Solo el autor original (no admin) puede editar una publicación; el admin solo puede eliminarla
+    if (existingPost.userId !== userId || userRole === UserRole.ADMIN) {
+      throw new PostException(POST_MESSAGES.FORBIDDEN_EDIT, HttpStatus.FORBIDDEN);
     }
 
     // Validar integridad de grupo si se especifica
@@ -359,13 +358,13 @@ export class PostsServiceImpl extends PostsService {
         ? await this.groupMessagingClient.findActiveById(payload.groupId)
         : await this.postsRepository.findGroupById(payload.groupId);
       if (!existingGroup) {
-        throw new NotFoundException(POST_MESSAGES.GROUP_NOT_FOUND);
+        throw new PostException(POST_MESSAGES.GROUP_NOT_FOUND, HttpStatus.NOT_FOUND);
       }
     }
 
     const updatedPost = await this.postsRepository.edit(postId, payload);
     if (!updatedPost) {
-      throw new NotFoundException(POST_MESSAGES.POST_NOT_FOUND);
+      throw new PostException(POST_MESSAGES.POST_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
     this.invalidateFeedCache();
 
@@ -389,17 +388,17 @@ export class PostsServiceImpl extends PostsService {
   ): Promise<DeletePostResponseDto> {
     const existingPost = await this.postsRepository.getPostById(postId);
     if (!existingPost) {
-      throw new NotFoundException(POST_MESSAGES.POST_NOT_FOUND);
+      throw new PostException(POST_MESSAGES.POST_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
 
     // Validar propiedad o rol administrador (SPEC Regla 1)
-    if (existingPost.userId !== userId && userRole !== 'admin') {
-      throw new ForbiddenException(POST_MESSAGES.FORBIDDEN_DELETE);
+    if (existingPost.userId !== userId && userRole !== UserRole.ADMIN) {
+      throw new PostException(POST_MESSAGES.FORBIDDEN_DELETE, HttpStatus.FORBIDDEN);
     }
 
     const success = await this.postsRepository.delete(postId);
     if (!success) {
-      throw new NotFoundException(POST_MESSAGES.POST_NOT_FOUND);
+      throw new PostException(POST_MESSAGES.POST_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
     this.invalidateFeedCache();
 

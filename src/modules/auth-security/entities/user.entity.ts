@@ -61,6 +61,9 @@ export class UserEntity {
   @Column({ type: 'text', name: 'suspension_reason', nullable: true })
   suspensionReason!: string | null;
 
+  @Column({ type: 'timestamptz', name: 'suspended_until', nullable: true })
+  suspendedUntil!: Date | null;
+
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt!: Date;
 

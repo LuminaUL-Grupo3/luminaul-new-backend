@@ -32,6 +32,8 @@ import {
   ReportAction,
   ReportStatus,
 } from '../../enums/administration.enums';
+import { UserAccountStatus } from '../../../auth-security/enums/UserAccountStatus';
+import { UserRole } from '../../../auth-security/enums/UserRole';
 import { resolveContentTarget } from '../../policies/content-targets';
 import { ADMIN_MESSAGES, AuditAction, NOTICES, USER_STATUS_STRATEGIES } from '../../administration.constants';
 
@@ -231,14 +233,14 @@ export class AdminServiceImpl extends AdminService {
       throw new AdminException(ADMIN_MESSAGES.CANNOT_CHANGE_OWN_STATUS, HttpStatus.BAD_REQUEST);
     }
     const user = await this.repository.findUserById(userId);
-    if (!user || user.status === 'deleted') {
+    if (!user || user.status === UserAccountStatus.DELETED) {
       throw new AdminException(ADMIN_MESSAGES.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
-    if (user.role === 'admin') {
+    if (user.role === UserRole.ADMIN) {
       throw new AdminException(ADMIN_MESSAGES.CANNOT_SUSPEND_ADMIN, HttpStatus.FORBIDDEN);
     }
     // Reactivar una cuenta sin verificar saltaría la verificación por correo de SPEC-01
-    if (user.status === 'pending_verification') {
+    if (user.status === UserAccountStatus.PENDING_VERIFICATION) {
       throw new AdminException(ADMIN_MESSAGES.USER_NOT_VERIFIED, HttpStatus.CONFLICT);
     }
     if (user.status === strategy.targetStatus) {

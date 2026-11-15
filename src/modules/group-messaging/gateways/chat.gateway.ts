@@ -19,7 +19,7 @@ import { plainToInstance, ClassConstructor } from "class-transformer";
 import { validate } from "class-validator";
 import { Server, Socket } from "socket.io";
 import { isOriginAllowed } from "../../../config/cors.config";
-import { extractToken } from "../../auth-security/token/TokenExtractor";
+import { extractToken } from "../../../common/token/token-extractor";
 import { GroupSession } from "../security/group-session";
 import { GroupMessagingService } from "../group-messaging.service";
 import {
@@ -376,7 +376,7 @@ export class ChatGateway
     });
   }
   /** Agrega una reacción propia con idempotencia en la base de datos. */
-  @SubscribeMessage("reaction:add")
+  @SubscribeMessage("chat:reaction_add")
   addReaction(
     @ConnectedSocket() socket: ChatSocket,
     @MessageBody() raw: unknown,
@@ -384,7 +384,7 @@ export class ChatGateway
     return this.changeReaction(socket, raw, true);
   }
   /** Retira únicamente la reacción del usuario autenticado. */
-  @SubscribeMessage("reaction:remove")
+  @SubscribeMessage("chat:reaction_remove")
   removeReaction(
     @ConnectedSocket() socket: ChatSocket,
     @MessageBody() raw: unknown,
@@ -393,7 +393,7 @@ export class ChatGateway
   }
 
   /** Notifica una lectura real que el cliente produce solo con la conversación visible. */
-  @SubscribeMessage("message:read")
+  @SubscribeMessage("chat:message_read")
   markRead(@ConnectedSocket() socket: ChatSocket, @MessageBody() raw: unknown) {
     return this.execute(socket, WsReadMessageDto, raw, async (dto, user) => {
       this.requireRoom(socket, dto.groupId);

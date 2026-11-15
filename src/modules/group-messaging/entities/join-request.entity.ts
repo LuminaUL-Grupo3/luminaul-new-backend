@@ -19,6 +19,8 @@ export class JoinRequestEntity {
   @Column({ name: "reviewed_by", type: "uuid", nullable: true }) reviewedBy!:
     | string
     | null;
+  @Column({ name: "reviewed_at", type: "timestamptz", nullable: true })
+  reviewedAt!: Date | null;
   @Column({ name: "responded_at", type: "timestamptz", nullable: true })
   respondedAt!: Date | null;
   @CreateDateColumn({ name: "created_at", type: "timestamptz" })

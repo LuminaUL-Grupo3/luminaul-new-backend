@@ -15,7 +15,7 @@ export class GroupMessagingClientImpl extends GroupMessagingClient {
   }
 
   async createAutoGroup(input: AutoGroupInput, userId: string): Promise<string> {
-    const group = await this.groupsRepository.createWithAdmin(
+    const group = await this.groupsRepository.createWithLeader(
       {
         name: input.name,
         description: input.description ?? null,

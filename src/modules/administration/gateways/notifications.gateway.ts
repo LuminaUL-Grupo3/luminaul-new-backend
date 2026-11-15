@@ -9,7 +9,7 @@ import {
 import { Namespace, Socket } from 'socket.io';
 import { isOriginAllowed } from '../../../config/cors.config';
 import { SessionService } from '../../auth-security/service/SessionService';
-import { extractToken } from '../../auth-security/token/TokenExtractor';
+import { extractToken } from '../../../common/token/token-extractor';
 import {
   DeliveredNotification,
   NotificationDeliveryEvent,

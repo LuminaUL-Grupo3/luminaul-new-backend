@@ -1,8 +1,6 @@
-import {
-  BadRequestException,
-  UnprocessableEntityException,
-} from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
 import { type Mocked } from 'vitest';
+import { PostException } from '../exception/PostException';
 import { PostsServiceImpl } from '../service/impl/PostsServiceImpl';
 import { PostsRepository } from '../repository/PostsRepository';
 import { CoursesClient, CourseData } from '../client/CoursesClient';
@@ -102,7 +100,7 @@ describe('HU 1.1 PostsServiceImpl.createPost (Caja Blanca · V(G) = 7 > 4)', () 
     };
 
     await expect(service.createPost(dto, authorId)).rejects.toThrow(
-      new BadRequestException('description cannot be empty'),
+      new PostException(POST_MESSAGES.EMPTY_DESCRIPTION, HttpStatus.BAD_REQUEST),
     );
     expect(mockCoursesClient.findById).not.toHaveBeenCalled();
     expect(getCreatorSpy).not.toHaveBeenCalled();
@@ -119,7 +117,7 @@ describe('HU 1.1 PostsServiceImpl.createPost (Caja Blanca · V(G) = 7 > 4)', () 
     };
 
     await expect(service.createPost(dto, authorId)).rejects.toThrow(
-      new BadRequestException('description cannot be empty'),
+      new PostException(POST_MESSAGES.EMPTY_DESCRIPTION, HttpStatus.BAD_REQUEST),
     );
     expect(mockCoursesClient.findById).not.toHaveBeenCalled();
     expect(getCreatorSpy).not.toHaveBeenCalled();
@@ -136,7 +134,7 @@ describe('HU 1.1 PostsServiceImpl.createPost (Caja Blanca · V(G) = 7 > 4)', () 
     };
 
     await expect(service.createPost(dto, authorId)).rejects.toThrow(
-      new BadRequestException('maxCapacity must be between 1 and 50'),
+      new PostException(POST_MESSAGES.INVALID_MAX_CAPACITY, HttpStatus.BAD_REQUEST),
     );
     expect(mockCoursesClient.findById).not.toHaveBeenCalled();
     expect(getCreatorSpy).not.toHaveBeenCalled();
@@ -152,14 +150,14 @@ describe('HU 1.1 PostsServiceImpl.createPost (Caja Blanca · V(G) = 7 > 4)', () 
     };
 
     await expect(service.createPost(dto, authorId)).rejects.toThrow(
-      new BadRequestException('maxCapacity must be between 1 and 50'),
+      new PostException(POST_MESSAGES.INVALID_MAX_CAPACITY, HttpStatus.BAD_REQUEST),
     );
     expect(mockCoursesClient.findById).not.toHaveBeenCalled();
     expect(mockPostsRepo.create).not.toHaveBeenCalled();
   });
 
   // Prueba de Caja Blanca C5 (Camino independiente 5 - D2a=F, D3=V): curso inexistente en catálogo
-  it('C5 · D2a falsa, D3 verdadera: lanza UnprocessableEntityException cuando el curso no existe', async () => {
+  it('C5 · D2a falsa, D3 verdadera: lanza PostException 422 cuando el curso no existe', async () => {
     mockCoursesClient.findById.mockResolvedValue(null);
     const getCreatorSpy = vi.spyOn(postCreatorFactory, 'getCreator');
     const dto: PostCreateDto = {
@@ -169,7 +167,7 @@ describe('HU 1.1 PostsServiceImpl.createPost (Caja Blanca · V(G) = 7 > 4)', () 
     };
 
     await expect(service.createPost(dto, authorId)).rejects.toThrow(
-      new UnprocessableEntityException(POST_MESSAGES.COURSE_NOT_FOUND),
+      new PostException(POST_MESSAGES.COURSE_NOT_FOUND, HttpStatus.UNPROCESSABLE_ENTITY),
     );
     expect(mockCoursesClient.findById).toHaveBeenCalledWith(courseId);
     expect(getCreatorSpy).not.toHaveBeenCalled();

@@ -13,7 +13,6 @@ import {
   ValidationPipe,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
-import { IsIn } from "class-validator";
 import { GroupMessagingService } from "./group-messaging.service";
 import {
   GroupActor,
@@ -26,6 +25,7 @@ import {
   CreateJoinRequestDto,
   DecideJoinRequestDto,
   GroupFilterDto,
+  JoinRequestDecisionDto,
   MessageHistoryQueryDto,
   TransferLeadershipDto,
 } from "./dto/group.dto";
@@ -70,7 +70,7 @@ export class GroupMessagingController {
   @Post()
   @ApiOperation({ summary: "Crear grupo y membresía del líder" })
   create(@GroupActor() user: ChatIdentity, @Body() dto: CreateGroupDto) {
-    return this.service.create(user.id, dto);
+    return this.service.create(user.id, dto, user.role);
   }
 
   /** El detalle permite descubrir el grupo, pero no entrega contenido de la conversación a terceros. */
@@ -109,7 +109,7 @@ export class GroupMessagingController {
     @GroupActor() user: ChatIdentity,
     @Body() dto: CreateJoinRequestDto,
   ) {
-    return this.service.requestJoin(groupId, user.id, dto.message);
+    return this.service.requestJoin(groupId, user.id, dto.message, user.role);
   }
 
   /** Solo el líder recibe datos de postulantes y sus solicitudes pendientes. */
@@ -160,11 +160,6 @@ export class GroupMessagingController {
   ) {
     return this.service.transfer(groupId, user.id, dto.userId);
   }
-}
-
-/** DTO de decisión para resolver solicitudes por ID directo. */
-class JoinRequestDecisionDto {
-  @IsIn(["accepted", "rejected"]) action!: "accepted" | "rejected";
 }
 
 /** Controlador de solicitudes de unión a grupos (H.U 2.1 y 2.2). */

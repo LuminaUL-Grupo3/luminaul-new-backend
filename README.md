@@ -26,7 +26,7 @@ cp .env.example .env
 ```
 *(En Windows PowerShell: `Copy-Item .env.example .env`)*
 
-Asegúrate de que los valores de conexión coincidan con tu base de datos local en `.env`:
+El módulo de configuración valida las variables al arranque mediante Zod (`src/config/env.validation.ts`):
 ```env
 PORT=8000
 NODE_ENV=development
@@ -34,6 +34,9 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5432/luminaul
 JWT_SECRET=super-secret-key-luminaul-development-2026
 JWT_EXPIRES_IN=86400
 ```
+* En `NODE_ENV=production`, `JWT_SECRET` es obligatorio con un mínimo de **32 caracteres**.
+* Opcionales soportadas por validación: `DATABASE_SSL` (`true`/`false`), `DATABASE_SSL_REJECT_UNAUTHORIZED`, `WEB_ORIGIN`, `FRONTEND_URL`, `DOMAIN`, `MAIL_TRANSPORT`, `SMTP_*`, `MAIL_FROM` y `OPENAI_API_KEY`.
+* **CORS (`src/config/cors.config.ts`):** Normaliza y unifica orígenes desde `WEB_ORIGIN`, `FRONTEND_URL` y `DOMAIN` (con soporte local por defecto cuando ninguno está definido) tanto en HTTP como en Socket.IO.
 
 ### 2.3 Inicialización de la Base de Datos
 La sincronización automática destructiva de TypeORM está deshabilitada. Para crear el esquema relacional con sus 17 tablas, índices y datos iniciales de catálogo, ejecuta:
@@ -121,31 +124,34 @@ npm run test:cov
 | `POST` | `/auth/logout` | Revocación explícita del token de acceso | `Bearer` / Cookie |
 | `DELETE` | `/auth/me` | Borrado lógico de cuenta (`status = 'deleted'`) | `Bearer` / Cookie |
 
-### 5.2 Publicaciones y Filtros (SPEC-03)
+### 5.2 Publicaciones y Filtros (SPEC-03 + Catálogo de Cursos)
 
 | Método | Ruta | Descripción | Acceso |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/posts` | Crear publicación (vinculada al autor en sesión) | `Bearer` / Cookie |
-| `GET` | `/posts` | Feed de publicaciones con soporte de filtros y paginación | Público |
+| `POST` | `/posts` | Crear publicación (exclusivo `student`; `admin` recibe `403`) | `Bearer` / Cookie (`UserRole.STUDENT`) |
+| `GET` | `/posts` | Feed de publicaciones con filtros, paginación y caché en memoria (TTL `20s`) | Público |
 | `GET` | `/posts/me` | Historial de publicaciones del autor autenticado | `Bearer` / Cookie |
-| `PUT` | `/posts/:post_id` | Editar publicación (solo autor o administrador) | `Bearer` / Cookie |
-| `DELETE` | `/posts/:post_id` | Eliminar publicación (soft delete con status inactive) | `Bearer` / Cookie |
-| `GET` | `/courses` | Catálogo de cursos ordenados alfabéticamente | Público |
+| `PUT` | `/posts/:postId` | Editar publicación (solo autor o administrador; `courseId`/`type` inmutables) | `Bearer` / Cookie |
+| `DELETE` | `/posts/:postId` | Eliminar publicación (`status = 'hidden'`, retorna `success/deletedId/deletedAt`) | `Bearer` / Cookie |
+| `GET` | `/courses` | Catálogo de cursos ordenados alfabéticamente con caché en memoria (TTL `30s`) | Público |
 
 ### 5.3 Grupos y Solicitudes de Unión (SPEC-04)
 
 | Método | Ruta | Descripción | Acceso |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/groups/:group_id` | Detalle del grupo y estado del usuario (`my_status`) | `Bearer` / Cookie |
-| `POST` | `/groups/:group_id/join-requests` | Enviar solicitud de ingreso a un grupo | `Bearer` / Cookie |
+| `GET` | `/groups` / `/groups/:groupId` | Directorio público y detalle del grupo (lectura abierta también a `admin`) | Público / Sesión |
+| `POST` | `/groups` | Crear grupo de estudio (exclusivo `student`; `admin` recibe `403`) | `Bearer` / Cookie (`UserRole.STUDENT`) |
+| `POST` | `/groups/:groupId/join-requests` | Enviar solicitud de ingreso (exclusivo `student`; `admin` recibe `403`) | `Bearer` / Cookie (`UserRole.STUDENT`) |
 | `GET` | `/join-requests/me` | Solicitudes recibidas en mis grupos administrados | `Bearer` / Cookie |
-| `PATCH` | `/join-requests/:request_id` | Aprobar o rechazar solicitud de unión | `Bearer` / Cookie |
+| `PATCH` | `/join-requests/:requestId` | Aprobar o rechazar solicitud de unión | `Bearer` / Cookie |
+
+> Para el contrato completo de **SPEC-02 (Perfiles)**, **SPEC-04 (Chat WebSocket `chat:*`)**, **SPEC-05 (Reseñas)**, **SPEC-06 (Moderación)** y **SPEC-07 (Admin & Notificaciones)**, consulta [`../SPECS.md`](../SPECS.md) o Swagger UI en `/api/docs`.
 
 ---
 
 ## 6. Arquitectura y Buenas Prácticas
 
-1. **Desacoplamiento Estricto (AGENTS.md Regla 3.2):** Los módulos no importan entidades de TypeORM entre sí. Las relaciones se manejan mediante identificadores lógicos UUID (`userId`, `groupId`, `courseId`).
-2. **Chain of Responsibility:** La validación de tokens de acceso (`SessionService`) se ejecuta a través de una cadena de eslabones independientes (`SignatureCheck`, `RevocationCheck`, `TokensValidAfterCheck`, `ActiveAccountCheck`) ordenados de menor a mayor costo computacional.
-3. **Validación Dual de Sesiones:** Toda petición autenticada valida tanto la presencia del hash en `revoked_tokens` como la vigencia temporal contra `user.tokens_valid_after`.
-4. **Seguridad Defensiva:** Prevención de ataques de tiempo (*timing attacks*) en login y respuesta uniforme anti-enumeración en recuperación de credenciales.
+1. **Desacoplamiento Estricto (AGENTS.md Regla 3.3):** Los módulos no importan entidades de TypeORM entre sí (incluyendo `PostEntity`, que consulta perfiles y cursos mediante identificadores lógicos UUID y SQL parametrizado).
+2. **RBAC y Guards Compartidos:** `RolesGuard` y `@Roles()` en `src/common/` aplican control de acceso por rol (`UserRole.STUDENT` / `UserRole.ADMIN`); `HttpExceptionFilter` normaliza respuestas de error incluyendo siempre el campo `error`.
+3. **Caché en Memoria Anti-Stampede (`src/common/cache/in-memory-ttl.cache.ts`):** `InMemoryTtlCache` cachea `/courses` (TTL `30s`) y el feed canónico de `/posts` (TTL `20s`, clave ordenada de filtros e invalidación automática ante mutaciones y moderación), evitando caché en `/posts/me` por privacidad.
+4. **Chain of Responsibility y Seguridad Defensiva:** La validación de JWT (`SessionService`) valida firma, `revoked_tokens`, `tokens_valid_after` y estado de cuenta activo; prevención de timing attacks y anti-enumeración en autenticación.

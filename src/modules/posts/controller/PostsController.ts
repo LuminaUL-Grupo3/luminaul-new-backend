@@ -28,16 +28,20 @@ import { PostFeedResponseDto } from '../dto/post-feed-response.dto';
 import { MyPostHistoryResponseDto } from '../dto/my-post-history-response.dto';
 import { DeletePostResponseDto } from '../dto/delete-post-response.dto';
 import { CurrentUser, CurrentUserRole } from '../../../common/decorators/current-user.decorator';
+import { Roles } from '../../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../common/guards/roles.guard';
+import { UserRole } from '../../auth-security/enums/UserRole';
 
 @ApiTags('Posts')
 @Controller('posts')
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
-  // H.U 1.1: POST /posts (Crear publicación)
+  // H.U 1.1: POST /posts (Crear publicación — exclusivo alumnos)
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.STUDENT)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Crear una nueva publicación (H.U 1.1 / SPEC-03)' })
@@ -49,6 +53,10 @@ export class PostsController {
   @ApiResponse({
     status: 401,
     description: 'Falta token de autenticación o es inválido',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Solo los alumnos pueden crear publicaciones',
   })
   @ApiResponse({
     status: 422,

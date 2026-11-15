@@ -33,6 +33,14 @@ const contentJoins = (sourceType: string, sourceId: string): string =>
 const coalesceColumn = (column: (target: ContentTarget) => string): string =>
   `COALESCE(${TARGET_ENTRIES.map(([, target], index) => `c${index}.${column(target)}`).join(', ')})`;
 
+const coalesceContentText = (): string =>
+  `COALESCE(${TARGET_ENTRIES.map(([, target], index) => {
+    const cols = [target.textColumn, ...(target.extraTextColumns ?? [])];
+    if (cols.length === 1) return `c${index}.${cols[0]}`;
+    const parts = cols.map((col) => `NULLIF(TRIM(c${index}.${col}), '')`).join(', ');
+    return `NULLIF(CONCAT_WS(' ', ${parts}), '')`;
+  }).join(', ')})`;
+
 /**
  * Patrón Repository: implementación con SQL de AdminRepository.
  *
@@ -65,7 +73,7 @@ export class AdminRepositoryImpl extends AdminRepository {
         `SELECT r.id, r.reason, r.status, r.created_at, r.resolved_at, r.resolution_notes,
                 r.target_type, r.target_id,
                 rep.id AS reporter_id, rep.email AS reporter_email, rep.name AS reporter_name,
-                ${coalesceColumn((t) => t.textColumn)} AS content,
+                ${coalesceContentText()} AS content,
                 ${coalesceColumn(() => 'status')} AS current_status,
                 author.id AS author_id, author.name AS author_name, author.status AS author_status
          FROM reports r
@@ -134,7 +142,7 @@ export class AdminRepositoryImpl extends AdminRepository {
         `SELECT a.id, a.moderation_log_id, a.justification, a.status, a.created_at, a.resolved_at,
                 u.id AS user_id, u.name AS user_name, u.email AS user_email,
                 ml.content_type, ml.content_id, ml.detected_words, ml.moderated_at,
-                ${coalesceColumn((t) => t.textColumn)} AS content,
+                ${coalesceContentText()} AS content,
                 ${coalesceColumn(() => 'status')} AS current_status
          FROM appeals a
          JOIN users u ON u.id = a.user_id

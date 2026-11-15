@@ -2,7 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { ContentModerationService } from '../service/content-moderation.service';
 import { ContentCreatedEvent } from '../events/content-created.event';
-import { CONTENT_CREATED_EVENT } from '../moderation.constants';
+import {
+  CONTENT_CREATED_EVENT,
+  MODERATION_WAKEUP_EVENT,
+} from '../moderation.constants';
 import { ModerationTaskWorkerService } from '../service/moderation-task-worker.service';
 
 // Observer de 'content.created' y 'moderation.wakeup'.
@@ -26,7 +29,7 @@ export class ContentCreatedListener {
     }
   }
 
-  @OnEvent('moderation.wakeup', { async: true })
+  @OnEvent(MODERATION_WAKEUP_EVENT, { async: true })
   async handleWakeup(): Promise<void> {
     try {
       await this.worker.processBatch();

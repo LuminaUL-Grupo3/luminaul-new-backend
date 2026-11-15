@@ -8,6 +8,7 @@ export const envValidationSchema = z
     PORT: z.coerce.number().min(1).max(65535).default(8000),
     DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
     OPENAI_API_KEY: z.string().optional(),
+    MODERATION_BLOCK_THRESHOLD: z.coerce.number().min(0).max(1).default(0.35),
     // Secreto HS256 con el que se firman los JWT; obligatorio en producción (mínimo 32 caracteres)
     JWT_SECRET: z.string().min(16, 'JWT_SECRET debe tener al menos 16 caracteres').optional(),
     JWT_EXPIRES_IN: z.string().optional(),

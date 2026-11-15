@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
+import { UserRole } from '../auth-security/enums/UserRole';
 import { GroupsRepository } from './repositories/groups.repository';
 import { MessagesRepository } from './repositories/messages.repository';
 import {
@@ -12,7 +13,7 @@ import {
   WsSendMessageDto,
 } from './dto/chat.dto';
 import { GroupEventsClient } from './client/GroupEventsClient';
-import { GROUP_NOTICES } from './group-messaging.constants';
+import { GROUP_MESSAGES, GROUP_NOTICES } from './group-messaging.constants';
 
 /** Orquesta las reglas del dominio sin conocer HTTP, Socket.IO ni entidades de otros módulos. */
 @Injectable()
@@ -39,12 +40,23 @@ export class GroupMessagingService {
   }
 
   /** Crea el grupo y luego proyecta su contrato de respuesta. */
-  async create(userId: string, dto: CreateGroupDto) {
+  async create(userId: string, dto: CreateGroupDto, actorRole?: string) {
+    if (actorRole === UserRole.ADMIN) {
+      throw new ForbiddenException(GROUP_MESSAGES.ADMIN_CANNOT_CREATE_GROUP);
+    }
     return this.groups.detail(await this.groups.create(userId, dto), userId);
   }
 
   /** Registra la postulación y devuelve su identificador persistido. */
-  async requestJoin(groupId: string, userId: string, message?: string) {
+  async requestJoin(
+    groupId: string,
+    userId: string,
+    message?: string,
+    actorRole?: string,
+  ) {
+    if (actorRole === UserRole.ADMIN) {
+      throw new ForbiddenException(GROUP_MESSAGES.ADMIN_CANNOT_JOIN_GROUP);
+    }
     const result = await this.groups.requestJoin(groupId, userId, message);
     this.events.notifyUser({
       userId: result.leaderId,

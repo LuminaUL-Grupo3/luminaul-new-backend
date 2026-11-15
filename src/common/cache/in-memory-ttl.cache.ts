@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 
 interface CacheEntry<T> {
   value: T;
@@ -16,7 +16,11 @@ export class InMemoryTtlCache {
   private readonly store = new Map<string, CacheEntry<unknown>>();
   private readonly inFlight = new Map<string, Promise<unknown>>();
 
-  constructor(private readonly maxEntries: number = DEFAULT_MAX_ENTRIES) {}
+  constructor(
+    @Optional()
+    @Inject('IN_MEMORY_CACHE_MAX_ENTRIES')
+    private readonly maxEntries: number = DEFAULT_MAX_ENTRIES,
+  ) {}
 
   get size(): number {
     return this.store.size;

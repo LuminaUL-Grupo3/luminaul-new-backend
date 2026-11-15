@@ -1,3 +1,4 @@
+import { ForbiddenException } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { type Mocked } from "vitest";
 import { GroupMessagingService } from "../group-messaging.service";
@@ -30,7 +31,7 @@ describe("GroupMessagingService (Unit)", () => {
       transfer: vi.fn(),
       requestGroup: vi.fn(),
       findActiveById: vi.fn(),
-      createWithAdmin: vi.fn(),
+      createWithLeader: vi.fn(),
     } as unknown as Mocked<GroupsRepository>;
 
     mockMessagesRepo = {
@@ -179,6 +180,26 @@ describe("GroupMessagingService (Unit)", () => {
         "group.member_removed",
         expect.objectContaining({ groupId, userId: applicantId }),
       );
+    });
+  });
+
+  describe("RBAC admin en grupos", () => {
+    it("debe rechazar create con ForbiddenException si actorRole es admin", async () => {
+      await expect(
+        service.create(
+          leaderId,
+          { name: "Grupo Bloqueado" } as Parameters<typeof service.create>[1],
+          "admin",
+        ),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockGroupsRepo.create).not.toHaveBeenCalled();
+    });
+
+    it("debe rechazar requestJoin con ForbiddenException si actorRole es admin", async () => {
+      await expect(
+        service.requestJoin(groupId, applicantId, "Hola", "admin"),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockGroupsRepo.requestJoin).not.toHaveBeenCalled();
     });
   });
 });
