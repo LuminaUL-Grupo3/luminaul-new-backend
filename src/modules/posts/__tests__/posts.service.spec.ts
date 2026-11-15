@@ -483,7 +483,7 @@ describe('PostsModule Patterns (Unit Tests)', () => {
       const dto = plainToInstance(PostFilterQueryDto, { cycle: '12' });
       const errors = await validate(dto);
       expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].constraints?.max).toBeDefined();
+      expect(errors[0].constraints?.isBoundedInt).toBe('cycle no puede superar 11');
     });
   });
 });

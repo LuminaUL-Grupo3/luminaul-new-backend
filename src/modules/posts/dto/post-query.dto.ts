@@ -1,45 +1,41 @@
-import { IsOptional, IsUUID, IsString, IsInt, Min, Max } from 'class-validator';
+import { IsOptional, IsUUID, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsBoundedInt } from '../validator/PostValidators';
 
 export class PaginationQueryDto {
   @ApiPropertyOptional({ description: 'Cantidad de elementos a retornar', default: 15 })
   @IsOptional()
   @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
+  @IsBoundedInt('limit', 1, 100)
   limit?: number = 15;
 
   @ApiPropertyOptional({ description: 'Desplazamiento para paginación', default: 0 })
   @IsOptional()
   @Type(() => Number)
-  @IsInt()
-  @Min(0)
+  @IsBoundedInt('offset', 0)
   offset?: number = 0;
 }
 
 export class PostFilterQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: 'Filtrar por UUID de curso' })
   @IsOptional()
-  @IsUUID(undefined, { message: 'courseId must be a valid UUID' })
+  @IsUUID(undefined, { message: 'courseId debe ser un UUID válido' })
   courseId?: string;
 
   @ApiPropertyOptional({ description: 'Filtrar por tipo: study_group o tutoring' })
   @IsOptional()
-  @IsString()
+  @IsString({ message: 'type debe ser texto' })
   type?: string;
 
   @ApiPropertyOptional({ description: 'Filtrar por ciclo académico (1 a 11, donde 11 corresponde a cursos electivos)' })
   @IsOptional()
   @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(11)
+  @IsBoundedInt('cycle', 1, 11)
   cycle?: number;
 
   @ApiPropertyOptional({ description: 'Búsqueda parcial en descripción, beneficios y requisitos (insensible a mayúsculas)' })
   @IsOptional()
-  @IsString()
+  @IsString({ message: 'search debe ser texto' })
   search?: string;
 }

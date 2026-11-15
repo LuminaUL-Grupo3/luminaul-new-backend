@@ -2,17 +2,17 @@ import { IsIn, IsNotEmpty, IsString, MaxLength } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class CreateTutoringRequestDto {
-  @IsString()
-  @IsNotEmpty({ message: 'message cannot be empty' })
-  @MaxLength(255, { message: 'message must not exceed 255 characters' })
+  @IsString({ message: 'El mensaje debe ser texto' })
+  @IsNotEmpty({ message: 'El mensaje no puede estar vacío' })
+  @MaxLength(255, { message: 'El mensaje no puede superar los 255 caracteres' })
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   message!: string;
 }
 
 export class DecideTutoringRequestDto {
-  @IsString()
+  @IsString({ message: 'status debe ser texto' })
   @IsIn(['accepted', 'rejected'], {
-    message: 'status must be accepted or rejected',
+    message: 'status debe ser accepted o rejected',
   })
   status!: 'accepted' | 'rejected';
 }

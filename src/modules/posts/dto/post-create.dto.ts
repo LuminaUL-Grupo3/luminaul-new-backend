@@ -1,4 +1,6 @@
 import { POST_COLORS } from '../post-colors';
+import { POST_MESSAGES } from '../posts.constants';
+import { IsBoundedInt } from '../validator/PostValidators';
 import { ValidateIf } from 'class-validator';
 import {
   IsUUID,
@@ -7,9 +9,6 @@ import {
   IsIn,
   IsOptional,
   Validate,
-  IsInt,
-  Min,
-  Max,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import {
@@ -29,21 +28,21 @@ export class IsNotBlankConstraint implements ValidatorConstraintInterface {
   }
 
   defaultMessage(_args: ValidationArguments): string {
-    return 'description cannot be empty';
+    return POST_MESSAGES.EMPTY_DESCRIPTION;
   }
 }
 
 export class PostCreateDto {
   @ApiPropertyOptional({ enum: POST_COLORS, default: 'white' })
   @ValidateIf((_object, value) => value !== undefined)
-  @IsIn(POST_COLORS)
+  @IsIn(POST_COLORS, { message: 'El color seleccionado no es válido' })
   color?: string;
 
   @ApiProperty({
     description: 'UUID del curso asociado',
     example: '8c537243-ea7d-411a-8bb7-fce5230bfdf2',
   })
-  @IsUUID(undefined, { message: 'courseId must be a valid UUID' })
+  @IsUUID(undefined, { message: 'courseId debe ser un UUID válido' })
   courseId!: string;
 
   @ApiProperty({
@@ -51,10 +50,10 @@ export class PostCreateDto {
     enum: ALLOWED_POST_TYPES,
     example: 'study_group',
   })
-  @IsString()
-  @MaxLength(50)
+  @IsString({ message: 'type debe ser texto' })
+  @MaxLength(50, { message: 'type no puede superar los 50 caracteres' })
   @IsIn(ALLOWED_POST_TYPES, {
-    message: 'type must be tutoring or study_group',
+    message: POST_MESSAGES.UNSUPPORTED_TYPE,
   })
   type!: string;
 
@@ -62,12 +61,12 @@ export class PostCreateDto {
     description: 'Descripción de la publicación',
     example: 'Buscamos integrantes para repasar antes de la PC1',
   })
-  @IsString()
+  @IsString({ message: 'La descripción debe ser texto' })
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim() : value,
   )
   @Validate(IsNotBlankConstraint)
-  @MaxLength(500, { message: 'description must not exceed 500 characters' })
+  @MaxLength(500, { message: 'La descripción no puede superar los 500 caracteres' })
   description!: string;
 
   @ApiPropertyOptional({
@@ -75,8 +74,8 @@ export class PostCreateDto {
     example: 'Ejercicios resueltos y asesorías',
   })
   @IsOptional()
-  @IsString()
-  @MaxLength(100, { message: 'benefits must not exceed 100 characters' })
+  @IsString({ message: 'Los beneficios deben ser texto' })
+  @MaxLength(100, { message: 'Los beneficios no pueden superar los 100 caracteres' })
   benefits?: string;
 
   @ApiPropertyOptional({
@@ -84,8 +83,8 @@ export class PostCreateDto {
     example: 'Haber aprobado cursos previos',
   })
   @IsOptional()
-  @IsString()
-  @MaxLength(100, { message: 'requirements must not exceed 100 characters' })
+  @IsString({ message: 'Los requisitos deben ser texto' })
+  @MaxLength(100, { message: 'Los requisitos no pueden superar los 100 caracteres' })
   requirements?: string;
 
   @ApiPropertyOptional({
@@ -93,7 +92,7 @@ export class PostCreateDto {
     example: '7b134111-9a22-48df-9fa0-cd8213aa0981',
   })
   @IsOptional()
-  @IsUUID(undefined, { message: 'groupId must be a valid UUID' })
+  @IsUUID(undefined, { message: 'groupId debe ser un UUID válido' })
   groupId?: string;
 
   @ApiPropertyOptional({
@@ -102,9 +101,7 @@ export class PostCreateDto {
     default: 5,
   })
   @IsOptional()
-  @IsInt()
-  @Min(1)
-  @Max(50)
+  @IsBoundedInt('maxCapacity', 1, 50)
   maxCapacity?: number;
 
   @ApiPropertyOptional({
@@ -113,7 +110,9 @@ export class PostCreateDto {
     default: 'virtual',
   })
   @IsOptional()
-  @IsIn(['presencial', 'virtual', 'hibrido'])
+  @IsIn(['presencial', 'virtual', 'hibrido'], {
+    message: 'meetingMode debe ser presencial, virtual o hibrido',
+  })
   meetingMode?: 'presencial' | 'virtual' | 'hibrido';
 
   @ApiPropertyOptional({
@@ -122,6 +121,8 @@ export class PostCreateDto {
     default: 'tarde',
   })
   @IsOptional()
-  @IsIn(['manana', 'tarde', 'noche'])
+  @IsIn(['manana', 'tarde', 'noche'], {
+    message: 'meetingShift debe ser manana, tarde o noche',
+  })
   meetingShift?: 'manana' | 'tarde' | 'noche';
 }

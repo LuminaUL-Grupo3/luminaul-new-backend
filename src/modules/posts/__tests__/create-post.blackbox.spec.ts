@@ -418,7 +418,7 @@ describe('HU 1.1 Agregar Publicaciones · POST /api/posts (Pruebas de Caja Negra
     const res = await postCreate(payload);
 
     expect(res.status).toBe(400);
-    expect(extractMessages(res.body)).toContain('courseId must be a valid UUID');
+    expect(extractMessages(res.body)).toContain('courseId debe ser un UUID válido');
   });
 
   // Prueba de Caja Negra CN05 (Partición Inválida - campo courseId): campo obligatorio omitido
@@ -431,7 +431,7 @@ describe('HU 1.1 Agregar Publicaciones · POST /api/posts (Pruebas de Caja Negra
     const res = await postCreate(payload);
 
     expect(res.status).toBe(400);
-    expect(extractMessages(res.body)).toContain('courseId must be a valid UUID');
+    expect(extractMessages(res.body)).toContain('courseId debe ser un UUID válido');
   });
 
   // Prueba de Caja Negra CN06 (Partición Inválida - campo courseId): UUID válido pero inexistente en catálogo (422)
@@ -459,7 +459,7 @@ describe('HU 1.1 Agregar Publicaciones · POST /api/posts (Pruebas de Caja Negra
     const res = await postCreate(payload);
 
     expect(res.status).toBe(400);
-    expect(extractMessages(res.body)).toContain('type must be tutoring or study_group');
+    expect(extractMessages(res.body)).toContain(POST_MESSAGES.UNSUPPORTED_TYPE);
   });
 
   // Prueba de Caja Negra CN08 (Partición Inválida / Valor Límite 0 - campo description): cadena vacía
@@ -473,7 +473,7 @@ describe('HU 1.1 Agregar Publicaciones · POST /api/posts (Pruebas de Caja Negra
     const res = await postCreate(payload);
 
     expect(res.status).toBe(400);
-    expect(extractMessages(res.body)).toContain('description cannot be empty');
+    expect(extractMessages(res.body)).toContain(POST_MESSAGES.EMPTY_DESCRIPTION);
   });
 
   // Prueba de Caja Negra CN09 (Partición Inválida - campo description): cadena compuesta solo por espacios en blanco
@@ -487,7 +487,7 @@ describe('HU 1.1 Agregar Publicaciones · POST /api/posts (Pruebas de Caja Negra
     const res = await postCreate(payload);
 
     expect(res.status).toBe(400);
-    expect(extractMessages(res.body)).toContain('description cannot be empty');
+    expect(extractMessages(res.body)).toContain(POST_MESSAGES.EMPTY_DESCRIPTION);
   });
 
   // Prueba de Caja Negra CN10 (Valor Límite 1 y Partición Válida - campo description): longitud mínima 1 y trim de espacios
@@ -523,8 +523,8 @@ describe('HU 1.1 Agregar Publicaciones · POST /api/posts (Pruebas de Caja Negra
 
     expect(res.status).toBe(400);
     const msg = extractMessages(res.body);
-    expect(msg).toContain('benefits must be a string');
-    expect(msg).toContain('requirements must be a string');
+    expect(msg).toContain('Los beneficios deben ser texto');
+    expect(msg).toContain('Los requisitos deben ser texto');
   });
 
   // Prueba de Caja Negra CN12 (Partición Inválida - campo groupId): formato distinto a UUID
@@ -539,7 +539,7 @@ describe('HU 1.1 Agregar Publicaciones · POST /api/posts (Pruebas de Caja Negra
     const res = await postCreate(payload);
 
     expect(res.status).toBe(400);
-    expect(extractMessages(res.body)).toContain('groupId must be a valid UUID');
+    expect(extractMessages(res.body)).toContain('groupId debe ser un UUID válido');
   });
 
   // Prueba de Caja Negra CN13 (Partición Inválida - campo groupId): UUID válido de grupo inexistente o inactivo (404)
@@ -567,7 +567,7 @@ describe('HU 1.1 Agregar Publicaciones · POST /api/posts (Pruebas de Caja Negra
     });
 
     expect(res.status).toBe(400);
-    expect(extractMessages(res.body)).toContain('maxCapacity must not be less than 1');
+    expect(extractMessages(res.body)).toContain('maxCapacity debe ser mayor o igual a 1');
   });
 
   // Prueba de Caja Negra CN15 (Valor Límite inferior exacto - campo maxCapacity): valor 1 aceptado
@@ -619,7 +619,7 @@ describe('HU 1.1 Agregar Publicaciones · POST /api/posts (Pruebas de Caja Negra
     });
 
     expect(res.status).toBe(400);
-    expect(extractMessages(res.body)).toContain('maxCapacity must not be greater than 50');
+    expect(extractMessages(res.body)).toContain('maxCapacity no puede superar 50');
   });
 
   // Prueba de Caja Negra CN19 (Partición Inválida - campo maxCapacity): valor decimal no entero rechazado
@@ -632,7 +632,7 @@ describe('HU 1.1 Agregar Publicaciones · POST /api/posts (Pruebas de Caja Negra
     });
 
     expect(res.status).toBe(400);
-    expect(extractMessages(res.body)).toContain('maxCapacity must be an integer number');
+    expect(extractMessages(res.body)).toContain('maxCapacity debe ser un número entero');
   });
 
   // RBAC: POST /api/posts es exclusivo para alumnos (UserRole.STUDENT)
@@ -648,5 +648,28 @@ describe('HU 1.1 Agregar Publicaciones · POST /api/posts (Pruebas de Caja Negra
 
     expect(res.status).toBe(403);
     expect(postsRepo.saved).toHaveLength(0);
+  });
+
+  it('CN21 [Query/Params en español y sin mensajes contradictorios]: limit=abc devuelve un solo error en español', async () => {
+    const getJson = async (path: string) => {
+      const res = await fetch(`${baseUrl}${path}`);
+      return { status: res.status, body: (await res.json()) as BlackboxResponse['body'] };
+    };
+
+    const resLimitAbc = await getJson('/posts?limit=abc');
+    expect(resLimitAbc.status).toBe(400);
+    expect(resLimitAbc.body.message).toEqual(['limit debe ser un número entero']);
+
+    const resLimitZero = await getJson('/posts?limit=0');
+    expect(resLimitZero.status).toBe(400);
+    expect(resLimitZero.body.message).toEqual(['limit debe ser mayor o igual a 1']);
+
+    const resCourse = await getJson('/posts?courseId=no-uuid');
+    expect(resCourse.status).toBe(400);
+    expect(resCourse.body.message).toEqual(['courseId debe ser un UUID válido']);
+
+    const resPostParam = await getJson('/posts/no-uuid');
+    expect(resPostParam.status).toBe(400);
+    expect(resPostParam.body.message).toBe('El identificador debe ser un UUID válido');
   });
 });

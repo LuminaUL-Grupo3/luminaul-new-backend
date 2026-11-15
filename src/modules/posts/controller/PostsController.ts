@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   Post,
@@ -39,6 +40,11 @@ import { Roles } from '../../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { UserRole } from '../../auth-security/enums/UserRole';
+
+const POST_UUID_PIPE = new ParseUUIDPipe({
+  exceptionFactory: () =>
+    new BadRequestException('El identificador debe ser un UUID válido'),
+});
 
 @ApiTags('Posts')
 @Controller('posts')
@@ -164,7 +170,7 @@ export class PostsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Enviar solicitud de asesoría 1 a 1' })
   async createTutoringRequest(
-    @Param('postId', ParseUUIDPipe) postId: string,
+    @Param('postId', POST_UUID_PIPE) postId: string,
     @Body() payload: CreateTutoringRequestDto,
     @CurrentUser() userId: string,
   ): Promise<{ id: string; status: string; message: string }> {
@@ -176,7 +182,7 @@ export class PostsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Aceptar o rechazar una solicitud de asesoría' })
   async decideTutoringRequest(
-    @Param('requestId', ParseUUIDPipe) requestId: string,
+    @Param('requestId', POST_UUID_PIPE) requestId: string,
     @Body() payload: DecideTutoringRequestDto,
     @CurrentUser() userId: string,
   ): Promise<{ id: string; status: string; groupId: string | null }> {
@@ -204,7 +210,7 @@ export class PostsController {
     description: 'Publicación no encontrada',
   })
   async getPostById(
-    @Param('postId', ParseUUIDPipe) postId: string,
+    @Param('postId', POST_UUID_PIPE) postId: string,
   ): Promise<PostResponseDto> {
     return this.postsService.getPostById(postId);
   }
@@ -238,7 +244,7 @@ export class PostsController {
     description: 'Publicación no encontrada',
   })
   async editPost(
-    @Param('postId', ParseUUIDPipe) postId: string,
+    @Param('postId', POST_UUID_PIPE) postId: string,
     @Body() payload: PostUpdateDto,
     @CurrentUser() userId: string,
     @CurrentUserRole() userRole?: string,
@@ -277,7 +283,7 @@ export class PostsController {
     description: 'Publicación no encontrada',
   })
   async deletePost(
-    @Param('postId', ParseUUIDPipe) postId: string,
+    @Param('postId', POST_UUID_PIPE) postId: string,
     @CurrentUser() userId: string,
     @CurrentUserRole() userRole?: string,
   ): Promise<DeletePostResponseDto> {
