@@ -1,5 +1,7 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { UserProfileService } from '../UserProfileService';
+import { AvailabilityContext, AvailabilityRule } from '../../strategy/AvailabilityRule';
+import { USER_PROFILE_AVAILABILITY_RULES } from '../../user-profile.constants';
 import { UpdateProfileDto } from '../../dto/update-profile.dto';
 import { CreateAvailabilityDto, UpdateAvailabilityDto } from '../../dto/availability.dto';
 import {
@@ -14,8 +16,6 @@ import {
   ProfileChanges,
   UserProfileRepository,
 } from '../../repository/UserProfileRepository';
-
-const LATEST_END_TIME = '22:00';
 
 // PostgreSQL devuelve TIME como HH:mm:ss; el contrato expone HH:mm
 const toHourMinute = (time: string): string => time.slice(0, 5);
@@ -34,7 +34,10 @@ const toSlotDto = (slot: AvailabilityEntity): AvailabilitySlotDto => ({
 
 @Injectable()
 export class UserProfileServiceImpl extends UserProfileService {
-  constructor(private readonly repository: UserProfileRepository) {
+  constructor(
+    private readonly repository: UserProfileRepository,
+    @Inject(USER_PROFILE_AVAILABILITY_RULES) private readonly rules: AvailabilityRule[],
+  ) {
     super();
   }
 
@@ -128,29 +131,24 @@ export class UserProfileServiceImpl extends UserProfileService {
     return slot;
   }
 
-  // Las franjas contiguas (14:00-16:00 y 16:00-18:00) no se consideran traslape
+  // Las reglas (strategy/) se aplican en el orden en que las registra el módulo
   private async assertSlotAvailable(
     userId: string,
-    { dayOfWeek, startTime, endTime }: AvailabilityValues,
+    candidate: AvailabilityValues,
     ignoredSlotId?: string,
   ): Promise<void> {
-    // El patrón del DTO también acepta 22:01-22:59: aquí se aplica el tope real
-    if (endTime > LATEST_END_TIME) {
-      throw new BadRequestException('La hora de fin debe estar entre 07:01 y 22:00');
-    }
-    if (startTime >= endTime) {
-      throw new BadRequestException('La hora de inicio debe ser anterior a la hora de fin');
-    }
-
-    const sameDay = await this.repository.findAvailabilitiesByDay(userId, dayOfWeek);
-    const overlaps = sameDay.some(
-      (slot) =>
-        slot.id !== ignoredSlotId &&
-        startTime < toHourMinute(slot.endTime) &&
-        endTime > toHourMinute(slot.startTime),
-    );
-    if (overlaps) {
-      throw new BadRequestException('La franja horaria se cruza con otra que ya registraste ese día');
+    const sameDay = await this.repository.findAvailabilitiesByDay(userId, candidate.dayOfWeek);
+    const ctx: AvailabilityContext = {
+      candidate,
+      sameDaySlots: sameDay.map((slot) => ({
+        id: slot.id,
+        startTime: toHourMinute(slot.startTime),
+        endTime: toHourMinute(slot.endTime),
+      })),
+      ignoredSlotId,
+    };
+    for (const rule of this.rules) {
+      rule.validate(ctx);
     }
   }
 }

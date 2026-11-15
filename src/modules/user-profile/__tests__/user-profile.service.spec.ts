@@ -2,6 +2,9 @@ import { NotFoundException, BadRequestException, ValidationPipe } from '@nestjs/
 import { type Mocked } from 'vitest';
 import { UserProfileServiceImpl } from '../service/impl/UserProfileServiceImpl';
 import { UserProfileRepository, UserAccount } from '../repository/UserProfileRepository';
+import { OperatingHoursRule } from '../strategy/impl/OperatingHoursRule';
+import { StartBeforeEndRule } from '../strategy/impl/StartBeforeEndRule';
+import { NoOverlapRule } from '../strategy/impl/NoOverlapRule';
 import { ProfileEntity } from '../entities/profile.entity';
 import { AvailabilityEntity } from '../entities/availability.entity';
 import { UpdateProfileDto } from '../dto/update-profile.dto';
@@ -19,7 +22,8 @@ describe('UserProfileService (Unit)', () => {
       findSkills: vi.fn(),
       findInterests: vi.fn(),
       findAvailabilities: vi.fn(),
-      findAvailabilitiesByDay: vi.fn(),
+      // Las reglas se evalúan con las franjas del día: sin franjas por defecto
+      findAvailabilitiesByDay: vi.fn().mockResolvedValue([]),
       updateProfile: vi.fn(),
       createAvailability: vi.fn(),
       findOwnAvailability: vi.fn(),
@@ -27,7 +31,11 @@ describe('UserProfileService (Unit)', () => {
       deleteAvailability: vi.fn(),
     } as unknown as Mocked<UserProfileRepository>;
 
-    service = new UserProfileServiceImpl(mockRepo);
+    service = new UserProfileServiceImpl(mockRepo, [
+      new OperatingHoursRule(),
+      new StartBeforeEndRule(),
+      new NoOverlapRule(),
+    ]);
   });
 
   describe('getProfile', () => {
