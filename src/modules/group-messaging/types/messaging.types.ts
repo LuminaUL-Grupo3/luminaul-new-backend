@@ -8,6 +8,7 @@ export type ReactionEmoji = (typeof REACTION_EMOJIS)[number];
 export interface ChatIdentity {
   id: string;
   name: string;
+  role?: string;
   expiresAt: number;
 }
 export interface GroupMemberDto {

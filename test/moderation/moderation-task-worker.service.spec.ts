@@ -1,9 +1,9 @@
-import { type Mock, type Mocked } from 'vitest';
+import { type Mocked } from 'vitest';
 import { ModerationTaskWorkerService } from '../../src/modules/moderation/service/moderation-task-worker.service';
 import { ModerationRepository } from '../../src/modules/moderation/repository/moderation.repository';
+import { NotificationClient } from '../../src/modules/moderation/client/NotificationClient';
 import { ProfanityFilterService } from '../../src/modules/moderation/service/profanity-filter.service';
 import { OpenAiModerationException, OpenAiModerationService } from '../../src/modules/moderation/service/openai-moderation.service';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   LexicalResult,
   ModerationDecision,
@@ -16,7 +16,7 @@ describe('ModerationTaskWorkerService', () => {
   let mockRepo: Mocked<Partial<ModerationRepository>>;
   let mockProfanity: Mocked<Partial<ProfanityFilterService>>;
   let mockOpenAi: Mocked<Partial<OpenAiModerationService>>;
-  let mockEvents: { emit: Mock };
+  let mockNotifications: Mocked<NotificationClient>;
 
   beforeEach(() => {
     mockRepo = {
@@ -32,13 +32,17 @@ describe('ModerationTaskWorkerService', () => {
     mockOpenAi = {
       moderateText: vi.fn(),
     };
-    mockEvents = { emit: vi.fn() };
+    mockNotifications = {
+      notifyUser: vi.fn(),
+      notifyAdministrators: vi.fn(),
+      emitChatMessageHidden: vi.fn(),
+    };
 
     worker = new ModerationTaskWorkerService(
       mockRepo as unknown as ModerationRepository,
       mockProfanity as unknown as ProfanityFilterService,
       mockOpenAi as unknown as OpenAiModerationService,
-      mockEvents as unknown as EventEmitter2,
+      mockNotifications,
     );
   });
 
@@ -82,8 +86,7 @@ describe('ModerationTaskWorkerService', () => {
       SemanticStatus.NOT_EVALUATED,
       ['estafa'],
     );
-    expect(mockEvents.emit).toHaveBeenCalledWith(
-      'notification.send',
+    expect(mockNotifications.notifyUser).toHaveBeenCalledWith(
       expect.objectContaining({ userId: 'user-1', type: 'MODERATION' }),
     );
   });
@@ -131,7 +134,7 @@ describe('ModerationTaskWorkerService', () => {
       SemanticStatus.EVALUATED_CLEAN,
       [],
     );
-    expect(mockEvents.emit).not.toHaveBeenCalled();
+    expect(mockNotifications.notifyUser).not.toHaveBeenCalled();
   });
 
   it('debe ocultar el contenido si la Capa 2 de OpenAI detecta acoso u odio', async () => {
@@ -177,8 +180,7 @@ describe('ModerationTaskWorkerService', () => {
       SemanticStatus.FLAGGED,
       ['harassment'],
     );
-    expect(mockEvents.emit).toHaveBeenCalledWith(
-      'notification.send',
+    expect(mockNotifications.notifyUser).toHaveBeenCalledWith(
       expect.objectContaining({ userId: 'user-3' }),
     );
   });

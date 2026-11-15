@@ -5,6 +5,10 @@ import { DOMAIN_EVENTS } from '../../common/events/domain-events';
 // Evento que emiten posts (SPEC-03), chat (SPEC-04) y reseñas (SPEC-05) al crear o editar texto
 export const CONTENT_CREATED_EVENT = DOMAIN_EVENTS.CONTENT_CREATED;
 
+// Evento interno que despierta al worker de moderación y evento de invalidación de palabras prohibidas
+export const MODERATION_WAKEUP_EVENT = DOMAIN_EVENTS.MODERATION_WAKEUP;
+export const BANNED_WORDS_UPDATED_EVENT = DOMAIN_EVENTS.BANNED_WORDS_UPDATED;
+
 // Evento interno que el ChatGateway (SPEC-04) retransmite a la sala por WebSocket
 export const CHAT_MESSAGE_HIDDEN_EVENT = DOMAIN_EVENTS.CHAT_MESSAGE_HIDDEN;
 

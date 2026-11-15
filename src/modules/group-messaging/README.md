@@ -127,8 +127,8 @@ Handshake con la sesión real: `auth.token` o cookie HttpOnly. No admite identid
 | `chat:leave_room` | `{groupId}` | Abandona esa sala, no toda la conexión. |
 | `chat:send_message` | `{groupId,content,clientMessageId?,replyToId?}` | ACK con `message`; texto hasta 4000 caracteres. |
 | `chat:typing` | `{groupId,isTyping}` | Escritura efímera; vence si se interrumpe la conexión. |
-| `reaction:add` / `reaction:remove` | `{groupId,messageId,emoji}` | Estado persistido; opciones ❤️ 😂 👍 🔥. |
-| `message:read` | `{groupId,messageId}` | Marcador persistido que nunca retrocede. |
+| `chat:reaction_add` / `chat:reaction_remove` | `{groupId,messageId,emoji}` | Estado persistido; opciones ❤️ 😂 👍 🔥. |
+| `chat:message_read` | `{groupId,messageId}` | Marcador persistido que nunca retrocede. |
 
 ACK de éxito: `{success:true,...resultado}`. Error: `{success:false,error:{code,message}}` y `chat:error`. Otros eventos de salida: `chat:new_message`, `chat:message_updated`, `chat:typing`, `chat:presence`, `chat:read`, `chat:message_hidden`, `chat:membership_revoked` y `chat:group_changed`.
 

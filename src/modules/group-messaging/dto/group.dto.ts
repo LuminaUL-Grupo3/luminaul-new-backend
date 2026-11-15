@@ -92,3 +92,10 @@ export class MessageHistoryQueryDto {
   @IsUUID("4")
   beforeId?: string;
 }
+
+/** DTO de decisión para resolver solicitudes por ID directo. */
+export class JoinRequestDecisionDto {
+  @ApiProperty({ enum: ["accepted", "rejected"] })
+  @IsIn(["accepted", "rejected"])
+  action!: "accepted" | "rejected";
+}

@@ -1,7 +1,8 @@
-import { BadRequestException, NotFoundException, ForbiddenException, UnprocessableEntityException, ValidationPipe } from '@nestjs/common';
+import { BadRequestException, HttpStatus, NotFoundException, UnprocessableEntityException, ValidationPipe } from '@nestjs/common';
 import { type Mocked } from 'vitest';
 import { validate } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
+import { PostException } from '../exception/PostException';
 import { PostFilterQueryDto } from '../dto/post-query.dto';
 import { PostUpdateDto } from '../dto/post-update.dto';
 import { PostsService } from '../service/PostsService';
@@ -288,7 +289,7 @@ describe('PostsModule Patterns (Unit Tests)', () => {
           },
           userId,
         ),
-      ).rejects.toThrow(UnprocessableEntityException);
+      ).rejects.toThrow(PostException);
       expect(mockPostsRepo.create).not.toHaveBeenCalled();
       expect(mockModerationClient.publicationCreated).not.toHaveBeenCalled();
     });
@@ -332,25 +333,25 @@ describe('PostsModule Patterns (Unit Tests)', () => {
       expect(result.description).toBe('Post de prueba');
     });
 
-    it('debe lanzar NotFoundException si el post no existe', async () => {
+    it('debe lanzar PostException 404 si el post no existe', async () => {
       mockPostsRepo.getPostById.mockResolvedValue(null);
 
-      await expect(service.getPostById('inexistente')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getPostById('inexistente')).rejects.toMatchObject({
+        status: HttpStatus.NOT_FOUND,
+      });
     });
   });
 
   describe('PostsService.editPost', () => {
-    it('debe lanzar NotFoundException si el post a editar no existe', async () => {
+    it('debe lanzar PostException 404 si el post a editar no existe', async () => {
       mockPostsRepo.getPostById.mockResolvedValue(null);
 
       await expect(
         service.editPost('post-inexistente', { description: 'Nueva desc' }, userId),
-      ).rejects.toThrow(NotFoundException);
+      ).rejects.toMatchObject({ status: HttpStatus.NOT_FOUND });
     });
 
-    it('debe lanzar ForbiddenException (BOLA / IDOR) si el post pertenece a otro usuario', async () => {
+    it('debe lanzar PostException 403 (BOLA / IDOR) si el post pertenece a otro usuario', async () => {
       const otherPost: Partial<PostEntity> = {
         id: 'post-of-other',
         userId: otherUserId,
@@ -359,10 +360,10 @@ describe('PostsModule Patterns (Unit Tests)', () => {
 
       await expect(
         service.editPost('post-of-other', { description: 'Hack desc' }, userId),
-      ).rejects.toThrow(ForbiddenException);
+      ).rejects.toMatchObject({ status: HttpStatus.FORBIDDEN });
     });
 
-    it('debe permitir editar al usuario con rol admin según SPEC Regla 1', async () => {
+    it('debe rechazar con 403 Forbidden si un usuario con rol admin intenta editar un post ajeno', async () => {
       const otherPost: Partial<PostEntity> = {
         id: 'post-of-other',
         userId: otherUserId,
@@ -373,22 +374,16 @@ describe('PostsModule Patterns (Unit Tests)', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      const updatedEntity = {
-        ...otherPost,
-        description: 'Editado por admin',
-      } as PostEntity;
       mockPostsRepo.getPostById.mockResolvedValue(otherPost as PostEntity);
-      mockPostsRepo.edit.mockResolvedValue(updatedEntity);
 
-      const res = await service.editPost(
-        'post-of-other',
-        { description: 'Editado por admin' },
-        userId,
-        'admin',
-      );
-
-      expect(res.description).toBe('Editado por admin');
-      expect(mockModerationClient.publicationCreated).toHaveBeenCalledWith(updatedEntity);
+      await expect(
+        service.editPost(
+          'post-of-other',
+          { description: 'Editado por admin' },
+          userId,
+          'admin',
+        ),
+      ).rejects.toMatchObject({ status: HttpStatus.FORBIDDEN });
     });
 
     it('debe rechazar cualquier intento de cambiar courseId o type en PostUpdateDto vía ValidationPipe', async () => {
@@ -401,7 +396,7 @@ describe('PostsModule Patterns (Unit Tests)', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('debe lanzar NotFoundException si se intenta vincular un groupId inexistente al editar', async () => {
+    it('debe lanzar PostException 404 si se intenta vincular un groupId inexistente al editar', async () => {
       const myPost: Partial<PostEntity> = {
         id: 'post-1',
         userId,
@@ -413,7 +408,7 @@ describe('PostsModule Patterns (Unit Tests)', () => {
 
       await expect(
         service.editPost('post-1', { groupId: 'grupo-inexistente' }, userId),
-      ).rejects.toThrow(NotFoundException);
+      ).rejects.toMatchObject({ status: HttpStatus.NOT_FOUND });
       expect(mockPostsRepo.edit).not.toHaveBeenCalled();
     });
 
@@ -425,7 +420,7 @@ describe('PostsModule Patterns (Unit Tests)', () => {
   });
 
   describe('PostsService.deletePost', () => {
-    it('debe lanzar ForbiddenException (BOLA / IDOR) si se intenta borrar un post ajeno', async () => {
+    it('debe lanzar PostException 403 (BOLA / IDOR) si se intenta borrar un post ajeno', async () => {
       const otherPost: Partial<PostEntity> = {
         id: 'post-of-other',
         userId: otherUserId,
@@ -434,7 +429,7 @@ describe('PostsModule Patterns (Unit Tests)', () => {
 
       await expect(
         service.deletePost('post-of-other', userId),
-      ).rejects.toThrow(ForbiddenException);
+      ).rejects.toMatchObject({ status: HttpStatus.FORBIDDEN });
     });
   });
 

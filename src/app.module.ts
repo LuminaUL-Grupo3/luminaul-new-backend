@@ -16,6 +16,7 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
 import { ModerationModule } from './modules/moderation/moderation.module';
 import { UserProfileModule } from './modules/user-profile/user-profile.module';
 import { AdministrationModule } from './modules/administration/administration.module';
+import { CommonCacheModule } from './common/cache/common-cache.module';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 
 @Module({
@@ -46,6 +47,7 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
     ]),
     // Bus de eventos en memoria: content.created (moderación) y notification.send (SPEC-07)
     EventEmitterModule.forRoot(),
+    CommonCacheModule,
     HealthModule,
     AuthModule,
     UserProfileModule,

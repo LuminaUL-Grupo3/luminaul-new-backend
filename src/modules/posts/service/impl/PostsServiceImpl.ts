@@ -1,11 +1,13 @@
 import {
   Injectable,
-  BadRequestException,
-  NotFoundException,
-  ForbiddenException,
-  UnprocessableEntityException,
+  HttpStatus,
   Optional,
 } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
+import { InMemoryTtlCache } from '../../../../common/cache/in-memory-ttl.cache';
+import { DOMAIN_EVENTS } from '../../../../common/events/domain-events';
+import { UserRole } from '../../../auth-security/enums/UserRole';
+import { PostException } from '../../exception/PostException';
 import { PostsService } from '../PostsService';
 import { PostsRepository } from '../../repository/PostsRepository';
 import { CoursesClient } from '../../client/CoursesClient';
@@ -21,6 +23,56 @@ import { DeletePostResponseDto } from '../../dto/delete-post-response.dto';
 import { PostEntity } from '../../entities/post.entity';
 import { POST_MESSAGES } from '../../posts.constants';
 
+const POSTS_FEED_CACHE_PREFIX = 'posts:feed:';
+const POSTS_FEED_CACHE_TTL_MS = 20_000;
+const MAX_CACHED_FEED_LIMIT = 30;
+
+interface CachedFeedPage {
+  items: PostFeedResponseDto[];
+  total: number;
+}
+
+export interface PostFeedCacheFilter {
+  courseId?: string;
+  type?: string;
+  cycle?: number;
+  limit: number;
+  offset: number;
+  search?: string;
+}
+
+/**
+ * Construye una llave canónica de caché ordenando los filtros presentes por clave
+ * para compartir la misma entrada independientemente del orden en la query string.
+ */
+export function buildPostFeedCacheKey(filters: PostFeedCacheFilter): string {
+  const entries: Record<string, string | number> = {
+    limit: filters.limit,
+    offset: filters.offset,
+  };
+
+  if (filters.courseId?.trim()) {
+    entries.courseId = filters.courseId.trim();
+  }
+  if (filters.type?.trim()) {
+    entries.type = filters.type.trim();
+  }
+  if (typeof filters.cycle === 'number' && Number.isFinite(filters.cycle)) {
+    entries.cycle = filters.cycle;
+  }
+  const normalizedSearch = filters.search?.trim().toLowerCase();
+  if (normalizedSearch) {
+    entries.search = normalizedSearch;
+  }
+
+  const serialized = Object.keys(entries)
+    .sort()
+    .map((key) => `${key}=${entries[key]}`)
+    .join('|');
+
+  return `${POSTS_FEED_CACHE_PREFIX}${serialized}`;
+}
+
 @Injectable()
 export class PostsServiceImpl extends PostsService {
   constructor(
@@ -29,8 +81,62 @@ export class PostsServiceImpl extends PostsService {
     private readonly moderationClient: ModerationClient,
     private readonly postCreatorFactory: PostCreatorFactory,
     @Optional() private readonly groupMessagingClient?: GroupMessagingClient,
+    @Optional() private readonly cache?: InMemoryTtlCache,
   ) {
     super();
+  }
+
+  private shouldCacheFeedPage(limit: number, offset: number): boolean {
+    return (
+      limit > 0 &&
+      limit <= MAX_CACHED_FEED_LIMIT &&
+      offset >= 0 &&
+      offset <= limit
+    );
+  }
+
+  private formatFeedResponse(
+    items: PostFeedResponseDto[],
+    total: number,
+    limit: number,
+    offset: number,
+  ): PostFeedResponseDto[] {
+    const clonedItems = items.map((item) => ({
+      ...item,
+      author: { ...item.author },
+      course: { ...item.course },
+    }));
+    return Object.assign(clonedItems, {
+      total,
+      limit,
+      offset,
+      items: clonedItems,
+    });
+  }
+
+  private async getFeedPageWithCache(
+    cacheKey: string,
+    limit: number,
+    offset: number,
+    loader: () => Promise<CachedFeedPage>,
+  ): Promise<PostFeedResponseDto[]> {
+    const page =
+      this.cache && this.shouldCacheFeedPage(limit, offset)
+        ? await this.cache.getOrSet(cacheKey, POSTS_FEED_CACHE_TTL_MS, loader)
+        : await loader();
+
+    return this.formatFeedResponse(page.items, page.total, limit, offset);
+  }
+
+  private invalidateFeedCache(): void {
+    this.cache?.invalidatePrefix(POSTS_FEED_CACHE_PREFIX);
+  }
+
+  @OnEvent(DOMAIN_EVENTS.CONTENT_VISIBILITY_CHANGED)
+  handleContentVisibilityChanged(payload: { contentType?: string }): void {
+    if (payload?.contentType === 'publication') {
+      this.invalidateFeedCache();
+    }
   }
 
   private mapToPostResponseDto(post: PostEntity): PostResponseDto {
@@ -122,19 +228,19 @@ export class PostsServiceImpl extends PostsService {
     userId: string,
   ): Promise<PostResponseDto> {
     if (!postDto.description || postDto.description.trim().length === 0) {
-      throw new BadRequestException('description cannot be empty');
+      throw new PostException(POST_MESSAGES.EMPTY_DESCRIPTION, HttpStatus.BAD_REQUEST);
     }
 
     if (
       postDto.maxCapacity !== undefined &&
       (postDto.maxCapacity < 1 || postDto.maxCapacity > 50)
     ) {
-      throw new BadRequestException('maxCapacity must be between 1 and 50');
+      throw new PostException(POST_MESSAGES.INVALID_MAX_CAPACITY, HttpStatus.BAD_REQUEST);
     }
 
     const course = await this.coursesClient.findById(postDto.courseId);
     if (!course) {
-      throw new UnprocessableEntityException(POST_MESSAGES.COURSE_NOT_FOUND);
+      throw new PostException(POST_MESSAGES.COURSE_NOT_FOUND, HttpStatus.UNPROCESSABLE_ENTITY);
     }
 
     // 1. Resolver el creador correspondiente según el tipo (Factory Method)
@@ -143,6 +249,7 @@ export class PostsServiceImpl extends PostsService {
 
     // 2. Persistir en la base de datos (repositorio puro)
     const createdPost = await this.postsRepository.create(postEntity);
+    this.invalidateFeedCache();
 
     // 3. Notificar al motor de moderación asíncrona (Adapter)
     this.moderationClient.publicationCreated(createdPost);
@@ -156,13 +263,13 @@ export class PostsServiceImpl extends PostsService {
     offset: number,
     search?: string,
   ): Promise<PostFeedResponseDto[]> {
-    const { items, total } = await this.postsRepository.getPosts(limit, offset, search);
-    const dtos = items.map((p) => this.mapToFeedDto(p));
-    return Object.assign(dtos, {
-      total,
-      limit,
-      offset,
-      items: dtos,
+    const cacheKey = buildPostFeedCacheKey({ limit, offset, search });
+    return this.getFeedPageWithCache(cacheKey, limit, offset, async () => {
+      const { items, total } = await this.postsRepository.getPosts(limit, offset, search);
+      return {
+        items: items.map((p) => this.mapToFeedDto(p)),
+        total,
+      };
     });
   }
 
@@ -175,20 +282,27 @@ export class PostsServiceImpl extends PostsService {
     cycle?: number,
     search?: string,
   ): Promise<PostFeedResponseDto[]> {
-    const { items, total } = await this.postsRepository.searchByFilter(
-      limit,
-      offset,
+    const cacheKey = buildPostFeedCacheKey({
       courseId,
       type,
       cycle,
-      search,
-    );
-    const dtos = items.map((p) => this.mapToFeedDto(p));
-    return Object.assign(dtos, {
-      total,
       limit,
       offset,
-      items: dtos,
+      search,
+    });
+    return this.getFeedPageWithCache(cacheKey, limit, offset, async () => {
+      const { items, total } = await this.postsRepository.searchByFilter(
+        limit,
+        offset,
+        courseId,
+        type,
+        cycle,
+        search,
+      );
+      return {
+        items: items.map((p) => this.mapToFeedDto(p)),
+        total,
+      };
     });
   }
 
@@ -216,7 +330,7 @@ export class PostsServiceImpl extends PostsService {
   async getPostById(postId: string): Promise<PostResponseDto> {
     const post = await this.postsRepository.getPostById(postId);
     if (!post) {
-      throw new NotFoundException(POST_MESSAGES.POST_NOT_FOUND);
+      throw new PostException(POST_MESSAGES.POST_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
     return this.mapToPostResponseDto(post);
   }
@@ -230,12 +344,12 @@ export class PostsServiceImpl extends PostsService {
   ): Promise<PostResponseDto> {
     const existingPost = await this.postsRepository.getPostById(postId);
     if (!existingPost) {
-      throw new NotFoundException(POST_MESSAGES.POST_NOT_FOUND);
+      throw new PostException(POST_MESSAGES.POST_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
 
-    // Validar propiedad o rol administrador (SPEC Regla 1)
-    if (existingPost.userId !== userId && userRole !== 'admin') {
-      throw new ForbiddenException(POST_MESSAGES.FORBIDDEN_EDIT);
+    // Solo el autor original (no admin) puede editar una publicación; el admin solo puede eliminarla
+    if (existingPost.userId !== userId || userRole === UserRole.ADMIN) {
+      throw new PostException(POST_MESSAGES.FORBIDDEN_EDIT, HttpStatus.FORBIDDEN);
     }
 
     // Validar integridad de grupo si se especifica
@@ -244,14 +358,15 @@ export class PostsServiceImpl extends PostsService {
         ? await this.groupMessagingClient.findActiveById(payload.groupId)
         : await this.postsRepository.findGroupById(payload.groupId);
       if (!existingGroup) {
-        throw new NotFoundException(POST_MESSAGES.GROUP_NOT_FOUND);
+        throw new PostException(POST_MESSAGES.GROUP_NOT_FOUND, HttpStatus.NOT_FOUND);
       }
     }
 
     const updatedPost = await this.postsRepository.edit(postId, payload);
     if (!updatedPost) {
-      throw new NotFoundException(POST_MESSAGES.POST_NOT_FOUND);
+      throw new PostException(POST_MESSAGES.POST_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
+    this.invalidateFeedCache();
 
     // Reemisión de evento si se modificó texto (Adapter)
     if (
@@ -273,18 +388,19 @@ export class PostsServiceImpl extends PostsService {
   ): Promise<DeletePostResponseDto> {
     const existingPost = await this.postsRepository.getPostById(postId);
     if (!existingPost) {
-      throw new NotFoundException(POST_MESSAGES.POST_NOT_FOUND);
+      throw new PostException(POST_MESSAGES.POST_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
 
     // Validar propiedad o rol administrador (SPEC Regla 1)
-    if (existingPost.userId !== userId && userRole !== 'admin') {
-      throw new ForbiddenException(POST_MESSAGES.FORBIDDEN_DELETE);
+    if (existingPost.userId !== userId && userRole !== UserRole.ADMIN) {
+      throw new PostException(POST_MESSAGES.FORBIDDEN_DELETE, HttpStatus.FORBIDDEN);
     }
 
     const success = await this.postsRepository.delete(postId);
     if (!success) {
-      throw new NotFoundException(POST_MESSAGES.POST_NOT_FOUND);
+      throw new PostException(POST_MESSAGES.POST_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
+    this.invalidateFeedCache();
 
     return {
       success: true,

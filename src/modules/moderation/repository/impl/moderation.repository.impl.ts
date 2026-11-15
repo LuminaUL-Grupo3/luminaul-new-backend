@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
+import { UserAccountStatus } from '../../../auth-security/enums/UserAccountStatus';
+import { UserRole } from '../../../auth-security/enums/UserRole';
 import { BannedWordEntity } from '../../entities/banned-word.entity';
 import { ContentModerationLogEntity } from '../../entities/content-moderation-log.entity';
 import { ContentReportEntity } from '../../entities/content-report.entity';
@@ -16,7 +18,11 @@ import {
   TargetContentType,
   TaskStatus,
 } from '../../enums/moderation.enums';
-import { MODERATED_CONTENT, ModeratedContentSource } from '../../policies/moderated-content';
+import {
+  buildModerationTextSql,
+  MODERATED_CONTENT,
+  ModeratedContentSource,
+} from '../../policies/moderated-content';
 import {
   ContentSnapshot,
   ModerationLogWithAppeal,
@@ -52,11 +58,12 @@ export class ModerationRepositoryImpl extends ModerationRepository {
   // Lee un contenido de otro módulo; los borrados lógicos cuentan como inexistentes.
   async findContent(source: ModeratedContentSource, id: string): Promise<ContentSnapshot | null> {
     const group = source.groupColumn ? `${source.groupColumn}::text` : 'NULL';
+    const textSql = buildModerationTextSql(source);
     const rows: ContentSnapshot[] = await this.dataSource.query(
       `SELECT ${source.authorColumn}::text AS "authorId", 
               ${group} AS "groupId", 
               status, 
-              ${source.textColumn} AS "text"
+              ${textSql} AS "text"
        FROM ${source.table}
        WHERE id = $1 AND deleted_at IS NULL`,
       [id],
@@ -302,8 +309,8 @@ export class ModerationRepositoryImpl extends ModerationRepository {
     const [row]: { allowed: boolean }[] = await this.dataSource.query(
       `SELECT EXISTS(SELECT 1 FROM groups g WHERE g.id=$1 AND g.deleted_at IS NULL AND
         (EXISTS(SELECT 1 FROM group_members m WHERE m.group_id=g.id AND m.user_id=$2 AND m.status='active')
-        OR EXISTS(SELECT 1 FROM users u WHERE u.id=$2 AND u.role='admin' AND u.status='active'))) AS allowed`,
-      [groupId, userId],
+        OR EXISTS(SELECT 1 FROM users u WHERE u.id=$2 AND u.role=$3 AND u.status=$4))) AS allowed`,
+      [groupId, userId, UserRole.ADMIN, UserAccountStatus.ACTIVE],
     );
     return row.allowed;
   }
@@ -385,8 +392,9 @@ export class ModerationRepositoryImpl extends ModerationRepository {
     for (const [type, source] of Object.entries(MODERATED_CONTENT)) {
       const ids = logs.filter((log) => log.contentType === type).map((log) => log.contentId);
       if (ids.length === 0) continue;
+      const textSql = buildModerationTextSql(source);
       const found: { id: string; text: string }[] = await this.dataSource.query(
-        `SELECT id::text AS id, ${source.textColumn} AS text
+        `SELECT id::text AS id, ${textSql} AS text
          FROM ${source.table}
          WHERE id = ANY($1::uuid[])`,
         [ids],

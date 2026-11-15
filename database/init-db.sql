@@ -400,7 +400,7 @@ ON CONFLICT (id) DO NOTHING;
 -- B. Perfiles Demo
 INSERT INTO profiles (user_id, name, bio, major, academic_cycle, profile_photo_url, updated_at)
 VALUES 
-  ('d290f1ee-6c54-4b01-90e6-d701748f0851', 'Martín Vizcarra', 'Estudiante de 5to ciclo de Ing. de Sistemas', 'Ingeniería de Sistemas', '5', 'https://avatar.test/martin.png', NOW()),
+  ('d290f1ee-6c54-4b01-90e6-d701748f0851', 'Martín Vizcarra', 'Estudiante de 5to ciclo de Ing. de Sistemas', 'Ingeniería de Sistemas', '5', NULL, NOW()),
   ('a1b2c3d4-e5f6-47a8-b9c0-123456789abc', 'Carlos Mendoza', 'Estudiante de 4to ciclo enfocado en algoritmos y estructuras de datos', 'Ingeniería de Sistemas', '4', 'https://avatar.test/carlos.png', NOW()),
   ('99887766-5544-4322-8100-aabbccddeeff', 'Administrador General', 'Gestión de Comunidad y Moderación LuminaUL', 'Administración', '10', 'https://avatar.test/admin.png', NOW()),
   ('00000099-0000-4000-8000-000000000099', 'Administrador Secundario', 'Gestión de Soporte y Operaciones LuminaUL', 'Administración', '10', 'https://avatar.test/admin2.png', NOW())
@@ -525,8 +525,10 @@ VALUES
   (gen_random_uuid(), 'hdp', 'high'),
   (gen_random_uuid(), 'serrano_de_mierda', 'high'),
   (gen_random_uuid(), 'cholo_de_mierda', 'high'),
+  (gen_random_uuid(), 'cholo', 'high'),
   (gen_random_uuid(), 'negro_de_mierda', 'high'),
   (gen_random_uuid(), 'maricon', 'high'),
+  (gen_random_uuid(), 'cabro', 'high'),
   (gen_random_uuid(), 'cabro_de_mierda', 'high'),
   (gen_random_uuid(), 'cabrazo', 'high'),
   (gen_random_uuid(), 'marica', 'high'),
@@ -534,6 +536,10 @@ VALUES
   (gen_random_uuid(), 'travesti_de_mierda', 'high'),
   (gen_random_uuid(), 'indio_de_mierda', 'high'),
   (gen_random_uuid(), 'chapa_tu_cholo', 'high'),
+  (gen_random_uuid(), 'conero', 'high'),
+  (gen_random_uuid(), 'conera', 'high'),
+  (gen_random_uuid(), 'coneros', 'high'),
+  (gen_random_uuid(), 'coneras', 'high'),
 
   -- 8. Insultos, Acoso y Ofensas Verbales (High)
   (gen_random_uuid(), 'idiota', 'high'),
@@ -559,6 +565,9 @@ VALUES
   (gen_random_uuid(), 'conchatumare', 'high'),
   (gen_random_uuid(), 'pendejo', 'high'),
   (gen_random_uuid(), 'pendeja', 'high'),
+  (gen_random_uuid(), 'cojudo', 'high'),
+  (gen_random_uuid(), 'huevon', 'high'),
+  (gen_random_uuid(), 'huevonazo', 'high'),
   (gen_random_uuid(), 'zopenco', 'high'),
   (gen_random_uuid(), 'cretino', 'high'),
   (gen_random_uuid(), 'desgraciado', 'high'),

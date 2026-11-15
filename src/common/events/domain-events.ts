@@ -5,6 +5,8 @@
 export const DOMAIN_EVENTS = {
   CONTENT_CREATED: 'content.created',
   CONTENT_VISIBILITY_CHANGED: 'content.visibility_changed',
+  MODERATION_WAKEUP: 'moderation.wakeup',
+  BANNED_WORDS_UPDATED: 'banned_words.updated',
   CHAT_MESSAGE_HIDDEN: 'chat:message_hidden',
   GROUP_CHANGED: 'group.changed',
   GROUP_MEMBER_REMOVED: 'group.member_removed',

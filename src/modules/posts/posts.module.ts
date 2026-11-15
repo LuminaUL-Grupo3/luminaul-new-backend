@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { CommonCacheModule } from '../../common/cache/common-cache.module';
 import { PostEntity } from './entities/post.entity';
 import { PostsRepository } from './repository/PostsRepository';
 import { PostsRepositoryImpl } from './repository/impl/PostsRepositoryImpl';
@@ -28,6 +29,7 @@ import { POST_CREATORS } from './posts.constants';
 @Module({
   imports: [
     TypeOrmModule.forFeature([PostEntity]),
+    CommonCacheModule,
     CoursesModule,
     GroupMessagingModule,
     AuthModule,

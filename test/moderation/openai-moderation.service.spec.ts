@@ -43,6 +43,7 @@ describe('OpenAiModerationService', () => {
               hate: true,
               'hate/threatening': false,
               sexual: true,
+              illicit: true,
             },
           },
         ],
@@ -52,7 +53,7 @@ describe('OpenAiModerationService', () => {
     const result = await service.moderateText('Mensaje con acoso');
     expect(result.available).toBe(true);
     expect(result.flagged).toBe(true);
-    expect(result.categories).toEqual(['harassment', 'hate']);
+    expect(result.categories).toEqual(['harassment', 'hate', 'sexual']);
   });
 
   it('debe retornar clean si ninguna de las BLOCKED_CATEGORIES está activa', async () => {
@@ -76,6 +77,115 @@ describe('OpenAiModerationService', () => {
 
     const result = await service.moderateText('Mensaje completamente limpio');
     expect(result.available).toBe(true);
+    expect(result.flagged).toBe(false);
+    expect(result.categories).toEqual([]);
+  });
+
+  it('debe bloquear cuando category_scores alcanza el umbral por defecto de 0.35 aunque categories sea false', async () => {
+    const thresholdService = new OpenAiModerationService({
+      get: vi.fn((key: string) => (key === 'OPENAI_API_KEY' ? 'test-api-key' : undefined)),
+    } as unknown as ConfigService);
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: vi.fn().mockResolvedValue({
+        results: [
+          {
+            flagged: false,
+            categories: {
+              harassment: false,
+              'harassment/threatening': false,
+              hate: false,
+              'hate/threatening': false,
+            },
+            category_scores: {
+              harassment: 0.35,
+              'harassment/threatening': 0.02,
+              hate: 0.34,
+              'hate/threatening': 0.01,
+            },
+          },
+        ],
+      }),
+    } as unknown as Response);
+
+    const result = await thresholdService.moderateText('Comentario pasivo agresivo');
+    expect(result.available).toBe(true);
+    expect(result.flagged).toBe(true);
+    expect(result.categories).toEqual(['harassment']);
+  });
+
+  it('debe respetar MODERATION_BLOCK_THRESHOLD personalizado si está configurado', async () => {
+    const customService = new OpenAiModerationService({
+      get: vi.fn((key: string) => {
+        if (key === 'OPENAI_API_KEY') return 'test-api-key';
+        if (key === 'MODERATION_BLOCK_THRESHOLD') return 0.5;
+        return undefined;
+      }),
+    } as unknown as ConfigService);
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: vi.fn().mockResolvedValue({
+        results: [
+          {
+            flagged: false,
+            categories: {
+              harassment: false,
+              'harassment/threatening': false,
+              hate: false,
+              'hate/threatening': false,
+            },
+            category_scores: {
+              harassment: 0.42,
+              'harassment/threatening': 0.01,
+              hate: 0.01,
+              'hate/threatening': 0.01,
+            },
+          },
+        ],
+      }),
+    } as unknown as Response);
+
+    const result = await customService.moderateText('Texto límite debajo de 0.5');
+    expect(result.flagged).toBe(false);
+    expect(result.categories).toEqual([]);
+  });
+
+  it('no debe producir falso positivo si category_scores está debajo de 0.35 aunque categories sea true', async () => {
+    const thresholdService = new OpenAiModerationService({
+      get: vi.fn((key: string) => (key === 'OPENAI_API_KEY' ? 'test-api-key' : undefined)),
+    } as unknown as ConfigService);
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: vi.fn().mockResolvedValue({
+        results: [
+          {
+            flagged: true,
+            categories: {
+              harassment: false,
+              'harassment/threatening': false,
+              hate: false,
+              'hate/threatening': false,
+              violence: true,
+            },
+            category_scores: {
+              harassment: 0.01,
+              'harassment/threatening': 0.01,
+              hate: 0.01,
+              'hate/threatening': 0.01,
+              violence: 0.2004,
+            },
+          },
+        ],
+      }),
+    } as unknown as Response);
+
+    const result = await thresholdService.moderateText('Oe chibolo, hay que meterle punche');
     expect(result.flagged).toBe(false);
     expect(result.categories).toEqual([]);
   });

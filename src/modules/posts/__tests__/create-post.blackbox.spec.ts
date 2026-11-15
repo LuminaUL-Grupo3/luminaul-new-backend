@@ -49,6 +49,7 @@ const GOLDEN_USER_ID = 'd290f1ee-6c54-4b01-90e6-d701748f0851';
 const GOLDEN_COURSE_ID = '8c537243-ea7d-411a-8bb7-fce5230bfdf2';
 const GOLDEN_GROUP_ID = '7b134111-9a22-48df-9fa0-cd8213aa0981';
 const VALID_TOKEN = 'valid-student-jwt-token';
+const VALID_ADMIN_TOKEN = 'valid-admin-jwt-token';
 
 class InMemoryPostsRepository extends PostsRepository {
   readonly saved: PostEntity[] = [];
@@ -169,20 +170,27 @@ class StubSessionService extends SessionService {
   }
 
   async validate(token: string): Promise<ValidatedSession> {
-    if (token !== VALID_TOKEN) {
+    if (token !== VALID_TOKEN && token !== VALID_ADMIN_TOKEN) {
       throw new UnauthorizedException('Token inválido o expirado');
     }
+    const role = token === VALID_ADMIN_TOKEN ? 'admin' : 'student';
+    const userId =
+      role === 'admin'
+        ? '99887766-5544-4322-8100-aabbccddeeff'
+        : GOLDEN_USER_ID;
+    const email =
+      role === 'admin' ? 'admin@aloe.ulima.edu.pe' : '20210001@aloe.ulima.edu.pe';
     const user = {
-      id: GOLDEN_USER_ID,
-      email: '20210001@aloe.ulima.edu.pe',
-      role: 'student',
+      id: userId,
+      email,
+      role,
     } as UserEntity;
 
     return {
       payload: {
-        sub: GOLDEN_USER_ID,
-        email: '20210001@aloe.ulima.edu.pe',
-        role: 'student',
+        sub: userId,
+        email,
+        role,
         exp: Math.floor(Date.now() / 1000) + 3600,
       },
       user,
@@ -575,5 +583,20 @@ describe('HU 1.1 Agregar Publicaciones · POST /api/posts (Pruebas de Caja Negra
 
     expect(res.status).toBe(400);
     expect(extractMessages(res.body)).toContain('maxCapacity must be an integer number');
+  });
+
+  // RBAC: POST /api/posts es exclusivo para alumnos (UserRole.STUDENT)
+  it('CN20 [RBAC Admin]: rechaza con 403 Forbidden si el usuario tiene rol admin', async () => {
+    const res = await postCreate(
+      {
+        courseId: GOLDEN_COURSE_ID,
+        type: 'study_group',
+        description: 'Intento de creación por administrador',
+      },
+      VALID_ADMIN_TOKEN,
+    );
+
+    expect(res.status).toBe(403);
+    expect(postsRepo.saved).toHaveLength(0);
   });
 });

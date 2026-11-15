@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { createHttpCorsOptions } from './config/cors.config';
 import { API_PREFIX, configureHttpApp } from './config/http-app.config';
 
 async function bootstrap(): Promise<void> {
@@ -21,12 +22,7 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-  // Configuración de CORS idéntica a FastAPI (preservada según requerimiento)
-  app.enableCors({
-    origin: '*',
-    methods: '*',
-    allowedHeaders: '*',
-  });
+  app.enableCors(createHttpCorsOptions());
 
   // Prefijo /api, filtro de excepciones y validación estricta global (compartido con las pruebas e2e)
   configureHttpApp(app);
@@ -39,10 +35,13 @@ async function bootstrap(): Promise<void> {
     .addBearerAuth()
     .addTag('Auth', 'Autenticación y cierre de sesión')
     .addTag('Health', 'Verificación de estado del servidor')
+    .addTag('Profiles', 'Perfil académico, habilidades y disponibilidad (SPEC-02)')
     .addTag('Courses', 'Módulo de cursos académicos')
     .addTag('Posts', 'Módulo de publicaciones (feed, historial, creación, edición, eliminación)')
-    .addTag('Groups', 'Módulo de grupos de estudio (H.U 2.1: detalle del grupo)')
+    .addTag('SPEC-04 Grupos y chat', 'Grupos de estudio, miembros, solicitudes e historial de chat (SPEC-04)')
     .addTag('Join Requests', 'Módulo de solicitudes de unión a grupos de estudio (H.U 2.1 y 2.2)')
+    .addTag('Reviews', 'Reseñas y reputación entre estudiantes (SPEC-05)')
+    .addTag('Moderation', 'Denuncias, apelaciones y filtro de moderación (SPEC-06)')
     .addTag('Administration', 'Panel de administración: reportes, apelaciones y cuentas (SPEC-07)')
     .addTag('Notifications', 'Centro de notificaciones del alumno (SPEC-07)')
     .build();

@@ -7,6 +7,7 @@ import { ContentType } from '../enums/administration.enums';
 export interface ContentTarget {
   readonly table: string;
   readonly textColumn: string;
+  readonly extraTextColumns?: readonly string[];
   readonly authorColumn: string;
   // Estado con el que queda el contenido al borrarlo de forma lógica
   readonly deletedStatus: string;
@@ -21,6 +22,7 @@ export const CONTENT_TARGETS: Readonly<Record<ContentType, ContentTarget>> = {
   [ContentType.PUBLICATION]: {
     table: 'publications',
     textColumn: 'description',
+    extraTextColumns: ['benefits', 'requirements'],
     authorColumn: 'user_id',
     deletedStatus: 'inactive',
     hasUpdatedAt: true,

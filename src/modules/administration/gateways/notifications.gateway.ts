@@ -7,8 +7,9 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Namespace, Socket } from 'socket.io';
+import { isOriginAllowed } from '../../../config/cors.config';
 import { SessionService } from '../../auth-security/service/SessionService';
-import { extractToken } from '../../auth-security/token/TokenExtractor';
+import { extractToken } from '../../../common/token/token-extractor';
 import {
   DeliveredNotification,
   NotificationDeliveryEvent,
@@ -45,17 +46,6 @@ type NotificationServer = Namespace<
   NotificationSocketData
 >;
 
-function originAllowed(origin?: string): boolean {
-  const origins = (
-    process.env.WEB_ORIGIN ||
-    process.env.FRONTEND_URL ||
-    'http://localhost:5173,http://127.0.0.1:5173'
-  )
-    .split(',')
-    .map((value) => value.trim());
-  return !origin || origins.includes(origin);
-}
-
 /**
  * Transporte Socket.IO dedicado a notificaciones privadas (SPEC-07), desacoplado de ChatGateway (SPEC-04).
  */
@@ -63,11 +53,11 @@ function originAllowed(origin?: string): boolean {
   namespace: '/notifications',
   maxHttpBufferSize: 32 * 1024,
   cors: {
-    origin: (origin, callback) => callback(null, originAllowed(origin)),
+    origin: (origin, callback) => callback(null, isOriginAllowed(origin)),
     credentials: true,
   },
   allowRequest: (request, callback) =>
-    callback(null, originAllowed(request.headers.origin)),
+    callback(null, isOriginAllowed(request.headers.origin)),
 })
 export class NotificationsGateway
   implements

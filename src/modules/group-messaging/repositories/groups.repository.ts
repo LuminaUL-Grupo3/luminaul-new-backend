@@ -240,7 +240,7 @@ export class GroupsRepository {
   /**
    * Crea un grupo vinculando al usuario como líder dentro de una transacción.
    */
-  async createWithAdmin(
+  async createWithLeader(
     input: {
       name: string;
       description?: string | null;
@@ -251,7 +251,7 @@ export class GroupsRepository {
       meetingShift?: string;
       maxCapacity?: number;
     },
-    adminId: string,
+    leaderId: string,
     externalManager?: EntityManager,
   ): Promise<GroupEntity> {
     const execute = async (manager: EntityManager) => {
@@ -265,7 +265,7 @@ export class GroupsRepository {
           input.benefits || null,
           input.requirements || null,
           input.courseCode || "CS001",
-          adminId,
+          leaderId,
           input.meetingMode || "virtual",
           input.meetingShift || "manana",
           input.maxCapacity ?? 6,
@@ -275,7 +275,7 @@ export class GroupsRepository {
       await manager.query(
         `INSERT INTO group_members(group_id, user_id, role, status)
          VALUES($1, $2, 'leader', 'active')`,
-        [groupId, adminId],
+        [groupId, leaderId],
       );
       const group = await manager
         .getRepository(GroupEntity)

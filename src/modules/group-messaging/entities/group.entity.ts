@@ -11,6 +11,8 @@ export class GroupEntity {
   @PrimaryGeneratedColumn("uuid") id!: string;
   @Column({ type: "varchar", length: 100 }) name!: string;
   @Column({ type: "text", nullable: true }) description!: string | null;
+  @Column({ type: "text", nullable: true }) benefits!: string | null;
+  @Column({ type: "text", nullable: true }) requirements!: string | null;
   @Column({ name: "course_code", type: "varchar", length: 20 }) courseCode!: string;
   @Column({ name: "leader_id", type: "uuid" }) leaderId!: string;
   @Column({ name: "meeting_mode", type: "varchar", length: 20, default: "virtual" })

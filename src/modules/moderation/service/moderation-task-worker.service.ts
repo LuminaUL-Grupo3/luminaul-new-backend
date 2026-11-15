@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { randomUUID } from 'crypto';
 import { ModerationRepository } from '../repository/moderation.repository';
+import { NotificationClient } from '../client/NotificationClient';
 import { ProfanityFilterService } from './profanity-filter.service';
 import { OpenAiModerationService } from './openai-moderation.service';
 import { resolveModeratedContent } from '../policies/moderated-content';
@@ -11,15 +10,8 @@ import {
   SemanticStatus,
   TargetContentType,
 } from '../enums/moderation.enums';
-import {
-  CHAT_MESSAGE_HIDDEN_EVENT,
-  MODERATION_MESSAGES,
-  NOTIFICATION_SEND_EVENT,
-} from '../moderation.constants';
-import {
-  ChatMessageHiddenEvent,
-  ModerationNotificationEvent,
-} from '../events/content-created.event';
+import { MODERATION_MESSAGES } from '../moderation.constants';
+import { ChatMessageHiddenEvent } from '../events/content-created.event';
 
 @Injectable()
 export class ModerationTaskWorkerService {
@@ -31,7 +23,7 @@ export class ModerationTaskWorkerService {
     private readonly repository: ModerationRepository,
     private readonly profanityFilter: ProfanityFilterService,
     private readonly openAiModeration: OpenAiModerationService,
-    private readonly events: EventEmitter2,
+    private readonly notifications: NotificationClient,
   ) {}
 
   async processBatch(batchSize = 10): Promise<number> {
@@ -211,17 +203,16 @@ export class ModerationTaskWorkerService {
         groupId: content.groupId,
         messageId: contentId,
       };
-      this.events.emit(CHAT_MESSAGE_HIDDEN_EVENT, hiddenMessage);
+      this.notifications.emitChatMessageHidden(hiddenMessage);
     }
 
-    const notification: ModerationNotificationEvent = {
+    this.notifications.notifyUser({
       userId: content.authorId,
       title: MODERATION_MESSAGES.NOTIFICATION_TITLE,
       message:
         `Tu ${label} fue ocultada automáticamente por incumplir las normas comunitarias ` +
         `(${detectedWords.join(', ')}). Si crees que es un error, puedes apelar desde tu historial de moderación.`,
       type: 'MODERATION',
-    };
-    this.events.emit(NOTIFICATION_SEND_EVENT, notification);
+    });
   }
 }

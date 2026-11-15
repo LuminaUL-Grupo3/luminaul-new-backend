@@ -1,3 +1,5 @@
+import { DOMAIN_EVENTS } from '../../common/events/domain-events';
+
 export const POST_TYPES = {
   STUDY_GROUP: 'study_group',
   TUTORING: 'tutoring',
@@ -12,6 +14,8 @@ export const POST_STATUS = {
 } as const;
 
 export const POST_MESSAGES = {
+  EMPTY_DESCRIPTION: 'description cannot be empty',
+  INVALID_MAX_CAPACITY: 'maxCapacity must be between 1 and 50',
   COURSE_NOT_FOUND: 'Course not found',
   GROUP_NOT_FOUND: 'Specified group not found',
   POST_NOT_FOUND: 'Post not found',
@@ -21,7 +25,7 @@ export const POST_MESSAGES = {
   UNSUPPORTED_TYPE: 'type must be tutoring or study_group',
 } as const;
 
-export const CONTENT_CREATED_EVENT = 'content.created';
+export const CONTENT_CREATED_EVENT = DOMAIN_EVENTS.CONTENT_CREATED;
 
 /**
  * Token de Inyección de Dependencias para los creadores de publicaciones (Factory Method / Multi-provider).

@@ -9,7 +9,7 @@ import {
 import { Reflector } from "@nestjs/core";
 import { Request } from "express";
 import { SessionService } from "../../auth-security/service/SessionService";
-import { extractToken } from "../../auth-security/token/TokenExtractor";
+import { extractToken } from "../../../common/token/token-extractor";
 import { ChatIdentity } from "../types/messaging.types";
 
 export type GroupRequest = Request & { chatUser: ChatIdentity };
@@ -27,7 +27,12 @@ export class GroupSession {
     const { user, payload } = await this.sessions.validate(token);
     if (!user.isVerified)
       throw new UnauthorizedException("Verifica tu cuenta para continuar.");
-    return { id: user.id, name: user.name, expiresAt: payload.exp * 1000 };
+    return {
+      id: user.id,
+      name: user.name,
+      role: user.role,
+      expiresAt: payload.exp * 1000,
+    };
   }
 }
 
@@ -46,8 +51,9 @@ export class GroupSessionGuard implements CanActivate {
       "groups:public-read",
       [context.getHandler(), context.getClass()],
     );
-    if (publicRead && !token) req.chatUser = { id: "", name: "", expiresAt: 0 };
-    else req.chatUser = await this.session.validate(token);
+    if (publicRead && !token) {
+      req.chatUser = { id: "", name: "", role: "", expiresAt: 0 };
+    } else req.chatUser = await this.session.validate(token);
     return true;
   }
 }

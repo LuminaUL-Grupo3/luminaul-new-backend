@@ -4,12 +4,21 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  ManyToOne,
-  JoinColumn,
   Index,
 } from 'typeorm';
-import { CourseEntity } from '../../courses/entities/course.entity';
-import { ProfileEntity } from '../../user-profile/entities/profile.entity';
+
+export interface PostAuthorSnapshot {
+  id?: string;
+  userId?: string;
+  name: string;
+  profilePhotoUrl: string | null;
+}
+
+export interface PostCourseSnapshot {
+  id: string;
+  name: string;
+  cycle: number | null;
+}
 
 @Entity('publications')
 @Index('idx_posts_feed', ['status', 'deletedAt', 'createdAt'])
@@ -59,11 +68,7 @@ export class PostEntity {
   @Column({ type: 'timestamptz', nullable: true, name: 'deleted_at' })
   deletedAt!: Date | null;
 
-  @ManyToOne(() => ProfileEntity)
-  @JoinColumn({ name: 'user_id' })
-  profile?: ProfileEntity;
+  profile?: PostAuthorSnapshot;
 
-  @ManyToOne(() => CourseEntity)
-  @JoinColumn({ name: 'course_id' })
-  course?: CourseEntity;
+  course?: PostCourseSnapshot;
 }
