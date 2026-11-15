@@ -24,7 +24,10 @@ export class UpdateProfileDto {
 
   @ApiPropertyOptional({ type: String, maxLength: 255, nullable: true })
   @IsOptional()
-  @IsUrl({}, { message: 'La foto de perfil debe ser una URL válida' })
+  @IsUrl(
+    { protocols: ['http', 'https'], require_protocol: true },
+    { message: 'La foto de perfil debe ser una URL válida (http:// o https://)' },
+  )
   @MaxLength(255)
   profilePhotoUrl?: string | null;
 
