@@ -21,7 +21,12 @@ import { StudyGroupPostCreator } from '../factory/impl/StudyGroupPostCreator';
 import { TutoringPostCreator } from '../factory/impl/TutoringPostCreator';
 import { PostCreator } from '../factory/PostCreator';
 import { PostEntity } from '../entities/post.entity';
+import { TutoringRequestEntity } from '../entities/tutoring-request.entity';
 import { PostUpdateDto } from '../dto/post-update.dto';
+import {
+  MyTutoringRequestDto,
+  TutoringRequestIncomingDto,
+} from '../dto/tutoring-request.dto';
 import { POST_CREATORS, POST_MESSAGES } from '../posts.constants';
 
 /**
@@ -114,6 +119,45 @@ class InMemoryPostsRepository extends PostsRepository {
     return true;
   }
 
+  async createTutoringRequest(
+    publicationId: string,
+    tutorId: string,
+    requesterId: string,
+    message: string,
+  ): Promise<TutoringRequestEntity> {
+    return Object.assign(new TutoringRequestEntity(), {
+      id: randomUUID(),
+      publicationId,
+      tutorId,
+      requesterId,
+      message,
+      status: 'pending' as const,
+      groupId: null,
+      respondedAt: null,
+      createdAt: new Date(),
+    });
+  }
+
+  async findTutoringRequestById(): Promise<TutoringRequestEntity | null> {
+    return null;
+  }
+
+  async findTutoringRequestByPublicationAndRequester(): Promise<TutoringRequestEntity | null> {
+    return null;
+  }
+
+  async listIncomingTutoringRequests(): Promise<TutoringRequestIncomingDto[]> {
+    return [];
+  }
+
+  async listMyTutoringRequests(): Promise<MyTutoringRequestDto[]> {
+    return [];
+  }
+
+  async decideTutoringRequest(): Promise<TutoringRequestEntity | null> {
+    return null;
+  }
+
   clear(): void {
     this.saved.length = 0;
   }
@@ -146,6 +190,12 @@ class InMemoryGroupMessagingClient extends GroupMessagingClient {
 
   async createAutoGroup(input: AutoGroupInput): Promise<string> {
     this.autoCreatedInputs.push(input);
+    const id = randomUUID();
+    this.activeGroups.add(id);
+    return id;
+  }
+
+  async createTutoringRoom(): Promise<string> {
     const id = randomUUID();
     this.activeGroups.add(id);
     return id;

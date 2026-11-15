@@ -23,6 +23,14 @@ export const POST_MESSAGES = {
   FORBIDDEN_DELETE: 'You do not have permission to delete this post',
   DELETED_SUCCESS: 'Post deleted successfully',
   UNSUPPORTED_TYPE: 'type must be tutoring or study_group',
+  TUTORING_ONLY_REQUESTS: 'Solo se pueden enviar solicitudes de asesoría a publicaciones de asesoría',
+  TUTORING_SELF_REQUEST: 'No puedes solicitar tu propia asesoría',
+  TUTORING_ALREADY_ACCEPTED: 'Tu solicitud de asesoría ya fue aceptada',
+  TUTORING_ALREADY_PENDING: 'Ya tienes una solicitud pendiente para esta asesoría',
+  TUTORING_REQUEST_SENT: 'Solicitud de asesoría enviada al tutor',
+  TUTORING_REQUEST_NOT_FOUND: 'Solicitud de asesoría no encontrada',
+  TUTORING_REQUEST_FORBIDDEN: 'No tienes permiso para responder esta solicitud de asesoría',
+  TUTORING_REQUEST_ALREADY_DECIDED: 'Esta solicitud de asesoría ya fue respondida',
 } as const;
 
 export const CONTENT_CREATED_EVENT = DOMAIN_EVENTS.CONTENT_CREATED;

@@ -87,7 +87,7 @@ describe('PostsServiceImpl feed caching (Parte B)', () => {
 
     const creators: PostCreator[] = [
       new StudyGroupPostCreator(mockGroupMessagingClient),
-      new TutoringPostCreator(),
+      new TutoringPostCreator(mockGroupMessagingClient),
     ];
     const factory = new PostCreatorFactory(creators);
     cache = new InMemoryTtlCache();

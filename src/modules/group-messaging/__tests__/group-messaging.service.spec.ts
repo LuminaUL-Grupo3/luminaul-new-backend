@@ -166,7 +166,10 @@ describe("GroupMessagingService (Unit)", () => {
 
   describe("remove", () => {
     it("debe expulsar miembro y emitir group.member_removed asíncronamente", async () => {
-      mockGroupsRepo.removeMember.mockResolvedValue(undefined);
+      mockGroupsRepo.removeMember.mockResolvedValue({
+        groupDeleted: false,
+        deletedPostsCount: 0,
+      });
 
       await service.remove(groupId, leaderId, applicantId, "kicked");
 
