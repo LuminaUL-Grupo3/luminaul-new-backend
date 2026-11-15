@@ -10,6 +10,11 @@ import { UserProfileService } from './service/UserProfileService';
 import { UserProfileServiceImpl } from './service/impl/UserProfileServiceImpl';
 import { UserProfileRepository } from './repository/UserProfileRepository';
 import { UserProfileRepositoryImpl } from './repository/impl/UserProfileRepositoryImpl';
+import { AvailabilityRule } from './strategy/AvailabilityRule';
+import { OperatingHoursRule } from './strategy/impl/OperatingHoursRule';
+import { StartBeforeEndRule } from './strategy/impl/StartBeforeEndRule';
+import { NoOverlapRule } from './strategy/impl/NoOverlapRule';
+import { USER_PROFILE_AVAILABILITY_RULES } from './user-profile.constants';
 
 @Module({
   imports: [
@@ -26,6 +31,16 @@ import { UserProfileRepositoryImpl } from './repository/impl/UserProfileReposito
   providers: [
     { provide: UserProfileService, useClass: UserProfileServiceImpl },
     { provide: UserProfileRepository, useClass: UserProfileRepositoryImpl },
+    OperatingHoursRule,
+    StartBeforeEndRule,
+    NoOverlapRule,
+    // Factory provider: arma la lista de estrategias en el orden de validación:
+    // horario de operación -> inicio antes que fin -> sin traslape
+    {
+      provide: USER_PROFILE_AVAILABILITY_RULES,
+      useFactory: (...rules: AvailabilityRule[]) => rules,
+      inject: [OperatingHoursRule, StartBeforeEndRule, NoOverlapRule],
+    },
   ],
   exports: [UserProfileService],
 })
