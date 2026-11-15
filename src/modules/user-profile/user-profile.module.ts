@@ -5,9 +5,11 @@ import { ProfileEntity } from './entities/profile.entity';
 import { AvailabilityEntity } from './entities/availability.entity';
 import { ProfileSkillEntity } from './entities/profile-skill.entity';
 import { ProfileInterestEntity } from './entities/profile-interest.entity';
-import { UserProfileRepository } from './user-profile.repository';
-import { UserProfileService } from './user-profile.service';
-import { UserProfileController } from './user-profile.controller';
+import { UserProfileRepository } from './repository/user-profile.repository';
+import { UserProfileRepositoryImpl } from './repository/impl/user-profile.repository.impl';
+import { UserProfileService } from './service/user-profile.service';
+import { UserProfileServiceImpl } from './service/impl/user-profile.service.impl';
+import { UserProfileController } from './controller/user-profile.controller';
 
 @Module({
   imports: [
@@ -20,7 +22,10 @@ import { UserProfileController } from './user-profile.controller';
     AuthModule,
   ],
   controllers: [UserProfileController],
-  providers: [UserProfileRepository, UserProfileService],
+  providers: [
+    { provide: UserProfileRepository, useClass: UserProfileRepositoryImpl },
+    { provide: UserProfileService, useClass: UserProfileServiceImpl },
+  ],
   exports: [UserProfileService],
 })
 export class UserProfileModule {}

@@ -1,26 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
-import { ProfileEntity } from './entities/profile.entity';
-import { AvailabilityEntity } from './entities/availability.entity';
-import { ProfileSkillEntity } from './entities/profile-skill.entity';
-import { ProfileInterestEntity } from './entities/profile-interest.entity';
-
-export interface UserAccount {
-  email: string;
-  status: string;
-}
-
-export interface ProfileChanges {
-  fields: Partial<Pick<ProfileEntity, 'bio' | 'major' | 'academicCycle' | 'profilePhotoUrl'>>;
-  skills?: string[];
-  interests?: string[];
-}
-
-export type AvailabilityValues = Pick<AvailabilityEntity, 'dayOfWeek' | 'startTime' | 'endTime'>;
+import { UserAccount, ProfileChanges, AvailabilityValues, UserProfileRepository } from '../user-profile.repository';
+import { ProfileEntity } from '../../entities/profile.entity';
+import { AvailabilityEntity } from '../../entities/availability.entity';
+import { ProfileSkillEntity } from '../../entities/profile-skill.entity';
+import { ProfileInterestEntity } from '../../entities/profile-interest.entity';
 
 @Injectable()
-export class UserProfileRepository {
+export class UserProfileRepositoryImpl extends UserProfileRepository {
   constructor(
     @InjectRepository(ProfileEntity)
     private readonly profiles: Repository<ProfileEntity>,
@@ -31,7 +19,9 @@ export class UserProfileRepository {
     @InjectRepository(ProfileInterestEntity)
     private readonly interests: Repository<ProfileInterestEntity>,
     private readonly dataSource: DataSource,
-  ) {}
+  ) {
+    super();
+  }
 
   // users pertenece a SPEC-01: se consulta con SQL directo (AGENTS.md §3.2)
   async findAccount(userId: string): Promise<UserAccount | null> {
