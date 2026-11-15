@@ -109,7 +109,7 @@ describe('SPEC-07: Panel de Administración y Notificaciones', () => {
     const adminRepo = repository as unknown as AdminRepository;
     const notificationClient = new NotificationClientImpl(emitter);
     service = new AdminServiceImpl(adminRepo, notificationClient, new ChatClientImpl(emitter), {
-      [ManagedUserStatus.SUSPENDED]: new SuspendUserStrategy(adminRepo, notificationClient),
+      [ManagedUserStatus.SUSPENDED]: new SuspendUserStrategy(adminRepo),
       [ManagedUserStatus.ACTIVE]: new ReactivateUserStrategy(adminRepo, notificationClient),
     });
   });
@@ -321,7 +321,7 @@ describe('SPEC-07: Panel de Administración y Notificaciones', () => {
       );
     });
 
-    it('suspende, audita y solicita aviso de sesión revocada', async () => {
+    it('suspende, audita y no notifica (el suspendido no puede entrar)', async () => {
       const result = await service.changeUserStatus(ADMIN, STUDENT, suspend);
 
       expect(result).toEqual({
@@ -332,10 +332,7 @@ describe('SPEC-07: Panel de Administración y Notificaciones', () => {
       expect(repository.changeUserStatus).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'suspended', reason: 'Lenguaje ofensivo', adminId: ADMIN }),
       );
-      expect(events.emit).toHaveBeenCalledWith(
-        NOTIFICATION_SEND_EVENT,
-        expect.objectContaining({ userId: STUDENT, sessionRevoked: true }),
-      );
+      expect(events.emit).not.toHaveBeenCalled();
     });
 
     it('reactivar notifica al alumno', async () => {

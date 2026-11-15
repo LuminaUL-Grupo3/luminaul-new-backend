@@ -38,7 +38,7 @@ describe('AdminServiceImpl (Unit)', () => {
 
     const notificationClient = new NotificationClientImpl(mockEventEmitter);
     service = new AdminServiceImpl(mockRepo, notificationClient, new ChatClientImpl(mockEventEmitter), {
-      [ManagedUserStatus.SUSPENDED]: new SuspendUserStrategy(mockRepo, notificationClient),
+      [ManagedUserStatus.SUSPENDED]: new SuspendUserStrategy(mockRepo),
       [ManagedUserStatus.ACTIVE]: new ReactivateUserStrategy(mockRepo, notificationClient),
     });
   });
