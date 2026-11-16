@@ -144,8 +144,8 @@ describe('HU 1.1 PostsServiceImpl.createPost (Caja Blanca · V(G) = 7 > 4)', () 
   it('C4 · D2a verdadera, D2b falsa, D2c verdadera: corta cuando maxCapacity supera 8 (valor 9)', async () => {
     const dto: PostCreateDto = {
       courseId,
-      type: POST_TYPES.TUTORING,
-      description: 'Asesoría grupal de patrones',
+      type: POST_TYPES.STUDY_GROUP,
+      description: 'Grupo de estudio de patrones',
       maxCapacity: 9,
     };
 

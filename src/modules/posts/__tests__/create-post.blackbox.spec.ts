@@ -574,8 +574,8 @@ describe('HU 1.1 Agregar Publicaciones · POST /api/posts (Pruebas de Caja Negra
   it('CN15 [BV maxCapacity = 2 (límite inferior exacto)]: acepta con 201 Created', async () => {
     const res = await postCreate({
       courseId: GOLDEN_COURSE_ID,
-      type: 'tutoring',
-      description: 'Tutoría en pareja (límite mínimo 2)',
+      type: 'study_group',
+      description: 'Grupo de estudio en pareja (límite mínimo 2)',
       maxCapacity: 2,
     });
 
@@ -587,8 +587,8 @@ describe('HU 1.1 Agregar Publicaciones · POST /api/posts (Pruebas de Caja Negra
   it('CN16 [BV maxCapacity = 3 (límite inferior + 1)]: acepta con 201 Created', async () => {
     const res = await postCreate({
       courseId: GOLDEN_COURSE_ID,
-      type: 'tutoring',
-      description: 'Tutoría de tres integrantes',
+      type: 'study_group',
+      description: 'Grupo de estudio de tres integrantes',
       maxCapacity: 3,
     });
 
