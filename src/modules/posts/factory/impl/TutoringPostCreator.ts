@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
+import { PostException } from '../../exception/PostException';
 import { PostCreator } from '../PostCreator';
 import { PostCreateDto } from '../../dto/post-create.dto';
 import { PostEntity } from '../../entities/post.entity';
@@ -8,13 +9,13 @@ import { POST_MESSAGES, POST_TYPES } from '../../posts.constants';
 
 /**
  * Creador Concreto para publicaciones de tutoría ('tutoring').
- * No auto-crea grupos de estudio; opcionalmente vincula a uno si fue especificado.
+ * No permite vincular ni auto-crear grupos manuales; la sala 1-a-1 se crea al aceptar una solicitud.
  */
 @Injectable()
 export class TutoringPostCreator extends PostCreator {
   readonly type = POST_TYPES.TUTORING;
 
-  constructor(private readonly groupMessagingClient: GroupMessagingClient) {
+  constructor(_groupMessagingClient: GroupMessagingClient) {
     super();
   }
 
@@ -23,19 +24,12 @@ export class TutoringPostCreator extends PostCreator {
     userId: string,
     _course: CourseData,
   ): Promise<PostEntity> {
-    const targetGroupId = dto.groupId;
-    let finalGroupId: string | null = null;
-
-    if (targetGroupId) {
-      const existing = await this.groupMessagingClient.findActiveById(targetGroupId);
-      if (!existing) {
-        throw new NotFoundException(POST_MESSAGES.GROUP_NOT_FOUND);
-      }
-      finalGroupId = targetGroupId;
+    if (dto.groupId) {
+      throw new PostException(POST_MESSAGES.TUTORING_NO_GROUP, HttpStatus.BAD_REQUEST);
     }
 
     const targetCourseId = dto.courseId;
-    return this.buildBaseEntity(dto, userId, targetCourseId, finalGroupId);
+    return this.buildBaseEntity(dto, userId, targetCourseId, null);
   }
 }
 

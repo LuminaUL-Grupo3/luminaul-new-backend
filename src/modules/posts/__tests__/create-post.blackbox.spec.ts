@@ -14,7 +14,7 @@ import { PostsService } from '../service/PostsService';
 import { PostsServiceImpl } from '../service/impl/PostsServiceImpl';
 import { PostsRepository, PaginatedResult } from '../repository/PostsRepository';
 import { CoursesClient, CourseData } from '../client/CoursesClient';
-import { GroupMessagingClient, AutoGroupInput } from '../client/GroupMessagingClient';
+import { GroupMessagingClient, AutoGroupInput, ActiveGroupInfo } from '../client/GroupMessagingClient';
 import { ModerationClient } from '../client/ModerationClient';
 import { PostCreatorFactory } from '../factory/PostCreatorFactory';
 import { StudyGroupPostCreator } from '../factory/impl/StudyGroupPostCreator';
@@ -181,23 +181,40 @@ class InMemoryCoursesClient extends CoursesClient {
 }
 
 class InMemoryGroupMessagingClient extends GroupMessagingClient {
-  private readonly activeGroups = new Set<string>([GOLDEN_GROUP_ID]);
+  private readonly activeGroups = new Map<
+    string,
+    { leaderId: string; groupType: string; maxCapacity: number }
+  >([
+    [GOLDEN_GROUP_ID, { leaderId: GOLDEN_USER_ID, groupType: 'study_group', maxCapacity: 6 }],
+  ]);
   readonly autoCreatedInputs: AutoGroupInput[] = [];
 
-  async findActiveById(groupId: string): Promise<{ id: string } | null> {
-    return this.activeGroups.has(groupId) ? { id: groupId } : null;
+  async findActiveById(groupId: string, userId?: string): Promise<ActiveGroupInfo | null> {
+    const group = this.activeGroups.get(groupId);
+    if (!group) return null;
+    return {
+      id: groupId,
+      leaderId: group.leaderId,
+      groupType: group.groupType,
+      maxCapacity: group.maxCapacity,
+      isMember: userId ? group.leaderId === userId : undefined,
+    };
   }
 
-  async createAutoGroup(input: AutoGroupInput): Promise<string> {
+  async createAutoGroup(input: AutoGroupInput, userId = GOLDEN_USER_ID): Promise<string> {
     this.autoCreatedInputs.push(input);
     const id = randomUUID();
-    this.activeGroups.add(id);
+    this.activeGroups.set(id, {
+      leaderId: userId,
+      groupType: 'study_group',
+      maxCapacity: input.maxCapacity ?? 6,
+    });
     return id;
   }
 
-  async createTutoringRoom(): Promise<string> {
+  async createTutoringRoom(tutorId = GOLDEN_USER_ID): Promise<string> {
     const id = randomUUID();
-    this.activeGroups.add(id);
+    this.activeGroups.set(id, { leaderId: tutorId, groupType: 'tutoring', maxCapacity: 2 });
     return id;
   }
 }
