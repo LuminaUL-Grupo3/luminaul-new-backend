@@ -23,9 +23,9 @@ export const GROUP_NOTICES = {
     message: `Tu solicitud para unirte a «${groupName}» fue rechazada.`,
   }),
   MEMBER_KICKED: {
-    title: 'Retiro del grupo',
+    title: 'Expulsión del grupo',
     message:
-      'El líder te retiró de un grupo de estudio. Puedes consultar tus grupos disponibles.',
+      'Fuiste expulsado del grupo de estudio por el líder. Puedes consultar tus grupos disponibles.',
   },
 } as const;
 
