@@ -106,6 +106,6 @@ export class ChangeUserStatusDto {
   @Transform(trim)
   @IsString()
   @IsNotEmpty({ message: 'Debes indicar el motivo' })
-  @MaxLength(500, { message: 'El motivo no puede superar los 500 caracteres' })
+  @MaxLength(300, { message: 'El motivo no puede superar los 300 caracteres' })
   reason!: string;
 }
