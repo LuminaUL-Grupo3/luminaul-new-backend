@@ -19,15 +19,15 @@ import { POST_MESSAGES, POST_TYPES } from '../posts.constants';
 //   D1a  !postDto.description
 //   D1b  postDto.description.trim().length === 0   (solo si D1a es falsa)
 //   D2a  postDto.maxCapacity !== undefined
-//   D2b  postDto.maxCapacity < 1                   (solo si D2a es verdadera)
-//   D2c  postDto.maxCapacity > 50                  (solo si D2a es verdadera y D2b es falsa)
+//   D2b  postDto.maxCapacity < 2                   (solo si D2a es verdadera)
+//   D2c  postDto.maxCapacity > 8                   (solo si D2a es verdadera y D2b es falsa)
 //   D3   !course
 //
 // Caminos básicos independientes (100 % de cobertura de ramas y condiciones de createPost):
 //   C1  D1a V                                            -> 400 description cannot be empty
 //   C2  D1a F, D1b V                                     -> 400 description cannot be empty
-//   C3  D1a F, D1b F, D2a V, D2b V                       -> 400 maxCapacity must be between 1 and 50
-//   C4  D1a F, D1b F, D2a V, D2b F, D2c V                -> 400 maxCapacity must be between 1 and 50
+//   C3  D1a F, D1b F, D2a V, D2b V                       -> 400 maxCapacity must be between 2 and 8
+//   C4  D1a F, D1b F, D2a V, D2b F, D2c V                -> 400 maxCapacity must be between 2 and 8
 //   C5  D1a F, D1b F, D2a F, D3 V                        -> 422 Course not found
 //   C6  D1a F, D1b F, D2a V, D2b F, D2c F, D3 F          -> 201 Post creado, persistido y notificado
 describe('HU 1.1 PostsServiceImpl.createPost (Caja Blanca · V(G) = 7 > 4)', () => {
@@ -123,14 +123,14 @@ describe('HU 1.1 PostsServiceImpl.createPost (Caja Blanca · V(G) = 7 > 4)', () 
     expect(getCreatorSpy).not.toHaveBeenCalled();
   });
 
-  // Prueba de Caja Blanca C3 (Camino independiente 3 - D2a=V, D2b=V): maxCapacity por debajo del mínimo (< 1)
-  it('C3 · D2a verdadera, D2b verdadera: corta cuando maxCapacity es menor a 1 (valor 0)', async () => {
+  // Prueba de Caja Blanca C3 (Camino independiente 3 - D2a=V, D2b=V): maxCapacity por debajo del mínimo (< 2)
+  it('C3 · D2a verdadera, D2b verdadera: corta cuando maxCapacity es menor a 2 (valor 1)', async () => {
     const getCreatorSpy = vi.spyOn(postCreatorFactory, 'getCreator');
     const dto: PostCreateDto = {
       courseId,
       type: POST_TYPES.STUDY_GROUP,
       description: 'Repaso para examen parcial',
-      maxCapacity: 0,
+      maxCapacity: 1,
     };
 
     await expect(service.createPost(dto, authorId)).rejects.toThrow(
@@ -140,13 +140,13 @@ describe('HU 1.1 PostsServiceImpl.createPost (Caja Blanca · V(G) = 7 > 4)', () 
     expect(getCreatorSpy).not.toHaveBeenCalled();
   });
 
-  // Prueba de Caja Blanca C4 (Camino independiente 4 - D2a=V, D2b=F, D2c=V): maxCapacity excede el máximo (> 50)
-  it('C4 · D2a verdadera, D2b falsa, D2c verdadera: corta cuando maxCapacity supera 50 (valor 51)', async () => {
+  // Prueba de Caja Blanca C4 (Camino independiente 4 - D2a=V, D2b=F, D2c=V): maxCapacity excede el máximo (> 8)
+  it('C4 · D2a verdadera, D2b falsa, D2c verdadera: corta cuando maxCapacity supera 8 (valor 9)', async () => {
     const dto: PostCreateDto = {
       courseId,
       type: POST_TYPES.TUTORING,
       description: 'Asesoría grupal de patrones',
-      maxCapacity: 51,
+      maxCapacity: 9,
     };
 
     await expect(service.createPost(dto, authorId)).rejects.toThrow(

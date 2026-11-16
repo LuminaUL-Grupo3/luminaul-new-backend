@@ -243,7 +243,7 @@ export class PostsServiceImpl extends PostsService {
 
     if (
       postDto.maxCapacity !== undefined &&
-      (postDto.maxCapacity < 1 || postDto.maxCapacity > 50)
+      (postDto.maxCapacity < 2 || postDto.maxCapacity > 8)
     ) {
       throw new PostException(POST_MESSAGES.INVALID_MAX_CAPACITY, HttpStatus.BAD_REQUEST);
     }

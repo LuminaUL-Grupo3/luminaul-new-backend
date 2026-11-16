@@ -41,13 +41,13 @@ import { POST_CREATORS, POST_MESSAGES } from '../posts.constants';
  *       4. benefits     (opcional, string)
  *       5. requirements (opcional, string)
  *       6. groupId      (opcional, UUID de grupo activo existente)
- *       7. maxCapacity  (opcional, entero entre 1 y 50; por defecto 5)
+ *       7. maxCapacity  (opcional, entero entre 2 y 8; por defecto 5)
  *   - Códigos de respuesta esperados:
  *       201 Created | 400 Bad Request | 401 Unauthorized | 404 Not Found | 422 Unprocessable Entity
  *
  * Técnicas aplicadas:
  *   - Particiones de Equivalencia (EV / EI) sobre los 7 campos de entrada
- *   - Análisis de Valores Límite (BV) sobre maxCapacity ([1, 50]) y description (longitud 0 vs 1)
+ *   - Análisis de Valores Límite (BV) sobre maxCapacity ([2, 8]) y description (longitud 0 vs 1)
  */
 
 const GOLDEN_USER_ID = 'd290f1ee-6c54-4b01-90e6-d701748f0851';
@@ -557,38 +557,25 @@ describe('HU 1.1 Agregar Publicaciones · POST /api/posts (Pruebas de Caja Negra
     expect(extractMessages(res.body)).toContain(POST_MESSAGES.GROUP_NOT_FOUND);
   });
 
-  // Prueba de Caja Negra CN14 (Valor Límite inferior - 1 - campo maxCapacity): valor 0 rechazado
-  it('CN14 [BV maxCapacity = 0 (límite inferior - 1)]: rechaza con 400 Bad Request', async () => {
+  // Prueba de Caja Negra CN14 (Valor Límite inferior - 1 - campo maxCapacity): valor 1 rechazado
+  it('CN14 [BV maxCapacity = 1 (límite inferior - 1)]: rechaza con 400 Bad Request', async () => {
     const res = await postCreate({
       courseId: GOLDEN_COURSE_ID,
       type: 'study_group',
       description: 'Prueba valor límite inferior - 1',
-      maxCapacity: 0,
-    });
-
-    expect(res.status).toBe(400);
-    expect(extractMessages(res.body)).toContain('maxCapacity debe ser mayor o igual a 1');
-  });
-
-  // Prueba de Caja Negra CN15 (Valor Límite inferior exacto - campo maxCapacity): valor 1 aceptado
-  it('CN15 [BV maxCapacity = 1 (límite inferior exacto)]: acepta con 201 Created', async () => {
-    const res = await postCreate({
-      courseId: GOLDEN_COURSE_ID,
-      type: 'tutoring',
-      description: 'Tutoría individual (límite mínimo 1)',
       maxCapacity: 1,
     });
 
-    expect(res.status).toBe(201);
-    expect(res.body.maxCapacity).toBe(1);
+    expect(res.status).toBe(400);
+    expect(extractMessages(res.body)).toContain('maxCapacity debe ser mayor o igual a 2');
   });
 
-  // Prueba de Caja Negra CN16 (Valor Límite inferior + 1 - campo maxCapacity): valor 2 aceptado
-  it('CN16 [BV maxCapacity = 2 (límite inferior + 1)]: acepta con 201 Created', async () => {
+  // Prueba de Caja Negra CN15 (Valor Límite inferior exacto - campo maxCapacity): valor 2 aceptado
+  it('CN15 [BV maxCapacity = 2 (límite inferior exacto)]: acepta con 201 Created', async () => {
     const res = await postCreate({
       courseId: GOLDEN_COURSE_ID,
       type: 'tutoring',
-      description: 'Tutoría en pareja',
+      description: 'Tutoría en pareja (límite mínimo 2)',
       maxCapacity: 2,
     });
 
@@ -596,30 +583,43 @@ describe('HU 1.1 Agregar Publicaciones · POST /api/posts (Pruebas de Caja Negra
     expect(res.body.maxCapacity).toBe(2);
   });
 
-  // Prueba de Caja Negra CN17 (Valor Límite superior exacto - campo maxCapacity): valor 50 aceptado
-  it('CN17 [BV maxCapacity = 50 (límite superior exacto)]: acepta con 201 Created', async () => {
+  // Prueba de Caja Negra CN16 (Valor Límite inferior + 1 - campo maxCapacity): valor 3 aceptado
+  it('CN16 [BV maxCapacity = 3 (límite inferior + 1)]: acepta con 201 Created', async () => {
     const res = await postCreate({
       courseId: GOLDEN_COURSE_ID,
-      type: 'study_group',
-      description: 'Seminario grande (límite máximo 50)',
-      maxCapacity: 50,
+      type: 'tutoring',
+      description: 'Tutoría de tres integrantes',
+      maxCapacity: 3,
     });
 
     expect(res.status).toBe(201);
-    expect(res.body.maxCapacity).toBe(50);
+    expect(res.body.maxCapacity).toBe(3);
   });
 
-  // Prueba de Caja Negra CN18 (Valor Límite superior + 1 - campo maxCapacity): valor 51 rechazado
-  it('CN18 [BV maxCapacity = 51 (límite superior + 1)]: rechaza con 400 Bad Request', async () => {
+  // Prueba de Caja Negra CN17 (Valor Límite superior exacto - campo maxCapacity): valor 8 aceptado
+  it('CN17 [BV maxCapacity = 8 (límite superior exacto)]: acepta con 201 Created', async () => {
     const res = await postCreate({
       courseId: GOLDEN_COURSE_ID,
       type: 'study_group',
-      description: 'Capacidad excedida (51)',
-      maxCapacity: 51,
+      description: 'Grupo completo (límite máximo 8)',
+      maxCapacity: 8,
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body.maxCapacity).toBe(8);
+  });
+
+  // Prueba de Caja Negra CN18 (Valor Límite superior + 1 - campo maxCapacity): valor 9 rechazado
+  it('CN18 [BV maxCapacity = 9 (límite superior + 1)]: rechaza con 400 Bad Request', async () => {
+    const res = await postCreate({
+      courseId: GOLDEN_COURSE_ID,
+      type: 'study_group',
+      description: 'Capacidad excedida (9)',
+      maxCapacity: 9,
     });
 
     expect(res.status).toBe(400);
-    expect(extractMessages(res.body)).toContain('maxCapacity no puede superar 50');
+    expect(extractMessages(res.body)).toContain('maxCapacity no puede superar 8');
   });
 
   // Prueba de Caja Negra CN19 (Partición Inválida - campo maxCapacity): valor decimal no entero rechazado

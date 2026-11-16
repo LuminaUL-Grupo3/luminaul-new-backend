@@ -15,7 +15,7 @@ export const POST_STATUS = {
 
 export const POST_MESSAGES = {
   EMPTY_DESCRIPTION: 'La descripción no puede estar vacía',
-  INVALID_MAX_CAPACITY: 'maxCapacity debe estar entre 1 y 50',
+  INVALID_MAX_CAPACITY: 'maxCapacity debe estar entre 2 y 8',
   COURSE_NOT_FOUND: 'Curso no encontrado',
   GROUP_NOT_FOUND: 'El grupo especificado no existe',
   POST_NOT_FOUND: 'Publicación no encontrada',
