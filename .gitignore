@@ -13,6 +13,7 @@ __pycache__/
 # Pruebas y cobertura
 .pytest_cache/
 .coverage
+coverage/
 htmlcov/
 
 # Editores

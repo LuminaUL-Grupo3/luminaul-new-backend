@@ -30,6 +30,7 @@ import { POST_MESSAGES, POST_TYPES } from '../posts.constants';
 //   C4  D1a F, D1b F, D2a V, D2b F, D2c V                -> 400 maxCapacity must be between 2 and 8
 //   C5  D1a F, D1b F, D2a F, D3 V                        -> 422 Course not found
 //   C6  D1a F, D1b F, D2a V, D2b F, D2c F, D3 F          -> 201 Post creado, persistido y notificado
+//   C7  D1a F, D1b F, D2a F, D3 F                        -> 201 Post creado sin maxCapacity explícito (valor por defecto)
 describe('HU 1.1 PostsServiceImpl.createPost (Caja Blanca · V(G) = 7 > 4)', () => {
   const authorId = 'd290f1ee-6c54-4b01-90e6-d701748f0851';
   const courseId = '8c537243-ea7d-411a-8bb7-fce5230bfdf2';
@@ -201,5 +202,74 @@ describe('HU 1.1 PostsServiceImpl.createPost (Caja Blanca · V(G) = 7 > 4)', () 
     expect(mockModerationClient.publicationCreated).toHaveBeenCalledTimes(1);
     expect(result.groupId).toBe(generatedGroupId);
     expect(result.maxCapacity).toBe(8);
+  });
+
+  // Prueba de Caja Blanca C7 (Camino independiente 7 - D1a=F, D1b=F, D2a=F, D3=F): maxCapacity omitido con curso válido
+  it('C7 · D2a falsa, D3 falsa: crea post correctamente cuando maxCapacity no se envía', async () => {
+    mockCoursesClient.findById.mockResolvedValue(courseFixture);
+    mockPostsRepo.create.mockImplementation(async (entity: PostEntity) => ({
+      ...entity,
+      maxCapacity: 5,
+    }));
+
+    const dto: PostCreateDto = {
+      courseId,
+      type: POST_TYPES.TUTORING,
+      description: 'Asesoría de algoritmos',
+    };
+
+    const result = await service.createPost(dto, authorId);
+
+    expect(mockCoursesClient.findById).toHaveBeenCalledWith(courseId);
+    expect(mockPostsRepo.create).toHaveBeenCalledTimes(1);
+    expect(mockModerationClient.publicationCreated).toHaveBeenCalledTimes(1);
+    expect(result.maxCapacity).toBe(5);
+  });
+
+  // Ramas internas de validateLinkedStudyGroup vía StudyGroupPostCreator
+  it('CB-G1 · groupType distinto a study_group: lanza PostException 400 y no persiste', async () => {
+    mockCoursesClient.findById.mockResolvedValue(courseFixture);
+    mockGroupMessagingClient.findActiveById.mockResolvedValue({
+      id: 'group-tutoring-1',
+      leaderId: authorId,
+      groupType: POST_TYPES.TUTORING,
+      maxCapacity: 2,
+      isMember: true,
+    });
+
+    const dto: PostCreateDto = {
+      courseId,
+      type: POST_TYPES.STUDY_GROUP,
+      description: 'Intento con grupo de tutoría',
+      groupId: 'group-tutoring-1',
+    };
+
+    await expect(service.createPost(dto, authorId)).rejects.toThrow(
+      new PostException(POST_MESSAGES.GROUP_INVALID_TYPE, HttpStatus.BAD_REQUEST),
+    );
+    expect(mockPostsRepo.create).not.toHaveBeenCalled();
+  });
+
+  it('CB-G2 · usuario no miembro ni líder del grupo: lanza PostException 403 y no persiste', async () => {
+    mockCoursesClient.findById.mockResolvedValue(courseFixture);
+    mockGroupMessagingClient.findActiveById.mockResolvedValue({
+      id: 'group-foreign-1',
+      leaderId: 'other-user-uuid',
+      groupType: POST_TYPES.STUDY_GROUP,
+      maxCapacity: 6,
+      isMember: false,
+    });
+
+    const dto: PostCreateDto = {
+      courseId,
+      type: POST_TYPES.STUDY_GROUP,
+      description: 'Intento con grupo ajeno',
+      groupId: 'group-foreign-1',
+    };
+
+    await expect(service.createPost(dto, authorId)).rejects.toThrow(
+      new PostException(POST_MESSAGES.FORBIDDEN_GROUP_LINK, HttpStatus.FORBIDDEN),
+    );
+    expect(mockPostsRepo.create).not.toHaveBeenCalled();
   });
 });
