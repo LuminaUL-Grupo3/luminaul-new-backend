@@ -147,6 +147,127 @@ describe('PostsModule Patterns (Unit Tests)', () => {
       );
     });
 
+    it('debe lanzar PostException 400 si el groupId especificado no es de tipo study_group', async () => {
+      mockGroupMessagingClient.findActiveById.mockResolvedValue({
+        id: 'tutoring-group-uuid',
+        leaderId: userId,
+        groupType: 'tutoring',
+        maxCapacity: 2,
+        isMember: true,
+      });
+
+      await expect(
+        studyGroupCreator.create(
+          {
+            courseId,
+            groupId: 'tutoring-group-uuid',
+            type: 'study_group',
+            description: 'Grupo de tipo inválido',
+          },
+          userId,
+          course,
+        ),
+      ).rejects.toThrow(
+        new PostException(POST_MESSAGES.GROUP_INVALID_TYPE, HttpStatus.BAD_REQUEST),
+      );
+    });
+
+    it('debe lanzar PostException 403 si el usuario no es miembro del groupId especificado', async () => {
+      mockGroupMessagingClient.findActiveById.mockResolvedValue({
+        id: 'foreign-group-uuid',
+        leaderId: otherUserId,
+        groupType: 'study_group',
+        maxCapacity: 6,
+        isMember: false,
+      });
+
+      await expect(
+        studyGroupCreator.create(
+          {
+            courseId,
+            groupId: 'foreign-group-uuid',
+            type: 'study_group',
+            description: 'Grupo ajeno',
+          },
+          userId,
+          course,
+        ),
+      ).rejects.toThrow(
+        new PostException(POST_MESSAGES.FORBIDDEN_GROUP_LINK, HttpStatus.FORBIDDEN),
+      );
+    });
+
+    it('debe usar courseCode directo en mayúsculas cuando el nombre del curso tiene <= 20 caracteres', async () => {
+      mockGroupMessagingClient.createAutoGroup.mockResolvedValue('short-course-group');
+      const shortCourse: CourseData = { id: courseId, name: 'Cálculo I', cycle: 2 };
+
+      const entity = await studyGroupCreator.create(
+        { courseId, type: 'study_group', description: 'Repaso breve' },
+        userId,
+        shortCourse,
+      );
+
+      expect(entity.groupId).toBe('short-course-group');
+      expect(mockGroupMessagingClient.createAutoGroup).toHaveBeenCalledWith(
+        expect.objectContaining({ courseCode: 'CÁLCULO I' }),
+        userId,
+      );
+    });
+
+    it('debe validar membresía por leaderId en validateLinkedStudyGroup cuando isMember es undefined', async () => {
+      mockGroupMessagingClient.findActiveById.mockResolvedValue({
+        id: 'leader-other-uuid',
+        leaderId: otherUserId,
+        groupType: 'study_group',
+      });
+
+      await expect(
+        studyGroupCreator.create(
+          {
+            courseId,
+            groupId: 'leader-other-uuid',
+            type: 'study_group',
+            description: 'Grupo de otro líder',
+          },
+          userId,
+          course,
+        ),
+      ).rejects.toThrow(
+        new PostException(POST_MESSAGES.FORBIDDEN_GROUP_LINK, HttpStatus.FORBIDDEN),
+      );
+
+      mockGroupMessagingClient.findActiveById.mockResolvedValue({
+        id: 'leader-own-uuid',
+        leaderId: userId,
+        groupType: 'study_group',
+      });
+
+      const ownLinked = await studyGroupCreator.create(
+        {
+          courseId,
+          groupId: 'leader-own-uuid',
+          type: 'study_group',
+          description: 'Grupo propio por leaderId',
+        },
+        userId,
+        course,
+      );
+      expect(ownLinked.groupId).toBe('leader-own-uuid');
+
+      mockGroupMessagingClient.findActiveById.mockResolvedValue({ id: 'minimal-group-uuid' });
+      const minimalLinked = await studyGroupCreator.create(
+        {
+          courseId,
+          groupId: 'minimal-group-uuid',
+          type: 'study_group',
+          description: 'Grupo mínimo',
+        },
+        userId,
+        course,
+      );
+      expect(minimalLinked.groupId).toBe('minimal-group-uuid');
+    });
+
     it('no debe auto-crear grupo para tutoring cuando groupId es omitido', async () => {
       const entity = await tutoringCreator.create(
         {
@@ -161,6 +282,23 @@ describe('PostsModule Patterns (Unit Tests)', () => {
       expect(entity.type).toBe('tutoring');
       expect(entity.groupId).toBeNull();
       expect(mockGroupMessagingClient.createAutoGroup).not.toHaveBeenCalled();
+    });
+
+    it('debe lanzar PostException 400 en tutoring si se intenta vincular un groupId', async () => {
+      await expect(
+        tutoringCreator.create(
+          {
+            courseId,
+            groupId: 'some-group-uuid',
+            type: 'tutoring',
+            description: 'Tutoría con grupo inválido',
+          },
+          userId,
+          course,
+        ),
+      ).rejects.toThrow(
+        new PostException(POST_MESSAGES.TUTORING_NO_GROUP, HttpStatus.BAD_REQUEST),
+      );
     });
 
     it('debe lanzar PostException 422 si se solicita un tipo no soportado', () => {

@@ -33,8 +33,7 @@ export function IsBoundedInt(
     validator: {
       validate: (value: unknown) => boundedIntError(value, label, min, max) === null,
       defaultMessage: (args?: ValidationArguments) =>
-        boundedIntError(args?.value, label, min, max) ??
-        `${label} debe ser un número entero`,
+        boundedIntError(args?.value, label, min, max) as string,
     },
   });
 }

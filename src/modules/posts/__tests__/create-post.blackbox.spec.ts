@@ -51,8 +51,11 @@ import { POST_CREATORS, POST_MESSAGES } from '../posts.constants';
  */
 
 const GOLDEN_USER_ID = 'd290f1ee-6c54-4b01-90e6-d701748f0851';
+const OTHER_USER_ID = 'f1111111-1111-4111-8111-111111111111';
 const GOLDEN_COURSE_ID = '8c537243-ea7d-411a-8bb7-fce5230bfdf2';
 const GOLDEN_GROUP_ID = '7b134111-9a22-48df-9fa0-cd8213aa0981';
+const TUTORING_GROUP_ID = '7b134111-9a22-48df-9fa0-cd8213aa0982';
+const FOREIGN_GROUP_ID = '7b134111-9a22-48df-9fa0-cd8213aa0983';
 const VALID_TOKEN = 'valid-student-jwt-token';
 const VALID_ADMIN_TOKEN = 'valid-admin-jwt-token';
 
@@ -186,6 +189,8 @@ class InMemoryGroupMessagingClient extends GroupMessagingClient {
     { leaderId: string; groupType: string; maxCapacity: number }
   >([
     [GOLDEN_GROUP_ID, { leaderId: GOLDEN_USER_ID, groupType: 'study_group', maxCapacity: 6 }],
+    [TUTORING_GROUP_ID, { leaderId: GOLDEN_USER_ID, groupType: 'tutoring', maxCapacity: 2 }],
+    [FOREIGN_GROUP_ID, { leaderId: OTHER_USER_ID, groupType: 'study_group', maxCapacity: 6 }],
   ]);
   readonly autoCreatedInputs: AutoGroupInput[] = [];
 
@@ -688,5 +693,92 @@ describe('HU 1.1 Agregar Publicaciones · POST /api/posts (Pruebas de Caja Negra
     const resPostParam = await getJson('/posts/no-uuid');
     expect(resPostParam.status).toBe(400);
     expect(resPostParam.body.message).toBe('El identificador debe ser un UUID válido');
+  });
+
+  // Prueba de Caja Negra CN22 (Autenticación JWT): petición sin token o con token inválido
+  it('CN22 [Auth / 401 Unauthorized]: rechaza con 401 cuando falta el token o es inválido', async () => {
+    const payload = {
+      courseId: GOLDEN_COURSE_ID,
+      type: 'study_group',
+      description: 'Intento sin autenticación',
+    };
+
+    const resSinToken = await postCreate(payload, null);
+    expect(resSinToken.status).toBe(401);
+
+    const resTokenInvalido = await postCreate(payload, 'token-invalido-123');
+    expect(resTokenInvalido.status).toBe(401);
+    expect(postsRepo.saved).toHaveLength(0);
+  });
+
+  // Prueba de Caja Negra CN23 (Valores Límite - MaxLength description: 500 vs 501)
+  it('CN23 [BV description 500 vs 501 caracteres]: acepta 500 y rechaza 501 con 400 Bad Request', async () => {
+    const res500 = await postCreate({
+      courseId: GOLDEN_COURSE_ID,
+      type: 'study_group',
+      description: 'a'.repeat(500),
+    });
+    expect(res500.status).toBe(201);
+
+    const res501 = await postCreate({
+      courseId: GOLDEN_COURSE_ID,
+      type: 'study_group',
+      description: 'a'.repeat(501),
+    });
+    expect(res501.status).toBe(400);
+    expect(extractMessages(res501.body)).toContain(
+      'La descripción no puede superar los 500 caracteres',
+    );
+  });
+
+  // Prueba de Caja Negra CN24 (Valores Límite - MaxLength benefits/requirements > 100)
+  it('CN24 [BV benefits/requirements > 100 caracteres]: rechaza con 400 Bad Request', async () => {
+    const resBenefits = await postCreate({
+      courseId: GOLDEN_COURSE_ID,
+      type: 'study_group',
+      description: 'Grupo de repaso',
+      benefits: 'b'.repeat(101),
+    });
+    expect(resBenefits.status).toBe(400);
+    expect(extractMessages(resBenefits.body)).toContain(
+      'Los beneficios no pueden superar los 100 caracteres',
+    );
+
+    const resRequirements = await postCreate({
+      courseId: GOLDEN_COURSE_ID,
+      type: 'study_group',
+      description: 'Grupo de repaso',
+      requirements: 'r'.repeat(101),
+    });
+    expect(resRequirements.status).toBe(400);
+    expect(extractMessages(resRequirements.body)).toContain(
+      'Los requisitos no pueden superar los 100 caracteres',
+    );
+  });
+
+  // Prueba de Caja Negra CN25 (Regla de negocio groupId): rechaza vincular un grupo de tipo tutoring
+  it('CN25 [EI groupId tipo inválido]: retorna 400 cuando groupId pertenece a un grupo de tutoría', async () => {
+    const res = await postCreate({
+      courseId: GOLDEN_COURSE_ID,
+      type: 'study_group',
+      description: 'Intento vinculando sala de tutoría',
+      groupId: TUTORING_GROUP_ID,
+    });
+
+    expect(res.status).toBe(400);
+    expect(postsRepo.saved).toHaveLength(0);
+  });
+
+  // Prueba de Caja Negra CN26 (Autorización sobre groupId): rechaza vincular un grupo al que el autor no pertenece
+  it('CN26 [EI groupId ajeno]: retorna 403 Forbidden cuando el usuario no pertenece al grupo', async () => {
+    const res = await postCreate({
+      courseId: GOLDEN_COURSE_ID,
+      type: 'study_group',
+      description: 'Intento vinculando grupo de otro estudiante',
+      groupId: FOREIGN_GROUP_ID,
+    });
+
+    expect(res.status).toBe(403);
+    expect(postsRepo.saved).toHaveLength(0);
   });
 });
