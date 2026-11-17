@@ -104,7 +104,11 @@ export class ChangeUserStatusDto {
 
   @ApiProperty({ example: 'Reincidencia en lenguaje ofensivo' })
   // D-15: un motivo ausente o nulo se trata como vacío, así solo responde "Debes indicar el motivo"
-  @Transform(({ value }) => (value === undefined || value === null ? '' : trim({ value })))
+  // D-16: se lee el valor original (obj.reason), no el ya convertido por enableImplicitConversion,
+  // para que un número, booleano u objeto se rechace como "El motivo debe ser un texto"
+  @Transform(({ obj }: { obj: { reason?: unknown } }) =>
+    obj.reason === undefined || obj.reason === null ? '' : trim({ value: obj.reason }),
+  )
   @IsString({ message: 'El motivo debe ser un texto' })
   @IsNotEmpty({ message: 'Debes indicar el motivo' })
   @MaxLength(300, { message: 'El motivo no puede superar los 300 caracteres' })
