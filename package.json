@@ -20,7 +20,11 @@
     "test:ws": "vitest run --config vitest.config.e2e.mts test/websockets-chat.spec.ts",
     "test:security": "vitest run --config vitest.config.e2e.mts test/security-owasp.spec.ts",
     "test:all": "vitest run --config vitest.config.mts && vitest run --config vitest.config.e2e.mts",
-    "test:cov": "vitest run --config vitest.config.mts --coverage"
+    "test:cov": "vitest run --config vitest.config.mts --coverage",
+    "test:hu22:whitebox": "vitest run --config vitest.config.mts src/modules/group-messaging/__tests__/WhiteBox_hu22-decide.spec.ts",
+    "test:hu22:unit": "vitest run --config vitest.config.mts src/modules/group-messaging/__tests__/Unit_hu22-service.spec.ts",
+    "test:hu22:blackbox": "node src/modules/group-messaging/__tests__/prepare-hu22-database.cjs && vitest run --config vitest.config.mts src/modules/group-messaging/__tests__/BlackBox_hu22-http.spec.ts",
+    "test:hu22:cov": "vitest run --config vitest.config.mts src/modules/group-messaging/__tests__/WhiteBox_hu22-decide.spec.ts src/modules/group-messaging/__tests__/Unit_hu22-service.spec.ts --coverage --coverage.include=src/modules/group-messaging/repositories/groups.repository.ts --coverage.include=src/modules/group-messaging/group-messaging.service.ts --coverage.reportsDirectory=./coverage/hu22 --coverage.reporter=text --coverage.reporter=html --coverage.reporter=json --coverage.reporter=json-summary && node src/modules/group-messaging/__tests__/report-hu22-coverage.cjs"
   },
   "dependencies": {
     "@nestjs/common": "^12.3.2",

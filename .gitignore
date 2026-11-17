@@ -31,3 +31,4 @@ dist/
 npm-debug.log*
 *.tsbuildinfo
 *.zip
+/coverage/
