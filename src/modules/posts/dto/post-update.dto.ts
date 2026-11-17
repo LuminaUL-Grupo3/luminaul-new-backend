@@ -42,9 +42,9 @@ export class PostUpdateDto {
   @MaxLength(100, { message: 'Los requisitos no pueden superar los 100 caracteres' })
   requirements?: string;
 
-  @ApiPropertyOptional({ description: 'Capacidad máxima de miembros (1 a 50)' })
+  @ApiPropertyOptional({ description: 'Capacidad máxima de miembros (2 a 8)' })
   @IsOptional()
-  @IsBoundedInt('maxCapacity', 1, 50)
+  @IsBoundedInt('maxCapacity', 2, 8)
   maxCapacity?: number;
 
   @ApiPropertyOptional({ description: 'ID del grupo de estudio asociado' })

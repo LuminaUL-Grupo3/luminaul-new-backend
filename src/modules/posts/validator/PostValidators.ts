@@ -1,4 +1,8 @@
+import { HttpStatus } from '@nestjs/common';
 import { ValidateBy, ValidationArguments } from 'class-validator';
+import { ActiveGroupInfo } from '../client/GroupMessagingClient';
+import { PostException } from '../exception/PostException';
+import { POST_MESSAGES, POST_TYPES } from '../posts.constants';
 
 function boundedIntError(
   value: unknown,
@@ -33,4 +37,26 @@ export function IsBoundedInt(
         `${label} debe ser un número entero`,
     },
   });
+}
+
+/** Valida que el grupo exista, sea de tipo study_group y pertenezca al usuario (miembro activo o líder). */
+export function validateLinkedStudyGroup(
+  existing: ActiveGroupInfo | null,
+  userId: string,
+): ActiveGroupInfo {
+  if (!existing) {
+    throw new PostException(POST_MESSAGES.GROUP_NOT_FOUND, HttpStatus.NOT_FOUND);
+  }
+  if (existing.groupType !== undefined && existing.groupType !== POST_TYPES.STUDY_GROUP) {
+    throw new PostException(POST_MESSAGES.GROUP_INVALID_TYPE, HttpStatus.BAD_REQUEST);
+  }
+  const notMember =
+    existing.isMember === false ||
+    (existing.isMember === undefined &&
+      existing.leaderId !== undefined &&
+      existing.leaderId !== userId);
+  if (notMember) {
+    throw new PostException(POST_MESSAGES.FORBIDDEN_GROUP_LINK, HttpStatus.FORBIDDEN);
+  }
+  return existing;
 }

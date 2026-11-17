@@ -103,9 +103,10 @@ export class ChangeUserStatusDto {
   status!: ManagedUserStatus;
 
   @ApiProperty({ example: 'Reincidencia en lenguaje ofensivo' })
-  @Transform(trim)
-  @IsString()
+  // D-15: un motivo ausente o nulo se trata como vacío, así solo responde "Debes indicar el motivo"
+  @Transform(({ value }) => (value === undefined || value === null ? '' : trim({ value })))
+  @IsString({ message: 'El motivo debe ser un texto' })
   @IsNotEmpty({ message: 'Debes indicar el motivo' })
-  @MaxLength(500, { message: 'El motivo no puede superar los 500 caracteres' })
-  reason!: string;
+  @MaxLength(300, { message: 'El motivo no puede superar los 300 caracteres' })
+  reason: string = '';
 }

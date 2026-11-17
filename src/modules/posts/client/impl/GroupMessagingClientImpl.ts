@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { GroupMessagingClient, AutoGroupInput } from '../GroupMessagingClient';
+import {
+  ActiveGroupInfo,
+  AutoGroupInput,
+  GroupMessagingClient,
+} from '../GroupMessagingClient';
 import { GroupsRepository } from '../../../group-messaging/repositories/groups.repository';
 
 @Injectable()
@@ -8,10 +12,34 @@ export class GroupMessagingClientImpl extends GroupMessagingClient {
     super();
   }
 
-  async findActiveById(groupId: string): Promise<{ id: string } | null> {
+  async findActiveById(
+    groupId: string,
+    userId?: string,
+  ): Promise<ActiveGroupInfo | null> {
     const group = await this.groupsRepository.findActiveById(groupId);
     if (!group) return null;
-    return { id: group.id };
+
+    let isMember: boolean | undefined;
+    if (userId) {
+      if (group.leaderId === userId) {
+        isMember = true;
+      } else {
+        try {
+          await this.groupsRepository.requireMember(groupId, userId);
+          isMember = true;
+        } catch {
+          isMember = false;
+        }
+      }
+    }
+
+    return {
+      id: group.id,
+      leaderId: group.leaderId,
+      groupType: group.groupType,
+      maxCapacity: group.maxCapacity,
+      isMember,
+    };
   }
 
   async createAutoGroup(input: AutoGroupInput, userId: string): Promise<string> {

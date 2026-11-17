@@ -1,4 +1,5 @@
-import { Inject, Injectable, UnprocessableEntityException } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { PostException } from '../exception/PostException';
 import { PostCreator } from './PostCreator';
 import { POST_CREATORS, POST_MESSAGES } from '../posts.constants';
 
@@ -23,7 +24,7 @@ export class PostCreatorFactory {
   getCreator(type: string): PostCreator {
     const creator = this.creatorsMap.get(type);
     if (!creator) {
-      throw new UnprocessableEntityException(POST_MESSAGES.UNSUPPORTED_TYPE);
+      throw new PostException(POST_MESSAGES.UNSUPPORTED_TYPE, HttpStatus.UNPROCESSABLE_ENTITY);
     }
     return creator;
   }

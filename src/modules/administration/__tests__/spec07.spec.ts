@@ -141,6 +141,17 @@ describe('SPEC-07: Panel de Administración y Notificaciones', () => {
       expect(await errorsOf(ChangeUserStatusDto, body)).toContain(property);
     });
 
+    // D-15: sin motivo se responde un solo mensaje y en español
+    it.each([
+      ['sin motivo', { status: 'suspended' }],
+      ['motivo nulo', { status: 'suspended', reason: null }],
+      ['motivo en blanco', { status: 'suspended', reason: '   ' }],
+    ])('ChangeUserStatusDto %s responde solo "Debes indicar el motivo"', async (_name, body) => {
+      const errors = await validate(plainToInstance(ChangeUserStatusDto, body));
+      const messages = errors.flatMap((error) => Object.values(error.constraints ?? {}));
+      expect(messages).toEqual(['Debes indicar el motivo']);
+    });
+
     it('ResolveReportDto rechaza estados y acciones fuera del contrato', async () => {
       expect(await errorsOf(ResolveReportDto, { status: 'pending' })).toContain('status');
       expect(await errorsOf(ResolveReportDto, { status: 'resolved', action: 'ban' })).toContain('action');

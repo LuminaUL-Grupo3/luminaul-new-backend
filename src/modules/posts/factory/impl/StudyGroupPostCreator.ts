@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PostCreator } from '../PostCreator';
 import { PostCreateDto } from '../../dto/post-create.dto';
 import { PostEntity } from '../../entities/post.entity';
 import { CourseData } from '../../client/CoursesClient';
 import { GroupMessagingClient } from '../../client/GroupMessagingClient';
-import { POST_MESSAGES, POST_TYPES } from '../../posts.constants';
+import { POST_TYPES } from '../../posts.constants';
+import { validateLinkedStudyGroup } from '../../validator/PostValidators';
 
 /**
  * Creador Concreto para publicaciones de grupo de estudio ('study_group').
@@ -43,13 +44,15 @@ export class StudyGroupPostCreator extends PostCreator {
   ): Promise<PostEntity> {
     const targetGroupId = dto.groupId;
     let finalGroupId: string;
+    let resolvedMaxCapacity = dto.maxCapacity;
 
     if (targetGroupId) {
-      const existing = await this.groupMessagingClient.findActiveById(targetGroupId);
-      if (!existing) {
-        throw new NotFoundException(POST_MESSAGES.GROUP_NOT_FOUND);
-      }
+      const existing = await this.groupMessagingClient.findActiveById(targetGroupId, userId);
+      const group = validateLinkedStudyGroup(existing, userId);
       finalGroupId = targetGroupId;
+      if (typeof group.maxCapacity === 'number') {
+        resolvedMaxCapacity = group.maxCapacity;
+      }
     } else {
       // Auto-creación de grupo de estudio para el curso
       finalGroupId = await this.groupMessagingClient.createAutoGroup(
@@ -66,7 +69,13 @@ export class StudyGroupPostCreator extends PostCreator {
     }
 
     const targetCourseId = dto.courseId;
-    return this.buildBaseEntity(dto, userId, targetCourseId, finalGroupId);
+    return this.buildBaseEntity(
+      dto,
+      userId,
+      targetCourseId,
+      finalGroupId,
+      resolvedMaxCapacity,
+    );
   }
 }
 

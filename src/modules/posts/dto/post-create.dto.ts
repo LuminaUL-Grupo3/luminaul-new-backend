@@ -96,12 +96,12 @@ export class PostCreateDto {
   groupId?: string;
 
   @ApiPropertyOptional({
-    description: 'Capacidad máxima de miembros (1 a 50)',
+    description: 'Capacidad máxima de miembros (2 a 8)',
     example: 5,
     default: 5,
   })
   @IsOptional()
-  @IsBoundedInt('maxCapacity', 1, 50)
+  @IsBoundedInt('maxCapacity', 2, 8)
   maxCapacity?: number;
 
   @ApiPropertyOptional({

@@ -22,6 +22,7 @@ import { MyPostHistoryResponseDto } from '../../dto/my-post-history-response.dto
 import { DeletePostResponseDto } from '../../dto/delete-post-response.dto';
 import { PostEntity } from '../../entities/post.entity';
 import { POST_MESSAGES, POST_STATUS, POST_TYPES } from '../../posts.constants';
+import { validateLinkedStudyGroup } from '../../validator/PostValidators';
 import {
   MyTutoringRequestDto,
   TutoringRequestIncomingDto,
@@ -243,7 +244,7 @@ export class PostsServiceImpl extends PostsService {
 
     if (
       postDto.maxCapacity !== undefined &&
-      (postDto.maxCapacity < 1 || postDto.maxCapacity > 50)
+      (postDto.maxCapacity < 2 || postDto.maxCapacity > 8)
     ) {
       throw new PostException(POST_MESSAGES.INVALID_MAX_CAPACITY, HttpStatus.BAD_REQUEST);
     }
@@ -364,12 +365,13 @@ export class PostsServiceImpl extends PostsService {
 
     // Validar integridad de grupo si se especifica
     if (payload.groupId) {
-      const existingGroup = this.groupMessagingClient
-        ? await this.groupMessagingClient.findActiveById(payload.groupId)
-        : await this.postsRepository.findGroupById(payload.groupId);
-      if (!existingGroup) {
-        throw new PostException(POST_MESSAGES.GROUP_NOT_FOUND, HttpStatus.NOT_FOUND);
+      if (existingPost.type === POST_TYPES.TUTORING) {
+        throw new PostException(POST_MESSAGES.TUTORING_NO_GROUP, HttpStatus.BAD_REQUEST);
       }
+      const existingGroup = this.groupMessagingClient
+        ? await this.groupMessagingClient.findActiveById(payload.groupId, userId)
+        : await this.postsRepository.findGroupById(payload.groupId);
+      validateLinkedStudyGroup(existingGroup, userId);
     }
 
     const updatedPost = await this.postsRepository.edit(postId, payload);

@@ -1,4 +1,4 @@
-import { BadRequestException, HttpStatus, NotFoundException, UnprocessableEntityException, ValidationPipe } from '@nestjs/common';
+import { BadRequestException, HttpStatus, ValidationPipe } from '@nestjs/common';
 import { type Mocked } from 'vitest';
 import { validate } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
@@ -15,7 +15,7 @@ import { PostCreatorFactory } from '../factory/PostCreatorFactory';
 import { StudyGroupPostCreator } from '../factory/impl/StudyGroupPostCreator';
 import { TutoringPostCreator } from '../factory/impl/TutoringPostCreator';
 import { PostEntity } from '../entities/post.entity';
-import { POST_TYPES } from '../posts.constants';
+import { POST_MESSAGES, POST_TYPES } from '../posts.constants';
 
 describe('PostsModule Patterns (Unit Tests)', () => {
   const userId = 'user-uuid-author-1';
@@ -102,8 +102,14 @@ describe('PostsModule Patterns (Unit Tests)', () => {
       );
     });
 
-    it('debe vincular a grupo existente para study_group si se especifica groupId', async () => {
-      mockGroupMessagingClient.findActiveById.mockResolvedValue({ id: 'existing-group-uuid' });
+    it('debe vincular a grupo existente para study_group si se especifica groupId y sincronizar maxCapacity', async () => {
+      mockGroupMessagingClient.findActiveById.mockResolvedValue({
+        id: 'existing-group-uuid',
+        leaderId: userId,
+        groupType: 'study_group',
+        maxCapacity: 4,
+        isMember: true,
+      });
 
       const entity = await studyGroupCreator.create(
         {
@@ -111,16 +117,18 @@ describe('PostsModule Patterns (Unit Tests)', () => {
           groupId: 'existing-group-uuid',
           type: 'study_group',
           description: 'Grupo existente',
+          maxCapacity: 8,
         },
         userId,
         course,
       );
 
       expect(entity.groupId).toBe('existing-group-uuid');
+      expect(entity.maxCapacity).toBe(4);
       expect(mockGroupMessagingClient.createAutoGroup).not.toHaveBeenCalled();
     });
 
-    it('debe lanzar NotFoundException si el groupId especificado no existe en study_group', async () => {
+    it('debe lanzar PostException 404 si el groupId especificado no existe en study_group', async () => {
       mockGroupMessagingClient.findActiveById.mockResolvedValue(null);
 
       await expect(
@@ -134,7 +142,9 @@ describe('PostsModule Patterns (Unit Tests)', () => {
           userId,
           course,
         ),
-      ).rejects.toThrow(NotFoundException);
+      ).rejects.toThrow(
+        new PostException(POST_MESSAGES.GROUP_NOT_FOUND, HttpStatus.NOT_FOUND),
+      );
     });
 
     it('no debe auto-crear grupo para tutoring cuando groupId es omitido', async () => {
@@ -153,9 +163,9 @@ describe('PostsModule Patterns (Unit Tests)', () => {
       expect(mockGroupMessagingClient.createAutoGroup).not.toHaveBeenCalled();
     });
 
-    it('debe lanzar UnprocessableEntityException si se solicita un tipo no soportado', () => {
+    it('debe lanzar PostException 422 si se solicita un tipo no soportado', () => {
       expect(() => postCreatorFactory.getCreator('invalid_type')).toThrow(
-        UnprocessableEntityException,
+        new PostException(POST_MESSAGES.UNSUPPORTED_TYPE, HttpStatus.UNPROCESSABLE_ENTITY),
       );
     });
 
