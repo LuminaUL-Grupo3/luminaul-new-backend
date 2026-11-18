@@ -238,7 +238,133 @@ describe('HU 4.3 - UserProfileService (unitarias con Mock)', () => {
   });
 
   // =====================================================
-  // METODOS DE APOYO COMPARTIDOS POR LOS CUATRO BLOQUES
+  // INICIO BLOQUE 05 - Métodos complementarios de la clase
+  // Cuenta eliminada, perfil incompleto, edición del perfil y registro de franjas
+  // =====================================================
+  // METODO getProfile()
+  // =====================================================
+  it('getProfile_cuentaEliminada_debeLanzarExcepcion', async () => {
+    // ARRANGE
+    repository.findAccount.mockResolvedValue({ email: 'alumno@aloe.ulima.edu.pe', status: 'deleted' });
+    repository.findProfile.mockResolvedValue(perfil());
+    // ACT
+    let excepcion: unknown = null;
+    try {
+      await service.getProfile(USUARIO);
+    } catch (error) {
+      excepcion = error;
+    }
+    // ASSERT
+    expect(excepcion).toBeInstanceOf(NotFoundException);
+    expect((excepcion as Error).message).toBe('Perfil no encontrado');
+    expect(repository.findAvailabilities).not.toHaveBeenCalled();
+  });
+
+  it('getProfile_sinPerfil_debeLanzarExcepcion', async () => {
+    // ARRANGE
+    repository.findAccount.mockResolvedValue({ email: 'alumno@aloe.ulima.edu.pe', status: 'active' });
+    repository.findProfile.mockResolvedValue(null);
+    // ACT
+    let excepcion: unknown = null;
+    try {
+      await service.getProfile(USUARIO);
+    } catch (error) {
+      excepcion = error;
+    }
+    // ASSERT
+    expect(excepcion).toBeInstanceOf(NotFoundException);
+    expect((excepcion as Error).message).toBe('Perfil no encontrado');
+  });
+
+  // =====================================================
+  // METODO updateProfile()
+  // =====================================================
+  it('updateProfile_todosLosCampos_debeNormalizarListas', async () => {
+    // ARRANGE
+    prepararPerfilExistente();
+    // ACT
+    await service.updateProfile(USUARIO, {
+      bio: 'Me gusta programar',
+      major: 'Ingeniería de Sistemas',
+      academicCycle: '8',
+      profilePhotoUrl: 'https://example.com/foto.png',
+      skills: [' TypeScript ', 'TypeScript', ''],
+      interests: ['Testing', ' Testing '],
+    });
+    // ASSERT
+    expect(repository.updateProfile).toHaveBeenCalledWith(USUARIO, {
+      fields: {
+        bio: 'Me gusta programar',
+        major: 'Ingeniería de Sistemas',
+        academicCycle: '8',
+        profilePhotoUrl: 'https://example.com/foto.png',
+      },
+      skills: ['TypeScript'],
+      interests: ['Testing'],
+    });
+    expect(repository.findProfile).toHaveBeenCalledWith(USUARIO);
+  });
+
+  it('updateProfile_sinCampos_noDebeCambiarNada', async () => {
+    // ARRANGE
+    prepararPerfilExistente();
+    // ACT
+    const resultado = await service.updateProfile(USUARIO, {});
+    // ASSERT
+    expect(repository.updateProfile).toHaveBeenCalledWith(USUARIO, { fields: {} });
+    expect(resultado.userId).toBe(USUARIO);
+  });
+
+  // =====================================================
+  // METODO createAvailability()
+  // =====================================================
+  it('createAvailability_franjaValida_debeRegistrarla', async () => {
+    // ARRANGE
+    repository.findAvailabilitiesByDay.mockResolvedValue([]);
+    repository.createAvailability.mockResolvedValue(franja(OTRA_FRANJA, 'jueves', '09:00:00', '11:00:00'));
+    // ACT
+    const resultado = await service.createAvailability(USUARIO, {
+      dayOfWeek: 'jueves',
+      startTime: '09:00',
+      endTime: '11:00',
+    });
+    // ASSERT
+    expect(resultado.message).toBe('Franja horaria creada con éxito');
+    expect(resultado.availability.startTime).toBe('09:00');
+    expect(repository.createAvailability).toHaveBeenCalledWith(USUARIO, {
+      dayOfWeek: 'jueves',
+      startTime: '09:00',
+      endTime: '11:00',
+    });
+  });
+
+  it('createAvailability_cruceConOtraFranja_debeRechazarSinRegistrar', async () => {
+    // ARRANGE
+    repository.findAvailabilitiesByDay.mockResolvedValue([franja(FRANJA, 'lunes', '14:00:00', '16:00:00')]);
+    // ACT
+    let excepcion: unknown = null;
+    try {
+      await service.createAvailability(USUARIO, { dayOfWeek: 'lunes', startTime: '15:00', endTime: '17:00' });
+    } catch (error) {
+      excepcion = error;
+    }
+    // ASSERT
+    expect(excepcion).toBeInstanceOf(BadRequestException);
+    expect((excepcion as Error).message).toBe('La franja horaria se cruza con otra que ya registraste ese día');
+    expect(repository.createAvailability).not.toHaveBeenCalled();
+  });
+
+  function prepararPerfilExistente(): void {
+    repository.updateProfile.mockResolvedValue(undefined);
+    repository.findAccount.mockResolvedValue({ email: 'alumno@aloe.ulima.edu.pe', status: 'active' });
+    repository.findProfile.mockResolvedValue(perfil());
+    repository.findSkills.mockResolvedValue([]);
+    repository.findInterests.mockResolvedValue([]);
+    repository.findAvailabilities.mockResolvedValue([]);
+  }
+
+  // =====================================================
+  // METODOS DE APOYO COMPARTIDOS POR LOS CINCO BLOQUES
   // =====================================================
   function franja(id: string, dia: string, inicio: string, fin: string): AvailabilityEntity {
     const entidad = new AvailabilityEntity();
