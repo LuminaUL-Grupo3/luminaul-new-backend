@@ -20,10 +20,16 @@ import { REVIEW_MESSAGES, REVIEW_STATUS } from '../reviews.constants';
 //   - 200 { userId, averageRating (1 decimal, 0 sin reseñas), totalReviews, reviews[] }.
 //     Solo cuentan las reseñas publicadas: las ocultas por moderación o eliminadas no aparecen.
 //   - 400 «El identificador de la ruta debe ser un UUID v4 válido» si userId no es un UUID v4.
-// Técnicas: particiones de equivalencia (EV = válida, EI = inválida) y valores límite (BV) sobre la
-// longitud del UUID (36 caracteres) y la calificación (1 y 5).
-// La base de datos se reemplaza por un repositorio en memoria con el mismo contrato que
-// ReviewsRepositoryImpl; los perfiles, por un ProfileClient en memoria.
+// Técnicas vistas en clase: partición de equivalencia y análisis de valores límite.
+//
+//   Variable          | Partición válida            | Partición inválida            | Valores límite
+//   userId (ruta)     | UUID v4 de 36 caracteres    | texto que no es UUID;         | 35 (no), 36 (sí), 37 (no)
+//                     |                             | UUID de otra versión (v1)     |
+//   reseñas del perfil| publicadas (1 o más);       | ocultas por moderación o      | 0 reseñas → promedio 0
+//                     | ninguna                     | eliminadas (no deben contar)  |
+//
+// Para llamarlo por HTTP se levanta solo ReviewsController con su servicio; la base de datos se
+// reemplaza por un repositorio en memoria y los perfiles por un ProfileClient en memoria.
 //
 // Nota: la HU tiene un solo campo de entrada (userId), por debajo de los más de 4 que pide la
 // rúbrica; se cubren todas sus particiones y valores límite.

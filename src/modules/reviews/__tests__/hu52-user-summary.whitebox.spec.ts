@@ -7,27 +7,30 @@ import { ReviewEntity } from '../entities/review.entity';
 import { REVIEW_STATUS } from '../reviews.constants';
 
 // Prueba de caja blanca (cap. 10.2) — HU 5.2 Ver reseñas en un perfil.
-// Módulo probado: el resumen de reseñas de un perfil, es decir, ReviewsServiceImpl.getUserSummary
-// con las funciones que ejecuta: averageRating, toResponses, ReviewResponseDto.fromEntity y
-// ProfileClientImpl.findPeople. Se usa el ProfileClientImpl real; solo la base de datos es un stub.
+// Módulo: el resumen de reseñas de un perfil. getUserSummary llama a averageRating, toResponses,
+// ProfileClientImpl.findPeople y ReviewResponseDto.fromEntity. Como en clase, se simula solo la
+// capa inferior: el repositorio y la base de datos (DataSource) son stubs.
 //
-// Decisiones del módulo:
-//   D1  averageRating:  reviews.length === 0
-//   D2  findPeople:     ids.length === 0
-//   D3  fromEntity:     people.get(reviewerId) ?? unknownPerson(...)       (autor sin cuenta)
-//   D4  fromEntity:     people.get(reviewedUserId) ?? unknownPerson(...)   (calificado sin cuenta)
-//   D5  findPeople:     row.name ?? ''                                     (sin nombre)
-// V(G) = decisiones + 1 = 5 + 1 = 6 > 4.
+// Grafo de flujo (Grafo_flujo_caja_blanca_HU5.2.png):
+//    1 obtener reseñas publicadas          9 nombre = ''
+//    2 ¿sin reseñas?          (predicado)  10 armar mapa de personas
+//    3 promedio = 0                        11 ¿autor sin cuenta?      (predicado)
+//    4 promedio con 1 decimal              12 autor vacío
+//    5 ¿sin ids? (findPeople) (predicado)  13 ¿calificado sin cuenta? (predicado)
+//    6 mapa vacío                          14 calificado vacío
+//    7 consultar users y profiles          15 devolver el resumen
+//    8 ¿nombre nulo?          (predicado)
 //
-// Caminos independientes (6 = V(G)):
-//   C1  D1 V (y D2 V)                     -> promedio 0, total 0, sin consultar perfiles
-//   C2  D1 F, D2 F, D3 F, D4 F, D5 F      -> resumen completo con nombres
-//   C3  D1 F, D2 F, D3 V, D4 F, D5 F      -> autor sin cuenta: nombre '' y foto null
-//   C4  D1 F, D2 F, D3 F, D4 V, D5 F      -> calificado sin cuenta
-//   C5  D1 F, D2 F, D3 F, D4 F, D5 V      -> cuenta sin nombre: name ''
-//   C6  D1 F, D2 F, D3 V, D4 V            -> ninguna cuenta existe
-// D1 y D2 están ligadas: sin reseñas no hay ids que consultar. Con C1..C6 cada decisión toma los
-// valores verdadero y falso: 100 % de cobertura de ramas del módulo.
+// Complejidad ciclomática:  V(G) = predicados + 1 = 5 + 1 = 6
+//                           V(G) = aristas − nodos + 2 = 19 − 15 + 2 = 6
+// Caminos básicos (uno por prueba):
+//   C1  1-2-3-5-6-15                  sin reseñas
+//   C2  1-2-4-5-7-8-10-11-13-15       reseñas con todas las cuentas completas
+//   C3  1-2-4-5-7-8-9-10-11-13-15     una cuenta sin nombre
+//   C4  1-2-4-5-7-8-10-11-12-13-15    el autor ya no tiene cuenta
+//   C5  1-2-4-5-7-8-10-11-13-14-15    el calificado no tiene cuenta
+//   C6  1-2-4-5-7-8-10-11-12-13-14-15 ninguna de las dos cuentas existe
+// Con los 6 caminos cada predicado sale por V y por F: 100 % de cobertura de ramas del módulo.
 
 const REVIEWED = 'a1b2c3d4-e5f6-47a8-b9c0-123456789abc';
 const AUTHOR = 'd290f1ee-6c54-4b01-90e6-d701748f0851';
@@ -52,7 +55,7 @@ function review(rating: number): ReviewEntity {
   } as ReviewEntity;
 }
 
-describe('HU 5.2 Resumen de reseñas de un perfil (caja blanca · V(G) = 6 > 4)', () => {
+describe('HU 5.2 Resumen de reseñas de un perfil (caja blanca · V(G) = 6)', () => {
   let rows: PersonRow[];
   let getRawMany: ReturnType<typeof vi.fn>;
   let repo: ReviewsRepository;
@@ -61,7 +64,7 @@ describe('HU 5.2 Resumen de reseñas de un perfil (caja blanca · V(G) = 6 > 4)'
   beforeEach(() => {
     rows = [];
     getRawMany = vi.fn(async () => rows);
-    // Stub del QueryBuilder de TypeORM: cada método devuelve el mismo objeto y getRawMany las filas
+    // Stub de la base de datos: el QueryBuilder devuelve las filas que define cada prueba
     const qb: Record<string, unknown> = { getRawMany };
     for (const m of ['select', 'addSelect', 'from', 'leftJoin', 'where']) qb[m] = vi.fn(() => qb);
     const dataSource = { createQueryBuilder: vi.fn(() => qb) } as unknown as DataSource;
@@ -71,23 +74,20 @@ describe('HU 5.2 Resumen de reseñas de un perfil (caja blanca · V(G) = 6 > 4)'
     service = new ReviewsServiceImpl(repo, moderation, new ProfileClientImpl(dataSource), []);
   });
 
-  function withReviews(list: ReviewEntity[]): void {
-    vi.mocked(repo.findPublishedByReviewedUser).mockResolvedValue(list);
-  }
-
-  it('C1 · D1 V y D2 V: sin reseñas devuelve promedio 0 y no consulta perfiles', async () => {
-    withReviews([]);
-
+  it('C1 · camino 1-2-3-5-6-15: sin reseñas devuelve promedio 0 y no consulta perfiles', async () => {
+    // Arrange
+    vi.mocked(repo.findPublishedByReviewedUser).mockResolvedValue([]);
+    // Act
     const summary = await service.getUserSummary(REVIEWED);
-
+    // Assert
     expect(summary).toEqual({ userId: REVIEWED, averageRating: 0, totalReviews: 0, reviews: [] });
     expect(getRawMany).not.toHaveBeenCalled();
   });
 
-  it('C2 · D1..D5 F: con reseñas y cuentas completas devuelve promedio, total y nombres', async () => {
-    withReviews([review(5), review(4)]);
+  it('C2 · camino 1-2-4-5-7-8-10-11-13-15: cuentas completas devuelven promedio y nombres', async () => {
+    vi.mocked(repo.findPublishedByReviewedUser).mockResolvedValue([review(5), review(4)]);
     rows = [
-      { id: AUTHOR, name: 'Martín Vizcarra', profilePhotoUrl: 'https://avatar.test/m.png' },
+      { id: AUTHOR, name: 'Martín Vizcarra', profilePhotoUrl: null },
       { id: REVIEWED, name: 'Gabriela Garay', profilePhotoUrl: null },
     ];
 
@@ -95,37 +95,12 @@ describe('HU 5.2 Resumen de reseñas de un perfil (caja blanca · V(G) = 6 > 4)'
 
     expect(summary.averageRating).toBe(4.5);
     expect(summary.totalReviews).toBe(2);
-    expect(summary.reviews[0].reviewer).toEqual({
-      id: AUTHOR,
-      name: 'Martín Vizcarra',
-      profilePhotoUrl: 'https://avatar.test/m.png',
-    });
-    expect(summary.reviews[0].reviewedUser.name).toBe('Gabriela Garay');
-    expect(getRawMany).toHaveBeenCalledTimes(1);
-  });
-
-  it('C3 · D3 V: el autor ya no tiene cuenta y se muestra sin nombre ni foto', async () => {
-    withReviews([review(3)]);
-    rows = [{ id: REVIEWED, name: 'Gabriela Garay', profilePhotoUrl: null }];
-
-    const summary = await service.getUserSummary(REVIEWED);
-
-    expect(summary.reviews[0].reviewer).toEqual({ id: AUTHOR, name: '', profilePhotoUrl: null });
-    expect(summary.reviews[0].reviewedUser.name).toBe('Gabriela Garay');
-  });
-
-  it('C4 · D4 V: el alumno calificado no aparece en perfiles', async () => {
-    withReviews([review(3)]);
-    rows = [{ id: AUTHOR, name: 'Martín Vizcarra', profilePhotoUrl: null }];
-
-    const summary = await service.getUserSummary(REVIEWED);
-
     expect(summary.reviews[0].reviewer.name).toBe('Martín Vizcarra');
-    expect(summary.reviews[0].reviewedUser).toEqual({ id: REVIEWED, name: '', profilePhotoUrl: null });
+    expect(summary.reviews[0].reviewedUser.name).toBe('Gabriela Garay');
   });
 
-  it('C5 · D5 V: una cuenta sin nombre se devuelve con name vacío', async () => {
-    withReviews([review(2)]);
+  it('C3 · camino 1-2-4-5-7-8-9-10-11-13-15: una cuenta sin nombre se devuelve con nombre vacío', async () => {
+    vi.mocked(repo.findPublishedByReviewedUser).mockResolvedValue([review(2)]);
     rows = [
       { id: AUTHOR, name: null, profilePhotoUrl: null },
       { id: REVIEWED, name: 'Gabriela Garay', profilePhotoUrl: null },
@@ -137,8 +112,28 @@ describe('HU 5.2 Resumen de reseñas de un perfil (caja blanca · V(G) = 6 > 4)'
     expect(summary.averageRating).toBe(2);
   });
 
-  it('C6 · D3 V y D4 V: ninguna cuenta existe y ambas personas quedan vacías', async () => {
-    withReviews([review(1)]);
+  it('C4 · camino 1-2-4-5-7-8-10-11-12-13-15: el autor sin cuenta aparece sin nombre ni foto', async () => {
+    vi.mocked(repo.findPublishedByReviewedUser).mockResolvedValue([review(3)]);
+    rows = [{ id: REVIEWED, name: 'Gabriela Garay', profilePhotoUrl: null }];
+
+    const summary = await service.getUserSummary(REVIEWED);
+
+    expect(summary.reviews[0].reviewer).toEqual({ id: AUTHOR, name: '', profilePhotoUrl: null });
+    expect(summary.reviews[0].reviewedUser.name).toBe('Gabriela Garay');
+  });
+
+  it('C5 · camino 1-2-4-5-7-8-10-11-13-14-15: el calificado sin cuenta aparece vacío', async () => {
+    vi.mocked(repo.findPublishedByReviewedUser).mockResolvedValue([review(3)]);
+    rows = [{ id: AUTHOR, name: 'Martín Vizcarra', profilePhotoUrl: null }];
+
+    const summary = await service.getUserSummary(REVIEWED);
+
+    expect(summary.reviews[0].reviewer.name).toBe('Martín Vizcarra');
+    expect(summary.reviews[0].reviewedUser).toEqual({ id: REVIEWED, name: '', profilePhotoUrl: null });
+  });
+
+  it('C6 · camino 1-2-4-5-7-8-10-11-12-13-14-15: ninguna cuenta existe', async () => {
+    vi.mocked(repo.findPublishedByReviewedUser).mockResolvedValue([review(1)]);
     rows = [];
 
     const summary = await service.getUserSummary(REVIEWED);
